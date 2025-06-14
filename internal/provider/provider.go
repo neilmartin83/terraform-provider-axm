@@ -16,6 +16,7 @@ type providerModel struct {
 	ClientID   types.String `tfsdk:"client_id"`
 	KeyID      types.String `tfsdk:"key_id"`
 	PrivateKey types.String `tfsdk:"private_key"`
+	BaseURL    types.String `tfsdk:"base_url"`
 }
 
 type axmProvider struct{}
@@ -44,6 +45,10 @@ func (p *axmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *
 				Sensitive:   true,
 				Description: "Contents of the .p8 private key",
 			},
+			"base_url": schema.StringAttribute{
+				Optional:    true,
+				Description: "Base URL for the Apple API (e.g., https://api-business.apple.com or https://api-school.apple.com)",
+			},
 		},
 	}
 }
@@ -56,7 +61,13 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
+	baseURL := config.BaseURL.ValueString()
+	if baseURL == "" {
+		baseURL = "https://api-business.apple.com"
+	}
+
 	client, err := NewClient(
+		baseURL,
 		config.TeamID.ValueString(),
 		config.ClientID.ValueString(),
 		config.KeyID.ValueString(),
@@ -76,7 +87,9 @@ func (p *axmProvider) Resources(_ context.Context) []func() resource.Resource {
 }
 
 func (p *axmProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		NewOrganizationDevicesDataSource,
+	}
 }
 
 func New() provider.Provider {
