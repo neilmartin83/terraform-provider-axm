@@ -2,21 +2,22 @@ package axm
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// providerModel is the Terraform schema model (internal)
 type providerModel struct {
 	TeamID     types.String `tfsdk:"team_id"`
 	ClientID   types.String `tfsdk:"client_id"`
 	KeyID      types.String `tfsdk:"key_id"`
 	PrivateKey types.String `tfsdk:"private_key"`
-	BaseURL    types.String `tfsdk:"base_url"`
+	Scope      types.String `tfsdk:"scope"`
 }
 
 type axmProvider struct{}
@@ -27,14 +28,15 @@ func (p *axmProvider) Metadata(_ context.Context, _ provider.MetadataRequest, re
 
 func (p *axmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Automate device management actions and access data about devices that enroll using Automated Device Enrollment with the Apple School and Business Manager API. https://developer.apple.com/documentation/apple-school-and-business-manager-api",
 		Attributes: map[string]schema.Attribute{
 			"team_id": schema.StringAttribute{
-				Required:    true,
-				Description: "Apple Business Manager Team ID (starts with BUSINESSAPI.)",
+				Optional:    true,
+				Description: "Apple Business Manager Team ID (starts with BUSINESSAPI.). If not specified, client_id will be used.",
 			},
 			"client_id": schema.StringAttribute{
 				Required:    true,
-				Description: "Client ID (same as Team ID for AxM)",
+				Description: "Client ID for Apple Business Manager authentication",
 			},
 			"key_id": schema.StringAttribute{
 				Required:    true,
@@ -45,9 +47,12 @@ func (p *axmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *
 				Sensitive:   true,
 				Description: "Contents of the .p8 private key",
 			},
-			"base_url": schema.StringAttribute{
+			"scope": schema.StringAttribute{
 				Optional:    true,
-				Description: "Base URL for the Apple API (e.g., https://api-business.apple.com or https://api-school.apple.com)",
+				Description: "API scope to use. Valid values are 'business.api' or 'school.api'. Defaults to 'business.api'",
+				Validators: []validator.String{
+					ScopeValidator{},
+				},
 			},
 		},
 	}
@@ -61,14 +66,33 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
-	baseURL := config.BaseURL.ValueString()
-	if baseURL == "" {
+	scope := config.Scope.ValueString()
+	if scope == "" {
+		scope = "business.api"
+	}
+
+	var baseURL string
+	switch scope {
+	case "business.api":
 		baseURL = "https://api-business.apple.com"
+	case "school.api":
+		baseURL = "https://api-school.apple.com"
+	default:
+		resp.Diagnostics.AddError(
+			"Invalid Scope",
+			fmt.Sprintf("Scope must be either 'business.api' or 'school.api', got: %s", scope),
+		)
+		return
+	}
+
+	teamID := config.TeamID.ValueString()
+	if teamID == "" {
+		teamID = config.ClientID.ValueString()
 	}
 
 	client, err := NewClient(
 		baseURL,
-		config.TeamID.ValueString(),
+		teamID,
 		config.ClientID.ValueString(),
 		config.KeyID.ValueString(),
 		config.PrivateKey.ValueString(),
@@ -89,9 +113,34 @@ func (p *axmProvider) Resources(_ context.Context) []func() resource.Resource {
 func (p *axmProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewOrganizationDevicesDataSource,
+		NewOrganizationDeviceDataSource,
 	}
 }
 
 func New() provider.Provider {
 	return &axmProvider{}
+}
+
+type ScopeValidator struct{}
+
+func (v ScopeValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	value := req.ConfigValue.ValueString()
+	if value != "business.api" && value != "school.api" {
+		resp.Diagnostics.AddError(
+			"Invalid Scope",
+			"Scope must be either 'business.api' or 'school.api'",
+		)
+	}
+}
+
+func (v ScopeValidator) Description(ctx context.Context) string {
+	return "Validates that the scope is either 'business.api' or 'school.api'"
+}
+
+func (v ScopeValidator) MarkdownDescription(ctx context.Context) string {
+	return "Validates that the scope is either `business.api` or `school.api`"
 }

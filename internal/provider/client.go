@@ -34,6 +34,11 @@ type OrgDevicesResponse struct {
 	Meta  Meta        `json:"meta"`
 }
 
+type OrgDeviceResponse struct {
+	Data  OrgDevice `json:"data"`
+	Links Links     `json:"links"`
+}
+
 type OrgDevice struct {
 	Type          string          `json:"type"`
 	ID            string          `json:"id"`
@@ -121,7 +126,7 @@ func parsePrivateKey(pemStr string) (*ecdsa.PrivateKey, error) {
 
 func (c *Client) authenticate() error {
 	now := time.Now().UTC()
-	expiration := now.Add(180 * 24 * time.Hour) // 180 days
+	expiration := now.Add(180 * 24 * time.Hour)
 
 	claims := jwt.MapClaims{
 		"iss": c.teamID,
@@ -248,4 +253,36 @@ func (c *Client) GetOrgDevices(ctx context.Context) ([]OrgDevice, error) {
 	}
 
 	return allDevices, nil
+}
+
+func (c *Client) GetOrgDevice(ctx context.Context, id string) (*OrgDevice, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET",
+		fmt.Sprintf("%s/v1/orgDevices/%s", c.baseURL, id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("error %d: %s", resp.StatusCode, bodyBytes)
+	}
+
+	var response OrgDeviceResponse
+	if err := json.Unmarshal(bodyBytes, &response); err != nil {
+		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
+	}
+
+	return &response.Data, nil
 }
