@@ -47,7 +47,7 @@ func (d *OrganizationDeviceDataSource) Metadata(_ context.Context, req datasourc
 
 func (d *OrganizationDeviceDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Fetches information about a specific organization device from Apple Business Manager.",
+		Description: "Fetches information about a specific device from Apple Business or School Manager.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Required:    true,

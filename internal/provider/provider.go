@@ -49,7 +49,7 @@ func (p *axmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *
 			},
 			"scope": schema.StringAttribute{
 				Optional:    true,
-				Description: "API scope to use. Valid values are 'business.api' or 'school.api'. Defaults to 'business.api'",
+				Description: "API scope to use. Valid values are 'business.api' or 'school.api'.",
 				Validators: []validator.String{
 					ScopeValidator{},
 				},
