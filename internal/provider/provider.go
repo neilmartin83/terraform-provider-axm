@@ -95,6 +95,7 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		teamID,
 		config.ClientID.ValueString(),
 		config.KeyID.ValueString(),
+		config.Scope.ValueString(),
 		config.PrivateKey.ValueString(),
 	)
 	if err != nil {
@@ -114,6 +115,9 @@ func (p *axmProvider) DataSources(_ context.Context) []func() datasource.DataSou
 	return []func() datasource.DataSource{
 		NewOrganizationDevicesDataSource,
 		NewOrganizationDeviceDataSource,
+		NewDeviceManagementServicesDataSource,
+		NewDeviceManagementServiceSerialNumbersDataSource,
+		NewOrganizationDeviceAssignedServerInformationDataSource,
 	}
 }
 

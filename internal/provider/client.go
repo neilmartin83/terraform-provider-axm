@@ -1,7 +1,6 @@
 package axm
 
 import (
-	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
@@ -10,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -21,11 +22,11 @@ type Client struct {
 	baseURL     string
 	token       string
 	tokenExpiry time.Time
-
-	teamID     string
-	clientID   string
-	keyID      string
-	privateKey *ecdsa.PrivateKey
+	teamID      string
+	clientID    string
+	keyID       string
+	scope       string
+	privateKey  *ecdsa.PrivateKey
 }
 
 type OrgDevicesResponse struct {
@@ -40,11 +41,16 @@ type OrgDeviceResponse struct {
 }
 
 type OrgDevice struct {
-	Type          string          `json:"type"`
-	ID            string          `json:"id"`
-	Attributes    DeviceAttribute `json:"attributes"`
-	Relationships Relationships   `json:"relationships"`
-	Links         Links           `json:"links"`
+	Type          string              `json:"type"`
+	ID            string              `json:"id"`
+	Attributes    DeviceAttribute     `json:"attributes"`
+	Relationships DeviceRelationships `json:"relationships"`
+	Links         Links               `json:"links"`
+}
+
+type OrgDeviceAssignedServerResponse struct {
+	Data  MdmServer `json:"data"`
+	Links Links     `json:"links"`
 }
 
 type DeviceAttribute struct {
@@ -67,7 +73,7 @@ type DeviceAttribute struct {
 	PurchaseSourceType string   `json:"purchaseSourceType"`
 }
 
-type Relationships struct {
+type DeviceRelationships struct {
 	AssignedServer AssignedServer `json:"assignedServer"`
 }
 
@@ -77,6 +83,7 @@ type AssignedServer struct {
 
 type Links struct {
 	Self    string `json:"self"`
+	Next    string `json:"next,omitempty"`
 	Related string `json:"related,omitempty"`
 }
 
@@ -90,7 +97,49 @@ type Paging struct {
 	Total      int    `json:"total,omitempty"`
 }
 
-func NewClient(baseURL, teamID, clientID, keyID, p8Key string) (*Client, error) {
+type MdmServersResponse struct {
+	Data     []MdmServer `json:"data"`
+	Included []OrgDevice `json:"included,omitempty"`
+	Links    Links       `json:"links"`
+	Meta     Meta        `json:"meta"`
+}
+
+type MdmServer struct {
+	Type          string             `json:"type"`
+	ID            string             `json:"id"`
+	Attributes    MdmServerAttribute `json:"attributes"`
+	Relationships MdmRelationships   `json:"relationships"`
+}
+
+type MdmServerAttribute struct {
+	ServerName      string `json:"serverName"`
+	ServerType      string `json:"serverType"`
+	CreatedDateTime string `json:"createdDateTime"`
+	UpdatedDateTime string `json:"updatedDateTime"`
+}
+
+type MdmRelationships struct {
+	Devices MdmDevicesRelationship `json:"devices"`
+}
+
+type MdmDevicesRelationship struct {
+	Data  []MdmDeviceData `json:"data,omitempty"`
+	Links Links           `json:"links"`
+	Meta  Meta            `json:"meta,omitempty"`
+}
+
+type MdmDeviceData struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+}
+
+type DeviceRelationshipsResponse struct {
+	Data  []MdmDeviceData `json:"data"`
+	Links Links           `json:"links"`
+	Meta  Meta            `json:"meta"`
+}
+
+func NewClient(baseURL, teamID, clientID, keyID, scope, p8Key string) (*Client, error) {
 	privKey, err := parsePrivateKey(p8Key)
 	if err != nil {
 		return nil, err
@@ -103,6 +152,7 @@ func NewClient(baseURL, teamID, clientID, keyID, p8Key string) (*Client, error) 
 		clientID:   clientID,
 		keyID:      keyID,
 		privateKey: privKey,
+		scope:      scope,
 	}
 
 	if err := client.authenticate(); err != nil {
@@ -126,15 +176,16 @@ func parsePrivateKey(pemStr string) (*ecdsa.PrivateKey, error) {
 
 func (c *Client) authenticate() error {
 	now := time.Now().UTC()
-	expiration := now.Add(180 * 24 * time.Hour)
+	expiration := now.Add(time.Hour)
 
 	claims := jwt.MapClaims{
-		"iss": c.teamID,
-		"sub": c.clientID,
-		"aud": "https://account.apple.com/auth/oauth2/v2/token",
-		"iat": now.Unix(),
-		"exp": expiration.Unix(),
-		"jti": uuid.New().String(),
+		"iss":   c.teamID,
+		"sub":   c.clientID,
+		"aud":   "https://account.apple.com/auth/oauth2/v2/token",
+		"iat":   now.Unix(),
+		"exp":   expiration.Unix(),
+		"jti":   uuid.New().String(),
+		"scope": c.scope,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
@@ -145,18 +196,25 @@ func (c *Client) authenticate() error {
 		return fmt.Errorf("failed to sign JWT: %w", err)
 	}
 
-	form := map[string]string{
-		"grant_type":            "client_credentials",
-		"client_id":             c.clientID,
-		"client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-		"client_assertion":      signedToken,
-		"scope":                 "business.api",
-	}
+	// Create form values
+	formData := url.Values{}
+	formData.Set("grant_type", "client_credentials")
+	formData.Set("client_id", c.clientID)
+	formData.Set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
+	formData.Set("client_assertion", signedToken)
+	formData.Set("scope", c.scope)
 
-	req, err := http.NewRequest("POST", "https://account.apple.com/auth/oauth2/v2/token", bytes.NewBufferString(encodeForm(form)))
+	// Create request with form data in body
+	req, err := http.NewRequest(
+		"POST",
+		"https://account.apple.com/auth/oauth2/v2/token",
+		strings.NewReader(formData.Encode()),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create auth request: %w", err)
 	}
+
+	req.Header.Set("Host", "account.apple.com")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := c.httpClient.Do(req)
@@ -172,7 +230,9 @@ func (c *Client) authenticate() error {
 
 	var respBody struct {
 		AccessToken string `json:"access_token"`
+		TokenType   string `json:"token_type"`
 		ExpiresIn   int    `json:"expires_in"`
+		Scope       string `json:"scope"`
 	}
 	if err := json.Unmarshal(body, &respBody); err != nil {
 		return fmt.Errorf("failed to parse auth response: %w", err)
@@ -182,14 +242,6 @@ func (c *Client) authenticate() error {
 	c.tokenExpiry = now.Add(time.Duration(respBody.ExpiresIn) * time.Second)
 
 	return nil
-}
-
-func encodeForm(data map[string]string) string {
-	var buf bytes.Buffer
-	for k, v := range data {
-		buf.WriteString(fmt.Sprintf("%s=%s&", k, v))
-	}
-	return buf.String()[:buf.Len()-1]
 }
 
 func (c *Client) doRequest(req *http.Request) (*http.Response, error) {
@@ -280,6 +332,146 @@ func (c *Client) GetOrgDevice(ctx context.Context, id string) (*OrgDevice, error
 	}
 
 	var response OrgDeviceResponse
+	if err := json.Unmarshal(bodyBytes, &response); err != nil {
+		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
+	}
+
+	return &response.Data, nil
+}
+
+func (c *Client) GetDeviceManagementServices(ctx context.Context) ([]MdmServer, error) {
+	var allServers []MdmServer
+	nextCursor := ""
+	limit := 100
+
+	for {
+		req, err := http.NewRequestWithContext(ctx, "GET",
+			fmt.Sprintf("%s/v1/mdmServers", c.baseURL), nil)
+		if err != nil {
+			return nil, err
+		}
+
+		q := req.URL.Query()
+		q.Add("limit", fmt.Sprintf("%d", limit))
+		if nextCursor != "" {
+			q.Add("cursor", nextCursor)
+		}
+		req.URL.RawQuery = q.Encode()
+
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := c.doRequest(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response: %w", err)
+		}
+
+		if resp.StatusCode != 200 {
+			return nil, fmt.Errorf("error %d: %s", resp.StatusCode, bodyBytes)
+		}
+
+		var response MdmServersResponse
+		if err := json.Unmarshal(bodyBytes, &response); err != nil {
+			return nil, fmt.Errorf("failed to decode response JSON: %w", err)
+		}
+
+		allServers = append(allServers, response.Data...)
+
+		nextCursor = response.Meta.Paging.NextCursor
+		if nextCursor == "" {
+			break
+		}
+	}
+
+	return allServers, nil
+}
+
+func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, serverID string) ([]string, error) {
+	var allSerialNumbers []string
+	nextCursor := ""
+	limit := 100
+
+	for {
+		req, err := http.NewRequestWithContext(ctx, "GET",
+			fmt.Sprintf("%s/v1/mdmServers/%s/relationships/devices", c.baseURL, serverID), nil)
+		if err != nil {
+			return nil, err
+		}
+
+		q := req.URL.Query()
+		q.Add("limit", fmt.Sprintf("%d", limit))
+		if nextCursor != "" {
+			q.Add("cursor", nextCursor)
+		}
+		req.URL.RawQuery = q.Encode()
+
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := c.doRequest(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response: %w", err)
+		}
+
+		if resp.StatusCode != 200 {
+			return nil, fmt.Errorf("error %d: %s", resp.StatusCode, bodyBytes)
+		}
+
+		var response DeviceRelationshipsResponse
+		if err := json.Unmarshal(bodyBytes, &response); err != nil {
+			return nil, fmt.Errorf("failed to decode response JSON: %w", err)
+		}
+
+		for _, device := range response.Data {
+			if device.Type == "orgDevices" {
+				allSerialNumbers = append(allSerialNumbers, device.ID)
+			}
+		}
+
+		nextCursor = response.Meta.Paging.NextCursor
+		if nextCursor == "" {
+			break
+		}
+	}
+
+	return allSerialNumbers, nil
+}
+
+func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string) (*MdmServer, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET",
+		fmt.Sprintf("%s/v1/orgDevices/%s/assignedServer", c.baseURL, deviceID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("error %d: %s", resp.StatusCode, bodyBytes)
+	}
+
+	var response OrgDeviceAssignedServerResponse
 	if err := json.Unmarshal(bodyBytes, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
