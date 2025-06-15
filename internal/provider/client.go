@@ -2,31 +2,15 @@ package axm
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"strings"
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 type Client struct {
-	httpClient  *http.Client
-	baseURL     string
-	token       string
-	tokenExpiry time.Time
-	teamID      string
-	clientID    string
-	keyID       string
-	scope       string
-	privateKey  *ecdsa.PrivateKey
+	auth    *AppleOAuthClient
+	baseURL string
 }
 
 type OrgDevicesResponse struct {
@@ -140,118 +124,31 @@ type DeviceRelationshipsResponse struct {
 }
 
 func NewClient(baseURL, teamID, clientID, keyID, scope, p8Key string) (*Client, error) {
-	privKey, err := parsePrivateKey(p8Key)
+	config := &ClientConfig{
+		TeamID:     teamID,
+		ClientID:   clientID,
+		KeyID:      keyID,
+		Scope:      scope,
+		PrivateKey: []byte(p8Key),
+	}
+
+	auth, err := NewAppleOAuthClient(config)
 	if err != nil {
 		return nil, err
 	}
 
-	client := &Client{
-		httpClient: http.DefaultClient,
-		baseURL:    baseURL,
-		teamID:     teamID,
-		clientID:   clientID,
-		keyID:      keyID,
-		privateKey: privKey,
-		scope:      scope,
-	}
-
-	if err := client.authenticate(); err != nil {
-		return nil, err
-	}
-
-	return client, nil
+	return &Client{
+		auth:    auth,
+		baseURL: baseURL,
+	}, nil
 }
 
-func parsePrivateKey(pemStr string) (*ecdsa.PrivateKey, error) {
-	block, _ := pem.Decode([]byte(pemStr))
-	if block == nil {
-		return nil, fmt.Errorf("failed to decode PEM block")
-	}
-	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-	return key.(*ecdsa.PrivateKey), nil
-}
-
-func (c *Client) authenticate() error {
-	now := time.Now().UTC()
-	expiration := now.Add(time.Hour)
-
-	claims := jwt.MapClaims{
-		"iss":   c.teamID,
-		"sub":   c.clientID,
-		"aud":   "https://account.apple.com/auth/oauth2/v2/token",
-		"iat":   now.Unix(),
-		"exp":   expiration.Unix(),
-		"jti":   uuid.New().String(),
-		"scope": c.scope,
+func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	if err := c.auth.Authenticate(ctx, req); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w", err)
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
-	token.Header["kid"] = c.keyID
-
-	signedToken, err := token.SignedString(c.privateKey)
-	if err != nil {
-		return fmt.Errorf("failed to sign JWT: %w", err)
-	}
-
-	// Create form values
-	formData := url.Values{}
-	formData.Set("grant_type", "client_credentials")
-	formData.Set("client_id", c.clientID)
-	formData.Set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
-	formData.Set("client_assertion", signedToken)
-	formData.Set("scope", c.scope)
-
-	// Create request with form data in body
-	req, err := http.NewRequest(
-		"POST",
-		"https://account.apple.com/auth/oauth2/v2/token",
-		strings.NewReader(formData.Encode()),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create auth request: %w", err)
-	}
-
-	req.Header.Set("Host", "account.apple.com")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("auth HTTP request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("auth failed: %s", string(body))
-	}
-
-	var respBody struct {
-		AccessToken string `json:"access_token"`
-		TokenType   string `json:"token_type"`
-		ExpiresIn   int    `json:"expires_in"`
-		Scope       string `json:"scope"`
-	}
-	if err := json.Unmarshal(body, &respBody); err != nil {
-		return fmt.Errorf("failed to parse auth response: %w", err)
-	}
-
-	c.token = respBody.AccessToken
-	c.tokenExpiry = now.Add(time.Duration(respBody.ExpiresIn) * time.Second)
-
-	return nil
-}
-
-func (c *Client) doRequest(req *http.Request) (*http.Response, error) {
-	if c.token == "" || time.Now().After(c.tokenExpiry.Add(-10*time.Second)) {
-		if err := c.authenticate(); err != nil {
-			return nil, fmt.Errorf("failed to refresh token: %w", err)
-		}
-	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	return c.httpClient.Do(req)
+	return http.DefaultClient.Do(req)
 }
 
 func (c *Client) GetOrgDevices(ctx context.Context) ([]OrgDevice, error) {
@@ -273,10 +170,9 @@ func (c *Client) GetOrgDevices(ctx context.Context) ([]OrgDevice, error) {
 		}
 		req.URL.RawQuery = q.Encode()
 
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
 		req.Header.Set("Accept", "application/json")
 
-		resp, err := c.doRequest(req)
+		resp, err := c.doRequest(ctx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -316,7 +212,7 @@ func (c *Client) GetOrgDevice(ctx context.Context, id string) (*OrgDevice, error
 
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := c.doRequest(req)
+	resp, err := c.doRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +256,7 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context) ([]MdmServer, 
 
 		req.Header.Set("Accept", "application/json")
 
-		resp, err := c.doRequest(req)
+		resp, err := c.doRequest(ctx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -412,7 +308,7 @@ func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, se
 
 		req.Header.Set("Accept", "application/json")
 
-		resp, err := c.doRequest(req)
+		resp, err := c.doRequest(ctx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -456,7 +352,7 @@ func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string
 
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := c.doRequest(req)
+	resp, err := c.doRequest(ctx, req)
 	if err != nil {
 		return nil, err
 	}
