@@ -9,3 +9,5 @@ As well as the Terraform provider data sources/resources, a comprehensive set of
 
 * [client.go](internal/provider/client.go) contains a complete client implementation to interract with all the [endpoints documented here](https://developer.apple.com/documentation/apple-school-and-business-manager-api).
 * [client_oauth.go](internal/provider/client_oauth.go) contains the [authentication implementation](https://developer.apple.com/documentation/apple-school-and-business-manager-api/implementing-oauth-for-the-apple-school-and-business-manager-api) to handle assertation and token lifecycle management. It was complex enough to warrant breaking out into its own thing!
+
+Check out the [example Go scripts](examples/client) showing how the client functions can be used in other projects. The intention here is to break these out into a separate SDK eventually.
