@@ -1,0 +1,69 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	axm "github.com/neilmartin83/terraform-provider-axm/internal/provider"
+)
+
+func main() {
+	teamID := "BUSINESSAPI.123e4567-e89b-12d3-a456-426614174000"
+	clientID := "BUSINESSAPI.123e4567-e89b-12d3-a456-426614174000"
+	keyID := "123e4567-e89b-12d3-a456-426614174000"
+	privateKey := `-----BEGIN EC PRIVATE KEY-----
+FAKEAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wTESTBAQQgZxY8ytVhyXPLdHlj
+TESTx9TSUTcFK29+lHvA1DybmFAKEyhRANCAAQXv+VXUiVv511AIa4nEXBrTESTD+
+FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
+-----END EC PRIVATE KEY-----`
+	baseURL := "https://api-business.apple.com"
+	scope := "business.api"
+
+	// Example server ID - replace with an actual MDM server ID
+	serverID := "FAKE98765432TEST98765432DUMMY0000"
+
+	if teamID == "" || clientID == "" || keyID == "" || privateKey == "" || baseURL == "" {
+		log.Fatal("Missing required environment variables: AXM_TEAM_ID, AXM_CLIENT_ID, AXM_KEY_ID, AXM_PRIVATE_KEY, AXM_BASE_URL")
+	}
+
+	client, err := axm.NewClient(baseURL, teamID, clientID, keyID, scope, privateKey)
+	if err != nil {
+		log.Fatalf("Failed to initialize client: %v", err)
+	}
+
+	serialNumbers, err := client.GetDeviceManagementServiceSerialNumbers(context.Background(), serverID)
+	if err != nil {
+		log.Fatalf("Error getting device serial numbers: %v", err)
+	}
+
+	fmt.Printf("Found %d device(s) assigned to MDM server %s\n\n", len(serialNumbers), serverID)
+
+	// Print all serial numbers in a formatted list
+	for i, serialNumber := range serialNumbers {
+		fmt.Printf("%d. %s\n", i+1, serialNumber)
+	}
+
+	// Optional: Get detailed information for each device
+	fmt.Printf("\nDetailed Device Information:\n")
+	fmt.Println("------------------------")
+	for _, serialNumber := range serialNumbers {
+		device, err := client.GetOrgDevice(context.Background(), serialNumber)
+		if err != nil {
+			fmt.Printf("Error getting details for device %s: %v\n", serialNumber, err)
+			continue
+		}
+
+		fmt.Printf("\nDevice: %s\n"+
+			"Model: %s\n"+
+			"Product Family: %s\n"+
+			"Status: %s\n"+
+			"Added to Org: %s\n",
+			device.Attributes.SerialNumber,
+			device.Attributes.DeviceModel,
+			device.Attributes.ProductFamily,
+			device.Attributes.Status,
+			device.Attributes.AddedToOrgDateTime,
+		)
+	}
+}

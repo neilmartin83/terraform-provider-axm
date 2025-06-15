@@ -45,27 +45,33 @@ type ErrorLinksAssociated struct {
 }
 
 type OrgDevicesResponse struct {
-	Data  []OrgDevice `json:"data"`
-	Links Links       `json:"links"`
-	Meta  Meta        `json:"meta"`
+	Data  []OrgDevice        `json:"data"`
+	Links PagedDocumentLinks `json:"links"`
+	Meta  Meta               `json:"meta"`
 }
 
 type OrgDeviceResponse struct {
-	Data  OrgDevice `json:"data"`
-	Links Links     `json:"links"`
+	Data  OrgDevice     `json:"data"`
+	Links DocumentLinks `json:"links"`
 }
 
 type OrgDevice struct {
-	Type          string              `json:"type"`
-	ID            string              `json:"id"`
-	Attributes    DeviceAttribute     `json:"attributes"`
-	Relationships DeviceRelationships `json:"relationships"`
-	Links         Links               `json:"links"`
+	Type          string                 `json:"type"`
+	ID            string                 `json:"id"`
+	Attributes    DeviceAttribute        `json:"attributes"`
+	Relationships OrgDeviceRelationships `json:"relationships"`
+	Links         ResourceLinks          `json:"links"`
 }
 
-type OrgDeviceAssignedServerResponse struct {
-	Data  MdmServer `json:"data"`
-	Links Links     `json:"links"`
+type MdmServerResponse struct {
+	Data     MdmServer     `json:"data"`
+	Included []OrgDevice   `json:"included,omitempty"`
+	Links    DocumentLinks `json:"links"`
+}
+
+type OrgDeviceAssignedServerLinkageResponse struct {
+	Data  Data          `json:"data"`
+	Links DocumentLinks `json:"links"`
 }
 
 type DeviceAttribute struct {
@@ -88,18 +94,32 @@ type DeviceAttribute struct {
 	PurchaseSourceType string   `json:"purchaseSourceType"`
 }
 
-type DeviceRelationships struct {
-	AssignedServer AssignedServer `json:"assignedServer"`
+type OrgDeviceRelationships struct {
+	AssignedServer OrgDeviceRelationshipsAssignedServer `json:"assignedServer"`
 }
 
-type AssignedServer struct {
-	Links Links `json:"links"`
+type OrgDeviceRelationshipsAssignedServer struct {
+	Links RelationshipLinks `json:"links"`
 }
 
-type Links struct {
-	Self    string `json:"self"`
-	Next    string `json:"next,omitempty"`
+type PagedDocumentLinks struct {
+	First string `json:"first,omitempty"`
+	Next  string `json:"next,omitempty"`
+	Self  string `json:"self"`
+}
+
+type RelationshipLinks struct {
+	Include string `json:"include,omitempty"`
 	Related string `json:"related,omitempty"`
+	Self    string `json:"self,omitempty"`
+}
+
+type ResourceLinks struct {
+	Self string `json:"self,omitempty"`
+}
+
+type DocumentLinks struct {
+	Self string `json:"self"`
 }
 
 type Meta struct {
@@ -113,17 +133,17 @@ type Paging struct {
 }
 
 type MdmServersResponse struct {
-	Data     []MdmServer `json:"data"`
-	Included []OrgDevice `json:"included,omitempty"`
-	Links    Links       `json:"links"`
-	Meta     Meta        `json:"meta"`
+	Data     []MdmServer        `json:"data"`
+	Included []OrgDevice        `json:"included,omitempty"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     Meta               `json:"meta"`
 }
 
 type MdmServer struct {
-	Type          string             `json:"type"`
-	ID            string             `json:"id"`
-	Attributes    MdmServerAttribute `json:"attributes"`
-	Relationships MdmRelationships   `json:"relationships"`
+	Type          string                 `json:"type"`
+	ID            string                 `json:"id"`
+	Attributes    MdmServerAttribute     `json:"attributes"`
+	Relationships MdmServerRelationships `json:"relationships"`
 }
 
 type MdmServerAttribute struct {
@@ -133,32 +153,32 @@ type MdmServerAttribute struct {
 	UpdatedDateTime string `json:"updatedDateTime"`
 }
 
-type MdmRelationships struct {
-	Devices MdmDevicesRelationship `json:"devices"`
+type MdmServerRelationships struct {
+	Devices MdmServerRelationshipsDevices `json:"devices"`
 }
 
-type MdmDevicesRelationship struct {
-	Data  []MdmDeviceData `json:"data,omitempty"`
-	Links Links           `json:"links"`
-	Meta  Meta            `json:"meta,omitempty"`
+type MdmServerRelationshipsDevices struct {
+	Data  []Data            `json:"data,omitempty"`
+	Links RelationshipLinks `json:"links"`
+	Meta  Meta              `json:"meta,omitempty"`
 }
 
-type MdmDeviceData struct {
+type Data struct {
 	ID   string `json:"id"`
 	Type string `json:"type"`
 }
 
-type DeviceRelationshipsResponse struct {
-	Data  []MdmDeviceData `json:"data"`
-	Links Links           `json:"links"`
-	Meta  Meta            `json:"meta"`
+type MdmServerDevicesLinkagesResponse struct {
+	Data  []Data             `json:"data"`
+	Links PagedDocumentLinks `json:"links"`
+	Meta  Meta               `json:"meta"`
 }
 
 type OrgDeviceActivity struct {
 	Type       string                      `json:"type"`
 	ID         string                      `json:"id"`
 	Attributes OrgDeviceActivityAttributes `json:"attributes"`
-	Links      Links                       `json:"links"`
+	Links      ResourceLinks               `json:"links"`
 }
 
 type OrgDeviceActivityAttributes struct {
@@ -171,7 +191,7 @@ type OrgDeviceActivityAttributes struct {
 
 type OrgDeviceActivityResponse struct {
 	Data  OrgDeviceActivity `json:"data"`
-	Links Links             `json:"links"`
+	Links DocumentLinks     `json:"links"`
 }
 
 type OrgDeviceActivityCreateRequest struct {
@@ -189,16 +209,16 @@ type OrgDeviceActivityCreateRequestAttributes struct {
 }
 
 type OrgDeviceActivityCreateRequestRelationships struct {
-	MdmServer MdmServerRelationship `json:"mdmServer"`
-	Devices   DevicesRelationship   `json:"devices"`
+	MdmServer OrgDeviceActivityCreateRequestDataRelationshipsMdmServer `json:"mdmServer"`
+	Devices   OrgDeviceActivityCreateRequestDataRelationships          `json:"devices"`
 }
 
-type MdmServerRelationship struct {
-	Data MdmDeviceData `json:"data"`
+type OrgDeviceActivityCreateRequestDataRelationshipsMdmServer struct {
+	Data Data `json:"data"`
 }
 
-type DevicesRelationship struct {
-	Data []MdmDeviceData `json:"data"`
+type OrgDeviceActivityCreateRequestDataRelationships struct {
+	Data []Data `json:"data"`
 }
 
 // NewClient creates a new Apple Business/School Manager API client.
@@ -403,7 +423,7 @@ func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, se
 			return nil, c.handleErrorResponse(resp)
 		}
 
-		var response DeviceRelationshipsResponse
+		var response MdmServerDevicesLinkagesResponse
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 		}
@@ -421,6 +441,34 @@ func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, se
 	}
 
 	return allSerialNumbers, nil
+}
+
+// GetOrgDeviceAssignedServerID retrieves the MDM server ID assigned to a specific device.
+func (c *Client) GetOrgDeviceAssignedServerID(ctx context.Context, deviceID string) (*Data, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET",
+		fmt.Sprintf("%s/v1/orgDevices/%s/relationships/assignedServer", c.baseURL, deviceID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.doRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.handleErrorResponse(resp)
+	}
+
+	var response OrgDeviceAssignedServerLinkageResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
+	}
+
+	return &response.Data, nil
 }
 
 // GetOrgDeviceAssignedServer retrieves the MDM server assigned to a specific device.
@@ -443,7 +491,7 @@ func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string
 		return nil, c.handleErrorResponse(resp)
 	}
 
-	var response OrgDeviceAssignedServerResponse
+	var response MdmServerResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
@@ -458,9 +506,9 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 		activityType = "UNASSIGN_DEVICES"
 	}
 
-	devices := make([]MdmDeviceData, len(deviceIDs))
+	devices := make([]Data, len(deviceIDs))
 	for i, id := range deviceIDs {
-		devices[i] = MdmDeviceData{
+		devices[i] = Data{
 			Type: "orgDevices",
 			ID:   id,
 		}
@@ -473,13 +521,13 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 				ActivityType: activityType,
 			},
 			Relationships: OrgDeviceActivityCreateRequestRelationships{
-				MdmServer: MdmServerRelationship{
-					Data: MdmDeviceData{
+				MdmServer: OrgDeviceActivityCreateRequestDataRelationshipsMdmServer{
+					Data: Data{
 						Type: "mdmServers",
 						ID:   serverID,
 					},
 				},
-				Devices: DevicesRelationship{
+				Devices: OrgDeviceActivityCreateRequestDataRelationships{
 					Data: devices,
 				},
 			},
