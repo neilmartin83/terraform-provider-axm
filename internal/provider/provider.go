@@ -32,23 +32,23 @@ func (p *axmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *
 		Attributes: map[string]schema.Attribute{
 			"team_id": schema.StringAttribute{
 				Optional:    true,
-				Description: "Apple Business Manager Team ID (starts with BUSINESSAPI.). If not specified, client_id will be used.",
+				Description: "Team ID for Apple Business and School Manager authentication. If not specified, client_id will be used.",
 			},
 			"client_id": schema.StringAttribute{
 				Required:    true,
-				Description: "Client ID for Apple Business Manager authentication",
+				Description: "Client ID for Apple Business and School Manager authentication",
 			},
 			"key_id": schema.StringAttribute{
 				Required:    true,
-				Description: "Key ID for the .p8 private key",
+				Description: "Key ID for the private key.",
 			},
 			"private_key": schema.StringAttribute{
 				Required:    true,
 				Sensitive:   true,
-				Description: "Contents of the .p8 private key",
+				Description: "Contents of the private key downloaded from Apple Business or School Manager.",
 			},
 			"scope": schema.StringAttribute{
-				Optional:    true,
+				Required:    true,
 				Description: "API scope to use. Valid values are 'business.api' or 'school.api'.",
 				Validators: []validator.String{
 					ScopeValidator{},

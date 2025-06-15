@@ -26,11 +26,11 @@ provider "axm" {
 
 ### Required
 
-- `client_id` (String) Client ID for Apple Business Manager authentication
-- `key_id` (String) Key ID for the .p8 private key
-- `private_key` (String, Sensitive) Contents of the .p8 private key
+- `client_id` (String) Client ID for Apple Business and School Manager authentication
+- `key_id` (String) Key ID for the private key.
+- `private_key` (String, Sensitive) Contents of the private key downloaded from Apple Business or School Manager.
+- `scope` (String) API scope to use. Valid values are 'business.api' or 'school.api'.
 
 ### Optional
 
-- `scope` (String) API scope to use. Valid values are 'business.api' or 'school.api'.
-- `team_id` (String) Apple Business Manager Team ID (starts with BUSINESSAPI.). If not specified, client_id will be used.
+- `team_id` (String) Team ID for Apple Business and School Manager authentication. If not specified, client_id will be used.
