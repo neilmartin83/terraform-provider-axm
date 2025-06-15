@@ -43,11 +43,6 @@ type TokenInfo struct {
 	ExpiresAt   time.Time `json:"-"`
 }
 
-type JWTHeader struct {
-	Algorithm string `json:"alg"`
-	KeyID     string `json:"kid"`
-}
-
 type JWTClaims struct {
 	Issuer    string `json:"iss"`
 	Subject   string `json:"sub"`
@@ -76,24 +71,6 @@ type AuthErrorResponse struct {
 	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description,omitempty"`
 	ErrorURI         string `json:"error_uri,omitempty"`
-}
-
-type TokenManager interface {
-	// GetValidToken returns a valid token, refreshing if necessary
-	GetValidToken(ctx context.Context) (*TokenInfo, error)
-	// CreateClientAssertion generates a signed JWT
-	CreateClientAssertion() (string, error)
-	// RequestNewToken gets a new token from Apple
-	RequestNewToken(ctx context.Context) (*TokenInfo, error)
-}
-
-type Authenticator interface {
-	// Authenticate adds authentication to requests
-	Authenticate(req *http.Request) error
-	// IsTokenValid checks if current token is valid
-	IsTokenValid() bool
-	// RefreshToken forces a token refresh
-	RefreshToken(ctx context.Context) error
 }
 
 // NewAppleClient creates a new client with the provided configuration
@@ -155,7 +132,7 @@ func (c *AppleOAuthClient) RequestNewToken(ctx context.Context) (*TokenInfo, err
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
-		"https://account.apple.com/auth/oauth2/token",
+		defaultTokenURL,
 		strings.NewReader(data.Encode()),
 	)
 	if err != nil {
@@ -200,21 +177,22 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 	token := c.token
 	c.mu.RUnlock()
 
-	if token == nil || time.Now().After(token.ExpiresAt.Add(-5*time.Minute)) {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-
-		if c.token == nil || time.Now().After(c.token.ExpiresAt.Add(-5*time.Minute)) {
-			newToken, err := c.RequestNewToken(ctx)
-			if err != nil {
-				return nil, err
-			}
-			c.token = newToken
-		}
-		token = c.token
+	if token != nil && time.Now().Before(token.ExpiresAt.Add(-TokenRefreshBuffer)) {
+		return token, nil
 	}
 
-	return token, nil
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.token == nil || time.Now().After(c.token.ExpiresAt.Add(-TokenRefreshBuffer)) {
+		newToken, err := c.RequestNewToken(ctx)
+		if err != nil {
+			return nil, err
+		}
+		c.token = newToken
+	}
+
+	return c.token, nil
 }
 
 // IsTokenValid checks if the current token is valid
