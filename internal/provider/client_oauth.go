@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -90,13 +90,13 @@ func NewAppleOAuthClient(config *ClientConfig) (*AppleOAuthClient, error) {
 func (c *AppleOAuthClient) CreateClientAssertion() (string, error) {
 	now := time.Now()
 
-	claims := jwt.MapClaims{
-		"iss": c.config.TeamID,
-		"sub": c.config.ClientID,
-		"aud": defaultTokenURL,
-		"iat": now.Unix(),
-		"exp": now.Add(AssertionExpiry).Unix(),
-		"jti": uuid.New().String(),
+	claims := jwt.RegisteredClaims{
+		Issuer:    c.config.TeamID,
+		Subject:   c.config.ClientID,
+		Audience:  jwt.ClaimStrings{defaultTokenURL},
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(AssertionExpiry)),
+		ID:        uuid.New().String(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
