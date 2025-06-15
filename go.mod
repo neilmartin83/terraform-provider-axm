@@ -3,7 +3,7 @@ module github.com/neilmartin83/terraform-provider-axm
 go 1.24.4
 
 require (
-	github.com/golang-jwt/jwt/v5 v5.2.2
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-framework v1.15.0
 )
