@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 type Client struct {
 	auth    *AppleOAuthClient
 	baseURL string
+	limiter *rate.Limiter
 }
 
 type ErrorResponse struct {
@@ -221,7 +224,6 @@ type OrgDeviceActivityCreateRequestDataRelationships struct {
 	Data []Data `json:"data"`
 }
 
-// NewClient creates a new Apple Business/School Manager API client.
 func NewClient(baseURL, teamID, clientID, keyID, scope, p8Key string) (*Client, error) {
 	config := &ClientConfig{
 		TeamID:     teamID,
@@ -239,6 +241,7 @@ func NewClient(baseURL, teamID, clientID, keyID, scope, p8Key string) (*Client, 
 	return &Client{
 		auth:    auth,
 		baseURL: baseURL,
+		limiter: rate.NewLimiter(rate.Every(3500*time.Millisecond), 1),
 	}, nil
 }
 
@@ -260,10 +263,13 @@ func (c *Client) handleErrorResponse(resp *http.Response) error {
 
 // doRequest performs an authenticated HTTP request.
 func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	if err := c.limiter.Wait(ctx); err != nil {
+		return nil, fmt.Errorf("rate limit wait failed: %w", err)
+	}
+
 	if err := c.auth.Authenticate(ctx, req); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w", err)
 	}
-
 	return http.DefaultClient.Do(req)
 }
 
