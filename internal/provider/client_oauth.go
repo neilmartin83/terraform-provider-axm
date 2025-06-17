@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	defaultTokenURL    = "https://account.apple.com/auth/oauth2/v2/token"
+	defaultTokenURL    = "https://account.apple.com/auth/oauth2/token"
+	audienceURL        = "https://account.apple.com/auth/oauth2/v2/token"
 	AssertionExpiry    = 180 * 24 * time.Hour
 	TokenRefreshBuffer = 5 * time.Minute
 )
@@ -93,7 +94,7 @@ func (c *AppleOAuthClient) CreateClientAssertion() (string, error) {
 	claims := jwt.RegisteredClaims{
 		Issuer:    c.config.TeamID,
 		Subject:   c.config.ClientID,
-		Audience:  jwt.ClaimStrings{defaultTokenURL},
+		Audience:  jwt.ClaimStrings{audienceURL},
 		IssuedAt:  jwt.NewNumericDate(now),
 		ExpiresAt: jwt.NewNumericDate(now.Add(AssertionExpiry)),
 		ID:        uuid.New().String(),
