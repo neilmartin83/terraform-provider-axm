@@ -43,12 +43,12 @@ func (r *deviceManagementServiceResource) Schema(_ context.Context, _ resource.S
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Optional:    true,
-				Description: "MDM server ID. Required until creation is supported.",
+				Description: "MDM server ID. This is a unique ID for the server and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.",
 			},
 			"device_ids": schema.ListAttribute{
 				ElementType: types.StringType,
 				Required:    true,
-				Description: "A list of device IDs to assign to the MDM server.",
+				Description: "A list of device IDs to assign to the MDM server. These are device serial numbers.",
 			},
 		},
 	}
