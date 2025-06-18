@@ -20,7 +20,9 @@ type providerModel struct {
 	Scope      types.String `tfsdk:"scope"`
 }
 
-type axmProvider struct{}
+type axmProvider struct {
+	client *Client
+}
 
 func (p *axmProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "axm"
@@ -103,12 +105,17 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
+	p.client = client
 	resp.DataSourceData = client
 	resp.ResourceData = client
 }
 
 func (p *axmProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{}
+	return []func() resource.Resource{
+		func() resource.Resource {
+			return NewDeviceManagementServiceResource(p.client)
+		},
+	}
 }
 
 func (p *axmProvider) DataSources(_ context.Context) []func() datasource.DataSource {
