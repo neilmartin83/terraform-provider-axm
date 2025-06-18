@@ -3,7 +3,7 @@ Terraform Provider for the Apple Business/School Manager API
 
 [Read the documentation to get started with using it in Terraform!](https://registry.terraform.io/providers/neilmartin83/axm/latest/docs)
 
-This is in very early development - there be dragons! We are only working with read-only endpoints but ensure you use a test/disposable API Key, as there may be rate limiting/auth issues.
+This is in very early development - there be dragons! Make sure you use a test/disposable API Key, as there may be rate limiting/auth issues.
 
 As well as the Terraform provider data sources/resources, a comprehensive set of client functions are also implemented. These may be of interest to anyone who wishes to interract with this API using Go:
 
