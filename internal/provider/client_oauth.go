@@ -146,7 +146,12 @@ func (c *AppleOAuthClient) RequestNewToken(ctx context.Context) (*TokenInfo, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		var apiErr AuthErrorResponse

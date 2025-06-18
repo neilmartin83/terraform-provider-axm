@@ -299,7 +299,11 @@ func (c *Client) GetOrgDevices(ctx context.Context) ([]OrgDevice, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				fmt.Printf("warning: failed to close response body: %v\n", err)
+			}
+		}()
 
 		if resp.StatusCode != http.StatusOK {
 			return nil, c.handleErrorResponse(resp)
@@ -335,7 +339,11 @@ func (c *Client) GetOrgDevice(ctx context.Context, id string) (*OrgDevice, error
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.handleErrorResponse(resp)
@@ -375,7 +383,11 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context) ([]MdmServer, 
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				fmt.Printf("warning: failed to close response body: %v\n", err)
+			}
+		}()
 
 		if resp.StatusCode != http.StatusOK {
 			return nil, c.handleErrorResponse(resp)
@@ -423,7 +435,11 @@ func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, se
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				fmt.Printf("warning: failed to close response body: %v\n", err)
+			}
+		}()
 
 		if resp.StatusCode != http.StatusOK {
 			return nil, c.handleErrorResponse(resp)
@@ -463,7 +479,11 @@ func (c *Client) GetOrgDeviceAssignedServerID(ctx context.Context, deviceID stri
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.handleErrorResponse(resp)
@@ -491,7 +511,11 @@ func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.handleErrorResponse(resp)
@@ -558,7 +582,11 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, c.handleErrorResponse(resp)
@@ -627,7 +655,11 @@ func (c *Client) GetOrgDeviceActivity(ctx context.Context, activityID string) (*
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.handleErrorResponse(resp)
