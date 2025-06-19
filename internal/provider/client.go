@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -326,9 +327,14 @@ func (c *Client) GetOrgDevices(ctx context.Context) ([]OrgDevice, error) {
 }
 
 // GetOrgDevice retrieves a single organization device by its ID.
-func (c *Client) GetOrgDevice(ctx context.Context, id string) (*OrgDevice, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET",
-		fmt.Sprintf("%s/v1/orgDevices/%s", c.baseURL, id), nil)
+func (c *Client) GetOrgDevice(ctx context.Context, id string, queryParams url.Values) (*OrgDevice, error) {
+	baseURL := fmt.Sprintf("%s/v1/orgDevices/%s", c.baseURL, id)
+
+	if len(queryParams) > 0 {
+		baseURL += "?" + queryParams.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
 	if err != nil {
 		return nil, err
 	}

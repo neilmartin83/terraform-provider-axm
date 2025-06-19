@@ -3,6 +3,7 @@ package axm
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -66,22 +67,17 @@ func (r *deviceManagementServiceResource) Create(ctx context.Context, req resour
 
 	deviceIDs := extractStrings(plan.DeviceIDs)
 
-	for _, id := range deviceIDs {
-		device, err := r.client.GetOrgDevice(ctx, id)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Device Validation Error",
-				fmt.Sprintf("Failed to validate device %s: %s", id, err),
-			)
-			return
+	if errors := r.validateDevices(ctx, deviceIDs); len(errors) > 0 {
+		var errorMessages []string
+		for _, err := range errors {
+			errorMessages = append(errorMessages, err.Error())
 		}
-		if device == nil {
-			resp.Diagnostics.AddError(
-				"Device Not Found",
-				fmt.Sprintf("Device %s not found in Apple Business Manager", id),
-			)
-			return
-		}
+		resp.Diagnostics.AddError(
+			"Device Validation Errors",
+			fmt.Sprintf("Multiple devices failed validation:\n- %s",
+				strings.Join(errorMessages, "\n- ")),
+		)
+		return
 	}
 
 	_, err := r.client.AssignDevicesToMDMServer(ctx, plan.ID.ValueString(), deviceIDs, true)
@@ -185,22 +181,17 @@ func (r *deviceManagementServiceResource) Update(ctx context.Context, req resour
 	}
 
 	if len(toAssign) > 0 {
-		for _, id := range toAssign {
-			device, err := r.client.GetOrgDevice(ctx, id)
-			if err != nil {
-				resp.Diagnostics.AddError(
-					"Device Validation Error",
-					fmt.Sprintf("Failed to validate device %s: %s", id, err),
-				)
-				return
+		if errors := r.validateDevices(ctx, toAssign); len(errors) > 0 {
+			var errorMessages []string
+			for _, err := range errors {
+				errorMessages = append(errorMessages, err.Error())
 			}
-			if device == nil {
-				resp.Diagnostics.AddError(
-					"Device Not Found",
-					fmt.Sprintf("Device %s not found in Apple Business Manager", id),
-				)
-				return
-			}
+			resp.Diagnostics.AddError(
+				"Device Validation Errors",
+				fmt.Sprintf("Multiple devices failed validation:\n- %s",
+					strings.Join(errorMessages, "\n- ")),
+			)
+			return
 		}
 	}
 
@@ -260,4 +251,23 @@ func setsEqual(a, b map[string]struct{}) bool {
 		}
 	}
 	return true
+}
+
+// validateDevices checks all devices and returns a list of validation errors
+func (r *deviceManagementServiceResource) validateDevices(ctx context.Context, deviceIDs []string) []error {
+	queryParams := url.Values{}
+	queryParams.Add("fields[orgDevices]", "serialNumber")
+
+	var errors []error
+	for _, id := range deviceIDs {
+		device, err := r.client.GetOrgDevice(ctx, id, queryParams)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("failed to validate device %s: %s", id, err))
+			continue
+		}
+		if device == nil {
+			errors = append(errors, fmt.Errorf("device %s not found in Apple Business Manager", id))
+		}
+	}
+	return errors
 }

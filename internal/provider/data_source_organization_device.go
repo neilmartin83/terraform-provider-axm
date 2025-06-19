@@ -158,7 +158,7 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 		return
 	}
 
-	device, err := d.client.GetOrgDevice(ctx, config.ID.ValueString())
+	device, err := d.client.GetOrgDevice(ctx, config.ID.ValueString(), nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Organization Device",

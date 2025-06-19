@@ -45,23 +45,4 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 		serverData.ID,
 		serverData.Type,
 	)
-
-	// Optional: Get full server details
-	if serverData.ID != "" {
-		server, err := client.GetOrgDeviceAssignedServer(context.Background(), deviceID)
-		if err != nil {
-			log.Printf("Error getting server details: %v", err)
-		} else {
-			fmt.Printf("\nServer Details:\n"+
-				"Name: %s\n"+
-				"Type: %s\n"+
-				"Created: %s\n"+
-				"Updated: %s\n",
-				server.Attributes.ServerName,
-				server.Attributes.ServerType,
-				server.Attributes.CreatedDateTime,
-				server.Attributes.UpdatedDateTime,
-			)
-		}
-	}
 }

@@ -59,23 +59,4 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 		fmt.Printf("\nTotal Devices Assigned to Server: %d\n",
 			server.Relationships.Devices.Meta.Paging.Total)
 	}
-
-	// Optional: Get the device details to show alongside server info
-	device, err := client.GetOrgDevice(context.Background(), deviceID)
-	if err != nil {
-		log.Printf("Error getting device details: %v", err)
-	} else {
-		fmt.Printf("\nDevice Details:\n"+
-			"Serial Number: %s\n"+
-			"Model: %s\n"+
-			"Product Family: %s\n"+
-			"Status: %s\n"+
-			"Added to Org: %s\n",
-			device.Attributes.SerialNumber,
-			device.Attributes.DeviceModel,
-			device.Attributes.ProductFamily,
-			device.Attributes.Status,
-			device.Attributes.AddedToOrgDateTime,
-		)
-	}
 }

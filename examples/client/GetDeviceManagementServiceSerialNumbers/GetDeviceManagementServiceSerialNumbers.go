@@ -43,27 +43,4 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 	for i, serialNumber := range serialNumbers {
 		fmt.Printf("%d. %s\n", i+1, serialNumber)
 	}
-
-	// Optional: Get detailed information for each device
-	fmt.Printf("\nDetailed Device Information:\n")
-	fmt.Println("------------------------")
-	for _, serialNumber := range serialNumbers {
-		device, err := client.GetOrgDevice(context.Background(), serialNumber)
-		if err != nil {
-			fmt.Printf("Error getting details for device %s: %v\n", serialNumber, err)
-			continue
-		}
-
-		fmt.Printf("\nDevice: %s\n"+
-			"Model: %s\n"+
-			"Product Family: %s\n"+
-			"Status: %s\n"+
-			"Added to Org: %s\n",
-			device.Attributes.SerialNumber,
-			device.Attributes.DeviceModel,
-			device.Attributes.ProductFamily,
-			device.Attributes.Status,
-			device.Attributes.AddedToOrgDateTime,
-		)
-	}
 }
