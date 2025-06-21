@@ -1,4 +1,4 @@
-package axm
+package client
 
 import (
 	"bytes"

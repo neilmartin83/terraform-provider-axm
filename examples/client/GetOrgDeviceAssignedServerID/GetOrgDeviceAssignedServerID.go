@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	axm "github.com/neilmartin83/terraform-provider-axm/internal/provider"
+	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
 func main() {
@@ -27,7 +27,7 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 		log.Fatal("Missing required environment variables: AXM_TEAM_ID, AXM_CLIENT_ID, AXM_KEY_ID, AXM_PRIVATE_KEY, AXM_BASE_URL")
 	}
 
-	client, err := axm.NewClient(baseURL, teamID, clientID, keyID, scope, privateKey)
+	client, err := client.NewClient(baseURL, teamID, clientID, keyID, scope, privateKey)
 	if err != nil {
 		log.Fatalf("Failed to initialize client: %v", err)
 	}

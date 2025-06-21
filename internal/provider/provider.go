@@ -10,6 +10,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/neilmartin83/terraform-provider-axm/internal/client"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_service"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_service_serialnumbers"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_services"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device_assigned_server_information"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_devices"
 )
 
 type providerModel struct {
@@ -21,7 +29,7 @@ type providerModel struct {
 }
 
 type axmProvider struct {
-	client *Client
+	client *client.Client
 }
 
 func (p *axmProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -92,7 +100,7 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		teamID = config.ClientID.ValueString()
 	}
 
-	client, err := NewClient(
+	client, err := client.NewClient(
 		baseURL,
 		teamID,
 		config.ClientID.ValueString(),
@@ -113,18 +121,18 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 func (p *axmProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		func() resource.Resource {
-			return NewDeviceManagementServiceResource(p.client)
+			return device_management_service.NewDeviceManagementServiceResource(p.client)
 		},
 	}
 }
 
 func (p *axmProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewOrganizationDevicesDataSource,
-		NewOrganizationDeviceDataSource,
-		NewDeviceManagementServicesDataSource,
-		NewDeviceManagementServiceSerialNumbersDataSource,
-		NewOrganizationDeviceAssignedServerInformationDataSource,
+		organization_devices.NewOrganizationDevicesDataSource,
+		organization_device.NewOrganizationDeviceDataSource,
+		device_management_services.NewDeviceManagementServicesDataSource,
+		device_management_service_serialnumbers.NewDeviceManagementServiceSerialNumbersDataSource,
+		organization_device_assigned_server_information.NewOrganizationDeviceAssignedServerInformationDataSource,
 	}
 }
 
