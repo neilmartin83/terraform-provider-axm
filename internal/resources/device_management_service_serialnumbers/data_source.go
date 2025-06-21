@@ -1,4 +1,4 @@
-package axm
+package device_management_service_serialnumbers
 
 import (
 	"context"
@@ -7,12 +7,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
 var _ datasource.DataSource = &DeviceManagementServiceSerialNumbersDataSource{}
 
 type DeviceManagementServiceSerialNumbersDataSource struct {
-	client *Client
+	client *client.Client
 }
 
 type DeviceManagementServiceSerialNumbersDataSourceModel struct {
@@ -55,7 +57,7 @@ func (d *DeviceManagementServiceSerialNumbersDataSource) Configure(_ context.Con
 		return
 	}
 
-	client, ok := req.ProviderData.(*Client)
+	client, ok := req.ProviderData.(*client.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",

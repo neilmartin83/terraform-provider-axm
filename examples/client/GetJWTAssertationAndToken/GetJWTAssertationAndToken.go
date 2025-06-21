@@ -6,11 +6,11 @@ import (
 	"log"
 	"time"
 
-	axm "github.com/neilmartin83/terraform-provider-axm/internal/provider"
+	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
 func main() {
-	config := &axm.ClientConfig{
+	config := &client.ClientConfig{
 		TeamID:   "BUSINESSAPI.123e4567-e89b-12d3-a456-426614174000",
 		ClientID: "BUSINESSAPI.123e4567-e89b-12d3-a456-426614174000",
 		KeyID:    "123e4567-e89b-12d3-a456-426614174000",
@@ -23,7 +23,7 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 	}
 
 	// Create new client
-	client, err := axm.NewAppleOAuthClient(config)
+	client, err := client.NewAppleOAuthClient(config)
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}

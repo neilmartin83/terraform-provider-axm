@@ -1,59 +1,14 @@
-package axm
+package device_management_service
 
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-var _ resource.Resource = &deviceManagementServiceResource{}
-
-type deviceManagementServiceResource struct {
-	client *Client
-}
-
-type mdmDeviceAssignmentModel struct {
-	ID        types.String `tfsdk:"id"`
-	DeviceIDs types.List   `tfsdk:"device_ids"`
-}
-
-// NewDeviceManagementServiceResource creates a new instance of deviceManagementServiceResource
-// with the provided client for managing device assignments.
-func NewDeviceManagementServiceResource(client *Client) resource.Resource {
-	return &deviceManagementServiceResource{
-		client: client,
-	}
-}
-
-// Metadata sets the provider type name for the resource.
-func (r *deviceManagementServiceResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_device_management_service"
-}
-
-// Schema defines the schema for the resource.
-func (r *deviceManagementServiceResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
-		Description: "Manages device assignments to a specific Apple Business Manager MDM server.",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed:    true,
-				Optional:    true,
-				Description: "MDM server ID. This is a unique ID for the server and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.",
-			},
-			"device_ids": schema.ListAttribute{
-				ElementType: types.StringType,
-				Required:    true,
-				Description: "A list of device IDs to assign to the MDM server. These are device serial numbers.",
-			},
-		},
-	}
-}
 
 // Create handles the creation of device assignments. Currently only supports
 // assigning devices to an existing MDM server.
@@ -222,52 +177,4 @@ func (r *deviceManagementServiceResource) Delete(ctx context.Context, req resour
 	if resp.Diagnostics.HasError() {
 		return
 	}
-}
-
-// extractStrings converts a types.List containing string values into a slice of strings,
-// handling null and unknown values appropriately.
-func extractStrings(list types.List) []string {
-	var result []string
-	if list.IsNull() || list.IsUnknown() {
-		return result
-	}
-	for _, v := range list.Elements() {
-		if strVal, ok := v.(types.String); ok && !strVal.IsUnknown() && !strVal.IsNull() {
-			result = append(result, strVal.ValueString())
-		}
-	}
-	return result
-}
-
-// setsEqual compares two sets represented as maps and returns true if they contain
-// exactly the same elements, false otherwise.
-func setsEqual(a, b map[string]struct{}) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for k := range a {
-		if _, exists := b[k]; !exists {
-			return false
-		}
-	}
-	return true
-}
-
-// validateDevices checks all devices and returns a list of validation errors
-func (r *deviceManagementServiceResource) validateDevices(ctx context.Context, deviceIDs []string) []error {
-	queryParams := url.Values{}
-	queryParams.Add("fields[orgDevices]", "serialNumber")
-
-	var errors []error
-	for _, id := range deviceIDs {
-		device, err := r.client.GetOrgDevice(ctx, id, queryParams)
-		if err != nil {
-			errors = append(errors, fmt.Errorf("failed to validate device %s: %s", id, err))
-			continue
-		}
-		if device == nil {
-			errors = append(errors, fmt.Errorf("device %s not found in Apple Business Manager", id))
-		}
-	}
-	return errors
 }

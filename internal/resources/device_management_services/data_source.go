@@ -1,4 +1,4 @@
-package axm
+package device_management_services
 
 import (
 	"context"
@@ -7,10 +7,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
 type DeviceManagementServicesDataSource struct {
-	client *Client
+	client *client.Client
 }
 
 type DeviceManagementServicesDataSourceModel struct {
@@ -84,7 +86,7 @@ func (d *DeviceManagementServicesDataSource) Configure(_ context.Context, req da
 		return
 	}
 
-	client, ok := req.ProviderData.(*Client)
+	client, ok := req.ProviderData.(*client.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
