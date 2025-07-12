@@ -44,23 +44,6 @@ type TokenInfo struct {
 	ExpiresAt   time.Time `json:"-"`
 }
 
-type JWTClaims struct {
-	Issuer    string `json:"iss"`
-	Subject   string `json:"sub"`
-	Audience  string `json:"aud"`
-	ExpiresAt int64  `json:"exp"`
-	IssuedAt  int64  `json:"iat"`
-	JTI       string `json:"jti"`
-}
-
-type TokenRequest struct {
-	GrantType           string `json:"grant_type"`
-	ClientID            string `json:"client_id"`
-	ClientAssertion     string `json:"client_assertion"`
-	ClientAssertionType string `json:"client_assertion_type"`
-	Scope               string `json:"scope"`
-}
-
 type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
