@@ -22,10 +22,12 @@ const (
 )
 
 type AppleOAuthClient struct {
-	config     *ClientConfig
-	httpClient *http.Client
-	token      *TokenInfo
-	mu         sync.RWMutex
+	config          *ClientConfig
+	httpClient      *http.Client
+	token           *TokenInfo
+	assertion       string
+	assertionExpiry time.Time
+	mu              sync.RWMutex
 }
 
 type ClientConfig struct {
@@ -101,9 +103,9 @@ func (c *AppleOAuthClient) CreateClientAssertion() (string, error) {
 
 // RequestNewToken gets a new access token using the client assertion
 func (c *AppleOAuthClient) RequestNewToken(ctx context.Context) (*TokenInfo, error) {
-	assertion, err := c.CreateClientAssertion()
+	assertion, err := c.createOrGetAssertion()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create client assertion: %w", err)
+		return nil, fmt.Errorf("failed to get valid assertion: %w", err)
 	}
 
 	data := url.Values{}
@@ -184,6 +186,23 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 	return c.token, nil
 }
 
+// createOrGetAssertion is a lock-free version for use when already holding a lock
+func (c *AppleOAuthClient) createOrGetAssertion() (string, error) {
+	if c.assertion != "" && time.Now().Before(c.assertionExpiry.Add(-TokenRefreshBuffer)) {
+		return c.assertion, nil
+	}
+
+	newAssertion, err := c.CreateClientAssertion()
+	if err != nil {
+		return "", fmt.Errorf("failed to create client assertion: %w", err)
+	}
+
+	c.assertion = newAssertion
+	c.assertionExpiry = time.Now().Add(AssertionExpiry)
+
+	return c.assertion, nil
+}
+
 // IsTokenValid checks if the current token is valid
 func (c *AppleOAuthClient) IsTokenValid() bool {
 	c.mu.RLock()
@@ -193,7 +212,7 @@ func (c *AppleOAuthClient) IsTokenValid() bool {
 		return false
 	}
 
-	return time.Now().Before(c.token.ExpiresAt.Add(-5 * time.Minute))
+	return time.Now().Before(c.token.ExpiresAt.Add(-TokenRefreshBuffer))
 }
 
 // Helper function to validate client configuration
