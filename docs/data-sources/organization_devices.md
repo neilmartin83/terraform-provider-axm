@@ -34,6 +34,7 @@ output "all" {
 Read-Only:
 
 - `added_to_org_date_time` (String) Date and time when device was added to organization.
+- `bluetooth_mac_address` (String) Bluetooth MAC address.
 - `color` (String) Device color.
 - `device_capacity` (String) Device capacity.
 - `device_model` (String) Device model.
@@ -52,3 +53,4 @@ Read-Only:
 - `status` (String) Device status.
 - `type` (String) Device type.
 - `updated_date_time` (String) Last update date and time.
+- `wifi_mac_address` (String) Wi-Fi MAC address.

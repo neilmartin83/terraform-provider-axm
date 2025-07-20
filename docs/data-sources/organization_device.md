@@ -32,6 +32,7 @@ output "example_device" {
 ### Read-Only
 
 - `added_to_org_date_time` (String) The date and time when the device was added to the organization.
+- `bluetooth_mac_address` (String) Bluetooth MAC address.
 - `color` (String) The color of the device.
 - `device_capacity` (String) The storage capacity of the device.
 - `device_model` (String) The model of the device.
@@ -49,3 +50,4 @@ output "example_device" {
 - `status` (String) The current status of the device.
 - `type` (String) The type of the device.
 - `updated_date_time` (String) The date and time when the device was last updated.
+- `wifi_mac_address` (String) Wi-Fi MAC address.
