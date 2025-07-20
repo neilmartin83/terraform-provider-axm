@@ -18,25 +18,27 @@ type OrganizationDeviceDataSource struct {
 }
 
 type OrganizationDeviceDataSourceModel struct {
-	ID                 types.String   `tfsdk:"id"`
-	Type               types.String   `tfsdk:"type"`
-	SerialNumber       types.String   `tfsdk:"serial_number"`
-	AddedToOrgDateTime types.String   `tfsdk:"added_to_org_date_time"`
-	UpdatedDateTime    types.String   `tfsdk:"updated_date_time"`
-	DeviceModel        types.String   `tfsdk:"device_model"`
-	ProductFamily      types.String   `tfsdk:"product_family"`
-	ProductType        types.String   `tfsdk:"product_type"`
-	DeviceCapacity     types.String   `tfsdk:"device_capacity"`
-	PartNumber         types.String   `tfsdk:"part_number"`
-	OrderNumber        types.String   `tfsdk:"order_number"`
-	Color              types.String   `tfsdk:"color"`
-	Status             types.String   `tfsdk:"status"`
-	OrderDateTime      types.String   `tfsdk:"order_date_time"`
-	IMEI               []types.String `tfsdk:"imei"`
-	MEID               []types.String `tfsdk:"meid"`
-	EID                types.String   `tfsdk:"eid"`
-	PurchaseSourceID   types.String   `tfsdk:"purchase_source_id"`
-	PurchaseSourceType types.String   `tfsdk:"purchase_source_type"`
+	ID                  types.String   `tfsdk:"id"`
+	Type                types.String   `tfsdk:"type"`
+	SerialNumber        types.String   `tfsdk:"serial_number"`
+	AddedToOrgDateTime  types.String   `tfsdk:"added_to_org_date_time"`
+	UpdatedDateTime     types.String   `tfsdk:"updated_date_time"`
+	DeviceModel         types.String   `tfsdk:"device_model"`
+	ProductFamily       types.String   `tfsdk:"product_family"`
+	ProductType         types.String   `tfsdk:"product_type"`
+	DeviceCapacity      types.String   `tfsdk:"device_capacity"`
+	PartNumber          types.String   `tfsdk:"part_number"`
+	OrderNumber         types.String   `tfsdk:"order_number"`
+	Color               types.String   `tfsdk:"color"`
+	Status              types.String   `tfsdk:"status"`
+	OrderDateTime       types.String   `tfsdk:"order_date_time"`
+	IMEI                []types.String `tfsdk:"imei"`
+	MEID                []types.String `tfsdk:"meid"`
+	EID                 types.String   `tfsdk:"eid"`
+	PurchaseSourceID    types.String   `tfsdk:"purchase_source_id"`
+	PurchaseSourceType  types.String   `tfsdk:"purchase_source_type"`
+	WifiMacAddress      types.String   `tfsdk:"wifi_mac_address"`
+	BluetoothMacAddress types.String   `tfsdk:"bluetooth_mac_address"`
 }
 
 func NewOrganizationDeviceDataSource() datasource.DataSource {
@@ -129,6 +131,14 @@ func (d *OrganizationDeviceDataSource) Schema(_ context.Context, _ datasource.Sc
 				Computed:    true,
 				Description: "The type of the purchase source.",
 			},
+			"wifi_mac_address": schema.StringAttribute{
+				Description: "Wi-Fi MAC address.",
+				Computed:    true,
+			},
+			"bluetooth_mac_address": schema.StringAttribute{
+				Description: "Bluetooth MAC address.",
+				Computed:    true,
+			},
 		},
 	}
 }
@@ -186,6 +196,8 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 	state.EID = types.StringValue(device.Attributes.EID)
 	state.PurchaseSourceID = types.StringValue(device.Attributes.PurchaseSourceID)
 	state.PurchaseSourceType = types.StringValue(device.Attributes.PurchaseSourceType)
+	state.WifiMacAddress = types.StringValue(device.Attributes.WifiMacAddress)
+	state.BluetoothMacAddress = types.StringValue(device.Attributes.BluetoothMacAddress)
 
 	state.IMEI = make([]types.String, len(device.Attributes.IMEI))
 	for i, imei := range device.Attributes.IMEI {

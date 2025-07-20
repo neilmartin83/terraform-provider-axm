@@ -23,25 +23,27 @@ type OrganizationDevicesDataSourceModel struct {
 }
 
 type OrganizationDeviceModel struct {
-	ID                 types.String   `tfsdk:"id"`
-	Type               types.String   `tfsdk:"type"`
-	SerialNumber       types.String   `tfsdk:"serial_number"`
-	AddedDateTime      types.String   `tfsdk:"added_to_org_date_time"`
-	UpdatedDateTime    types.String   `tfsdk:"updated_date_time"`
-	DeviceModel        types.String   `tfsdk:"device_model"`
-	ProductFamily      types.String   `tfsdk:"product_family"`
-	ProductType        types.String   `tfsdk:"product_type"`
-	DeviceCapacity     types.String   `tfsdk:"device_capacity"`
-	PartNumber         types.String   `tfsdk:"part_number"`
-	OrderNumber        types.String   `tfsdk:"order_number"`
-	Color              types.String   `tfsdk:"color"`
-	Status             types.String   `tfsdk:"status"`
-	OrderDateTime      types.String   `tfsdk:"order_date_time"`
-	IMEI               []types.String `tfsdk:"imei"`
-	MEID               []types.String `tfsdk:"meid"`
-	EID                types.String   `tfsdk:"eid"`
-	PurchaseSourceID   types.String   `tfsdk:"purchase_source_id"`
-	PurchaseSourceType types.String   `tfsdk:"purchase_source_type"`
+	ID                  types.String   `tfsdk:"id"`
+	Type                types.String   `tfsdk:"type"`
+	SerialNumber        types.String   `tfsdk:"serial_number"`
+	AddedDateTime       types.String   `tfsdk:"added_to_org_date_time"`
+	UpdatedDateTime     types.String   `tfsdk:"updated_date_time"`
+	DeviceModel         types.String   `tfsdk:"device_model"`
+	ProductFamily       types.String   `tfsdk:"product_family"`
+	ProductType         types.String   `tfsdk:"product_type"`
+	DeviceCapacity      types.String   `tfsdk:"device_capacity"`
+	PartNumber          types.String   `tfsdk:"part_number"`
+	OrderNumber         types.String   `tfsdk:"order_number"`
+	Color               types.String   `tfsdk:"color"`
+	Status              types.String   `tfsdk:"status"`
+	OrderDateTime       types.String   `tfsdk:"order_date_time"`
+	IMEI                []types.String `tfsdk:"imei"`
+	MEID                []types.String `tfsdk:"meid"`
+	EID                 types.String   `tfsdk:"eid"`
+	PurchaseSourceID    types.String   `tfsdk:"purchase_source_id"`
+	PurchaseSourceType  types.String   `tfsdk:"purchase_source_type"`
+	WifiMacAddress      types.String   `tfsdk:"wifi_mac_address"`
+	BluetoothMacAddress types.String   `tfsdk:"bluetooth_mac_address"`
 }
 
 func NewOrganizationDevicesDataSource() datasource.DataSource {
@@ -143,6 +145,14 @@ func (d *OrganizationDevicesDataSource) Schema(_ context.Context, _ datasource.S
 							Description: "Purchase source type.",
 							Computed:    true,
 						},
+						"wifi_mac_address": schema.StringAttribute{
+							Description: "Wi-Fi MAC address.",
+							Computed:    true,
+						},
+						"bluetooth_mac_address": schema.StringAttribute{
+							Description: "Bluetooth MAC address.",
+							Computed:    true,
+						},
 					},
 				},
 			},
@@ -182,23 +192,25 @@ func (d *OrganizationDevicesDataSource) Read(ctx context.Context, req datasource
 	state.Devices = make([]OrganizationDeviceModel, 0, len(devices))
 	for _, device := range devices {
 		deviceModel := OrganizationDeviceModel{
-			ID:                 types.StringValue(device.ID),
-			Type:               types.StringValue(device.Type),
-			SerialNumber:       types.StringValue(device.Attributes.SerialNumber),
-			AddedDateTime:      types.StringValue(device.Attributes.AddedToOrgDateTime),
-			UpdatedDateTime:    types.StringValue(device.Attributes.UpdatedDateTime),
-			DeviceModel:        types.StringValue(device.Attributes.DeviceModel),
-			ProductFamily:      types.StringValue(device.Attributes.ProductFamily),
-			ProductType:        types.StringValue(device.Attributes.ProductType),
-			DeviceCapacity:     types.StringValue(device.Attributes.DeviceCapacity),
-			PartNumber:         types.StringValue(device.Attributes.PartNumber),
-			OrderNumber:        types.StringValue(device.Attributes.OrderNumber),
-			Color:              types.StringValue(device.Attributes.Color),
-			Status:             types.StringValue(device.Attributes.Status),
-			OrderDateTime:      types.StringValue(device.Attributes.OrderDateTime),
-			EID:                types.StringValue(device.Attributes.EID),
-			PurchaseSourceID:   types.StringValue(device.Attributes.PurchaseSourceID),
-			PurchaseSourceType: types.StringValue(device.Attributes.PurchaseSourceType),
+			ID:                  types.StringValue(device.ID),
+			Type:                types.StringValue(device.Type),
+			SerialNumber:        types.StringValue(device.Attributes.SerialNumber),
+			AddedDateTime:       types.StringValue(device.Attributes.AddedToOrgDateTime),
+			UpdatedDateTime:     types.StringValue(device.Attributes.UpdatedDateTime),
+			DeviceModel:         types.StringValue(device.Attributes.DeviceModel),
+			ProductFamily:       types.StringValue(device.Attributes.ProductFamily),
+			ProductType:         types.StringValue(device.Attributes.ProductType),
+			DeviceCapacity:      types.StringValue(device.Attributes.DeviceCapacity),
+			PartNumber:          types.StringValue(device.Attributes.PartNumber),
+			OrderNumber:         types.StringValue(device.Attributes.OrderNumber),
+			Color:               types.StringValue(device.Attributes.Color),
+			Status:              types.StringValue(device.Attributes.Status),
+			OrderDateTime:       types.StringValue(device.Attributes.OrderDateTime),
+			EID:                 types.StringValue(device.Attributes.EID),
+			PurchaseSourceID:    types.StringValue(device.Attributes.PurchaseSourceID),
+			PurchaseSourceType:  types.StringValue(device.Attributes.PurchaseSourceType),
+			WifiMacAddress:      types.StringValue(device.Attributes.WifiMacAddress),
+			BluetoothMacAddress: types.StringValue(device.Attributes.BluetoothMacAddress),
 		}
 
 		deviceModel.IMEI = make([]types.String, len(device.Attributes.IMEI))
