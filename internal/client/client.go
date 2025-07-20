@@ -6,15 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"golang.org/x/time/rate"
 )
 
 // Client represents the Apple Device Management API client.
 type Client struct {
 	auth    *AppleOAuthClient
 	baseURL string
-	limiter *rate.Limiter
 }
 
 // ErrorResponse represents the error details that an API returns in the response body whenever the API request isn’t successful.
@@ -112,7 +109,6 @@ func NewClient(baseURL, teamID, clientID, keyID, scope, p8Key string) (*Client, 
 	return &Client{
 		auth:    auth,
 		baseURL: baseURL,
-		limiter: rate.NewLimiter(rate.Every(3500*time.Millisecond), 1),
 	}, nil
 }
 
@@ -132,14 +128,31 @@ func (c *Client) handleErrorResponse(resp *http.Response) error {
 	return fmt.Errorf("unknown error occurred with status %d", resp.StatusCode)
 }
 
-// doRequest performs an authenticated HTTP request.
+// doRequest performs an authenticated HTTP request and handles rate limiting via Retry-After.
 func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
-	if err := c.limiter.Wait(ctx); err != nil {
-		return nil, fmt.Errorf("rate limit wait failed: %w", err)
-	}
+	for {
+		if err := c.auth.Authenticate(ctx, req); err != nil {
+			return nil, fmt.Errorf("authentication failed: %w", err)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
 
-	if err := c.auth.Authenticate(ctx, req); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+		if resp.StatusCode != http.StatusTooManyRequests {
+			return resp, nil
+		}
+
+		retryAfter := resp.Header.Get("Retry-After")
+		resp.Body.Close()
+		if retryAfter != "" {
+			seconds, err := time.ParseDuration(retryAfter + "s")
+			if err == nil {
+				fmt.Printf("Received 429. Retrying after %s...\n", seconds)
+				time.Sleep(seconds)
+				continue
+			}
+		}
+		return resp, fmt.Errorf("received 429 Too Many Requests, and no valid Retry-After header")
 	}
-	return http.DefaultClient.Do(req)
 }
