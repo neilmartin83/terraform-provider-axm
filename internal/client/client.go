@@ -144,7 +144,9 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 		}
 
 		retryAfter := resp.Header.Get("Retry-After")
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("warning: failed to close response body: %v\n", err)
+		}
 		if retryAfter != "" {
 			seconds, err := time.ParseDuration(retryAfter + "s")
 			if err == nil {
