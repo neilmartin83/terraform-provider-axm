@@ -29,7 +29,7 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 		log.Fatalf("Failed to initialize client: %v", err)
 	}
 
-	servers, err := client.GetDeviceManagementServices(context.Background())
+	servers, err := client.GetDeviceManagementServices(context.Background(), nil)
 	if err != nil {
 		log.Fatalf("Error getting MDM servers: %v", err)
 	}

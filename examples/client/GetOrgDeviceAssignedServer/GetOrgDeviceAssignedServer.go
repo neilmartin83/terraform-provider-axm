@@ -32,7 +32,7 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 		log.Fatalf("Failed to initialize client: %v", err)
 	}
 
-	server, err := client.GetOrgDeviceAssignedServer(context.Background(), deviceID)
+	server, err := client.GetOrgDeviceAssignedServer(context.Background(), deviceID, nil)
 	if err != nil {
 		log.Fatalf("Error getting assigned server: %v", err)
 	}

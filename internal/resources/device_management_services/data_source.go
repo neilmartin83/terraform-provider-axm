@@ -101,7 +101,7 @@ func (d *DeviceManagementServicesDataSource) Configure(_ context.Context, req da
 func (d *DeviceManagementServicesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state DeviceManagementServicesDataSourceModel
 
-	servers, err := d.client.GetDeviceManagementServices(ctx)
+	servers, err := d.client.GetDeviceManagementServices(ctx, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Device Management Services",

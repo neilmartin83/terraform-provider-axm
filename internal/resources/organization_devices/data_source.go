@@ -180,7 +180,7 @@ func (d *OrganizationDevicesDataSource) Configure(_ context.Context, req datasou
 func (d *OrganizationDevicesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state OrganizationDevicesDataSourceModel
 
-	devices, err := d.client.GetOrgDevices(ctx)
+	devices, err := d.client.GetOrgDevices(ctx, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Organization Devices",

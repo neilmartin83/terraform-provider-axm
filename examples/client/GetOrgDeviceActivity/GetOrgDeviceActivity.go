@@ -32,7 +32,7 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 		log.Fatalf("Failed to initialize client: %v", err)
 	}
 
-	activity, err := client.GetOrgDeviceActivity(context.Background(), activityID)
+	activity, err := client.GetOrgDeviceActivity(context.Background(), activityID, nil)
 	if err != nil {
 		log.Fatalf("Error getting activity status: %v", err)
 	}

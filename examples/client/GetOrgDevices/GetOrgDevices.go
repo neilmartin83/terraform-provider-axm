@@ -29,7 +29,7 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 		log.Fatalf("Failed to initialize client: %v", err)
 	}
 
-	devices, err := client.GetOrgDevices(context.Background())
+	devices, err := client.GetOrgDevices(context.Background(), nil)
 	if err != nil {
 		log.Fatalf("Error getting org devices: %v", err)
 	}

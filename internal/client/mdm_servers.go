@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 // MdmServerResponse represents a response that contains a single device management service resource.
@@ -58,14 +59,18 @@ type MdmServerDevicesLinkagesResponse struct {
 }
 
 // GetDeviceManagementServices retrieves all MDM servers configured in the organization
-func (c *Client) GetDeviceManagementServices(ctx context.Context) ([]MdmServer, error) {
+func (c *Client) GetDeviceManagementServices(ctx context.Context, queryParams url.Values) ([]MdmServer, error) {
 	var allServers []MdmServer
 	nextCursor := ""
 	limit := 100
 
 	for {
-		req, err := http.NewRequestWithContext(ctx, "GET",
-			fmt.Sprintf("%s/v1/mdmServers", c.baseURL), nil)
+		baseURL := fmt.Sprintf("%s/v1/mdmServers", c.baseURL)
+		if len(queryParams) > 0 {
+			baseURL += "?" + queryParams.Encode()
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
 		if err != nil {
 			return nil, err
 		}

@@ -70,14 +70,18 @@ type OrgDeviceAssignedServerLinkageResponse struct {
 }
 
 // GetOrgDevices retrieves all organization devices from the API.
-func (c *Client) GetOrgDevices(ctx context.Context) ([]OrgDevice, error) {
+func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]OrgDevice, error) {
 	var allDevices []OrgDevice
 	nextCursor := ""
 	limit := 100
 
 	for {
-		req, err := http.NewRequestWithContext(ctx, "GET",
-			fmt.Sprintf("%s/v1/orgDevices", c.baseURL), nil)
+		baseURL := fmt.Sprintf("%s/v1/orgDevices", c.baseURL)
+		if len(queryParams) > 0 {
+			baseURL += "?" + queryParams.Encode()
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +128,6 @@ func (c *Client) GetOrgDevices(ctx context.Context) ([]OrgDevice, error) {
 // GetOrgDevice retrieves a single organization device by its ID.
 func (c *Client) GetOrgDevice(ctx context.Context, id string, queryParams url.Values) (*OrgDevice, error) {
 	baseURL := fmt.Sprintf("%s/v1/orgDevices/%s", c.baseURL, id)
-
 	if len(queryParams) > 0 {
 		baseURL += "?" + queryParams.Encode()
 	}
@@ -191,9 +194,13 @@ func (c *Client) GetOrgDeviceAssignedServerID(ctx context.Context, deviceID stri
 }
 
 // GetOrgDeviceAssignedServer retrieves the MDM server assigned to a specific device.
-func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string) (*MdmServer, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET",
-		fmt.Sprintf("%s/v1/orgDevices/%s/assignedServer", c.baseURL, deviceID), nil)
+func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string, queryParams url.Values) (*MdmServer, error) {
+	baseURL := fmt.Sprintf("%s/v1/orgDevices/%s/assignedServer", c.baseURL, deviceID)
+	if len(queryParams) > 0 {
+		baseURL += "?" + queryParams.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -147,8 +148,16 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 	maxAttempts := 30
 	retryInterval := time.Second * 5
 
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-time.After(retryInterval):
+	}
+
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		status, err := c.GetOrgDeviceActivity(ctx, response.Data.ID)
+		q := url.Values{}
+		q.Set("fields[orgDeviceActivities]", "status,subStatus")
+		status, err := c.GetOrgDeviceActivity(ctx, response.Data.ID, q)
 		if err != nil {
 			return nil, fmt.Errorf("error checking activity status: %w", err)
 		}
@@ -178,9 +187,13 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 }
 
 // GetOrgDeviceActivity retrieves information about a specific organization device activity
-func (c *Client) GetOrgDeviceActivity(ctx context.Context, activityID string) (*OrgDeviceActivity, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET",
-		fmt.Sprintf("%s/v1/orgDeviceActivities/%s", c.baseURL, activityID), nil)
+func (c *Client) GetOrgDeviceActivity(ctx context.Context, activityID string, queryParams url.Values) (*OrgDeviceActivity, error) {
+	baseURL := fmt.Sprintf("%s/v1/orgDeviceActivities/%s", c.baseURL, activityID)
+	if len(queryParams) > 0 {
+		baseURL += "?" + queryParams.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
 	if err != nil {
 		return nil, err
 	}

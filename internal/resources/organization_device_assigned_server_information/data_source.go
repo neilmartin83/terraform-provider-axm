@@ -97,7 +97,7 @@ func (d *OrganizationDeviceAssignedServerInformationDataSource) Read(ctx context
 		return
 	}
 
-	server, err := d.client.GetOrgDeviceAssignedServer(ctx, state.DeviceID.ValueString())
+	server, err := d.client.GetOrgDeviceAssignedServer(ctx, state.DeviceID.ValueString(), nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Device Assigned Server",
