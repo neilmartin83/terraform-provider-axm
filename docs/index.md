@@ -26,11 +26,11 @@ provider "axm" {
 
 ### Required
 
-- `client_id` (String) Client ID for Apple Business and School Manager authentication
-- `key_id` (String) Key ID for the private key.
-- `private_key` (String, Sensitive) Contents of the private key downloaded from Apple Business or School Manager.
-- `scope` (String) API scope to use. Valid values are 'business.api' or 'school.api'.
+- `client_id` (String) Client ID for Apple Business and School Manager authentication. Can also be set via the AXM_CLIENT_ID environment variable.
+- `key_id` (String) Key ID for the private key. Can also be set via the AXM_KEY_ID environment variable.
+- `private_key` (String, Sensitive) Contents of the private key downloaded from Apple Business or School Manager. Can also be set via the AXM_PRIVATE_KEY environment variable.
+- `scope` (String) API scope to use. Valid values are 'business.api' or 'school.api'. Can also be set via the AXM_SCOPE environment variable.
 
 ### Optional
 
-- `team_id` (String) Team ID for Apple Business and School Manager authentication. If not specified, client_id will be used.
+- `team_id` (String) Team ID for Apple Business and School Manager authentication. If not specified, client_id will be used. Can also be set via the AXM_TEAM_ID environment variable.

@@ -3,6 +3,7 @@ package axm
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -18,6 +19,15 @@ import (
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device_assigned_server_information"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_devices"
+)
+
+// Constants for environment variable names.
+const (
+	envTeamID     = "AXM_TEAM_ID"
+	envClientID   = "AXM_CLIENT_ID"
+	envKeyID      = "AXM_KEY_ID"
+	envPrivateKey = "AXM_PRIVATE_KEY"
+	envScope      = "AXM_SCOPE"
 )
 
 type providerModel struct {
@@ -42,24 +52,24 @@ func (p *axmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *
 		Attributes: map[string]schema.Attribute{
 			"team_id": schema.StringAttribute{
 				Optional:    true,
-				Description: "Team ID for Apple Business and School Manager authentication. If not specified, client_id will be used.",
+				Description: "Team ID for Apple Business and School Manager authentication. If not specified, client_id will be used. Can also be set via the AXM_TEAM_ID environment variable.",
 			},
 			"client_id": schema.StringAttribute{
 				Required:    true,
-				Description: "Client ID for Apple Business and School Manager authentication",
+				Description: "Client ID for Apple Business and School Manager authentication. Can also be set via the AXM_CLIENT_ID environment variable.",
 			},
 			"key_id": schema.StringAttribute{
 				Required:    true,
-				Description: "Key ID for the private key.",
+				Description: "Key ID for the private key. Can also be set via the AXM_KEY_ID environment variable.",
 			},
 			"private_key": schema.StringAttribute{
 				Required:    true,
 				Sensitive:   true,
-				Description: "Contents of the private key downloaded from Apple Business or School Manager.",
+				Description: "Contents of the private key downloaded from Apple Business or School Manager. Can also be set via the AXM_PRIVATE_KEY environment variable.",
 			},
 			"scope": schema.StringAttribute{
 				Required:    true,
-				Description: "API scope to use. Valid values are 'business.api' or 'school.api'.",
+				Description: "API scope to use. Valid values are 'business.api' or 'school.api'. Can also be set via the AXM_SCOPE environment variable.",
 				Validators: []validator.String{
 					ScopeValidator{},
 				},
@@ -76,7 +86,27 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
+	// Read from provider block, fallback to environment variables if not set
+	teamID := config.TeamID.ValueString()
+	if teamID == "" {
+		teamID = getenv(envTeamID)
+	}
+	clientID := config.ClientID.ValueString()
+	if clientID == "" {
+		clientID = getenv(envClientID)
+	}
+	keyID := config.KeyID.ValueString()
+	if keyID == "" {
+		keyID = getenv(envKeyID)
+	}
+	privateKey := config.PrivateKey.ValueString()
+	if privateKey == "" {
+		privateKey = getenv(envPrivateKey)
+	}
 	scope := config.Scope.ValueString()
+	if scope == "" {
+		scope = getenv(envScope)
+	}
 	if scope == "" {
 		scope = "business.api"
 	}
@@ -95,27 +125,32 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
-	teamID := config.TeamID.ValueString()
 	if teamID == "" {
-		teamID = config.ClientID.ValueString()
+		teamID = clientID
 	}
 
-	client, err := client.NewClient(
+	clientObj, err := client.NewClient(
 		baseURL,
 		teamID,
-		config.ClientID.ValueString(),
-		config.KeyID.ValueString(),
-		config.Scope.ValueString(),
-		config.PrivateKey.ValueString(),
+		clientID,
+		keyID,
+		scope,
+		privateKey,
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("AXM Client Init Failed", err.Error())
 		return
 	}
 
-	p.client = client
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	p.client = clientObj
+	resp.DataSourceData = clientObj
+	resp.ResourceData = clientObj
+}
+
+// getenv is a helper to get an environment variable, returns empty string if not set.
+func getenv(key string) string {
+	v, _ := os.LookupEnv(key)
+	return v
 }
 
 func (p *axmProvider) Resources(_ context.Context) []func() resource.Resource {
