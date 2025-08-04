@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.0...v1.2.1) (2025-08-04)
+
+
+### Bug Fixes
+
+* various client fixes ([#11](https://github.com/neilmartin83/terraform-provider-axm/issues/11)) ([ccb9434](https://github.com/neilmartin83/terraform-provider-axm/commit/ccb9434d46b4341af8c9ec56324f49c824089e4a))
+
 ## [1.2.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.1.2...v1.2.0) (2025-07-25)
 
 
