@@ -101,6 +101,11 @@ func (c *AppleOAuthClient) CreateClientAssertion() (string, error) {
 	return signedToken, nil
 }
 
+// GetHTTPClient returns the configured HTTP client
+func (c *AppleOAuthClient) GetHTTPClient() *http.Client {
+	return c.httpClient
+}
+
 // RequestNewToken gets a new access token using the client assertion
 func (c *AppleOAuthClient) RequestNewToken(ctx context.Context) (*TokenInfo, error) {
 	assertion, err := c.createOrGetAssertion()
@@ -175,13 +180,15 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.token == nil || time.Now().After(c.token.ExpiresAt.Add(-TokenRefreshBuffer)) {
-		newToken, err := c.RequestNewToken(ctx)
-		if err != nil {
-			return nil, err
-		}
-		c.token = newToken
+	if c.token != nil && time.Now().Before(c.token.ExpiresAt.Add(-TokenRefreshBuffer)) {
+		return c.token, nil
 	}
+
+	newToken, err := c.RequestNewToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	c.token = newToken
 
 	return c.token, nil
 }
