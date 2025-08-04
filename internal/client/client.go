@@ -134,7 +134,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 		if err := c.auth.Authenticate(ctx, req); err != nil {
 			return nil, fmt.Errorf("authentication failed: %w", err)
 		}
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := c.auth.GetHTTPClient().Do(req)
 		if err != nil {
 			return nil, err
 		}
@@ -144,9 +144,11 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 		}
 
 		retryAfter := resp.Header.Get("Retry-After")
+
 		if err := resp.Body.Close(); err != nil {
 			fmt.Printf("warning: failed to close response body: %v\n", err)
 		}
+
 		if retryAfter != "" {
 			seconds, err := time.ParseDuration(retryAfter + "s")
 			if err == nil {
@@ -155,6 +157,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 				continue
 			}
 		}
-		return resp, fmt.Errorf("received 429 Too Many Requests, and no valid Retry-After header")
+
+		return nil, fmt.Errorf("received 429 Too Many Requests, and no valid Retry-After header")
 	}
 }
