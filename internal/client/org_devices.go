@@ -73,7 +73,7 @@ type OrgDeviceAssignedServerLinkageResponse struct {
 func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]OrgDevice, error) {
 	var allDevices []OrgDevice
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	for {
 		baseURL := fmt.Sprintf("%s/v1/orgDevices", c.baseURL)
@@ -99,24 +99,33 @@ func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]O
 		if err != nil {
 			return nil, err
 		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				fmt.Printf("warning: failed to close response body: %v\n", err)
+
+		func() {
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					fmt.Printf("warning: failed to close response body: %v\n", err)
+				}
+			}()
+
+			if resp.StatusCode != http.StatusOK {
+				err = c.handleErrorResponse(resp)
+				return
 			}
+
+			var response OrgDevicesResponse
+			if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+				err = fmt.Errorf("failed to decode response JSON: %w", err)
+				return
+			}
+
+			allDevices = append(allDevices, response.Data...)
+			nextCursor = response.Meta.Paging.NextCursor
 		}()
 
-		if resp.StatusCode != http.StatusOK {
-			return nil, c.handleErrorResponse(resp)
+		if err != nil {
+			return nil, err
 		}
 
-		var response OrgDevicesResponse
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			return nil, fmt.Errorf("failed to decode response JSON: %w", err)
-		}
-
-		allDevices = append(allDevices, response.Data...)
-
-		nextCursor = response.Meta.Paging.NextCursor
 		if nextCursor == "" {
 			break
 		}
