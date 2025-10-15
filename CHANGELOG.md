@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.6](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.5...v1.2.6) (2025-10-15)
+
+
+### Bug Fixes
+
+* update axm provider schema to make all attributes optional (required for env var usage) ([#20](https://github.com/neilmartin83/terraform-provider-axm/issues/20)) ([f78f233](https://github.com/neilmartin83/terraform-provider-axm/commit/f78f233e455c9bfbbdb818baa2aec2aa54189715))
+
 ## [1.2.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.0...v1.2.1) (2025-08-04)
 
 
