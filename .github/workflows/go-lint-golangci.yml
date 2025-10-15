@@ -1,29 +1,28 @@
-name: 'Linter'
+name: "Linter"
 on:
   pull_request:
     branches: [main]
     paths:
-      - '**/*.go'
-      - 'go.mod'
-      - 'go.sum'
-      - '.golangci.yml'
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - ".golangci.yml"
 
 permissions:
   contents: read
 
 jobs:
   golangci:
-    name: '🧹golangci'
+    name: "🧹golangci"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      
-    
+
       - uses: actions/setup-go@v6
         with:
           go-version: stable
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.1
+          version: latest
           only-new-issues: true
