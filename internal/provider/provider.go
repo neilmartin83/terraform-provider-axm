@@ -55,20 +55,20 @@ func (p *axmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *
 				Description: "Team ID for Apple Business and School Manager authentication. If not specified, client_id will be used. Can also be set via the AXM_TEAM_ID environment variable.",
 			},
 			"client_id": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "Client ID for Apple Business and School Manager authentication. Can also be set via the AXM_CLIENT_ID environment variable.",
 			},
 			"key_id": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "Key ID for the private key. Can also be set via the AXM_KEY_ID environment variable.",
 			},
 			"private_key": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
 				Description: "Contents of the private key downloaded from Apple Business or School Manager. Can also be set via the AXM_PRIVATE_KEY environment variable.",
 			},
 			"scope": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "API scope to use. Valid values are 'business.api' or 'school.api'. Can also be set via the AXM_SCOPE environment variable.",
 				Validators: []validator.String{
 					ScopeValidator{},
@@ -86,7 +86,6 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
-	// Read from provider block, fallback to environment variables if not set
 	teamID := config.TeamID.ValueString()
 	if teamID == "" {
 		teamID = getenv(envTeamID)
@@ -109,6 +108,29 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	}
 	if scope == "" {
 		scope = "business.api"
+	}
+
+	if clientID == "" {
+		resp.Diagnostics.AddError(
+			"Missing Client ID",
+			"client_id must be provided either in the provider configuration or via the AXM_CLIENT_ID environment variable.",
+		)
+	}
+	if keyID == "" {
+		resp.Diagnostics.AddError(
+			"Missing Key ID",
+			"key_id must be provided either in the provider configuration or via the AXM_KEY_ID environment variable.",
+		)
+	}
+	if privateKey == "" {
+		resp.Diagnostics.AddError(
+			"Missing Private Key",
+			"private_key must be provided either in the provider configuration or via the AXM_PRIVATE_KEY environment variable.",
+		)
+	}
+
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	var baseURL string
