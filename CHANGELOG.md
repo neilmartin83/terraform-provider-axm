@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.6...v1.3.0) (2025-10-27)
+
+
+### Features
+
+* add released_from_org_date_time attribute to organization device data sources ([#22](https://github.com/neilmartin83/terraform-provider-axm/issues/22)) ([ae612d4](https://github.com/neilmartin83/terraform-provider-axm/commit/ae612d48cea3f1bbf14e28d46114c151f43563e1))
+
 ## [1.2.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.0...v1.2.1) (2025-08-04)
 
 
