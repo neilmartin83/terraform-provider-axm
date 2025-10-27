@@ -18,27 +18,28 @@ type OrganizationDeviceDataSource struct {
 }
 
 type OrganizationDeviceDataSourceModel struct {
-	ID                  types.String   `tfsdk:"id"`
-	Type                types.String   `tfsdk:"type"`
-	SerialNumber        types.String   `tfsdk:"serial_number"`
-	AddedToOrgDateTime  types.String   `tfsdk:"added_to_org_date_time"`
-	UpdatedDateTime     types.String   `tfsdk:"updated_date_time"`
-	DeviceModel         types.String   `tfsdk:"device_model"`
-	ProductFamily       types.String   `tfsdk:"product_family"`
-	ProductType         types.String   `tfsdk:"product_type"`
-	DeviceCapacity      types.String   `tfsdk:"device_capacity"`
-	PartNumber          types.String   `tfsdk:"part_number"`
-	OrderNumber         types.String   `tfsdk:"order_number"`
-	Color               types.String   `tfsdk:"color"`
-	Status              types.String   `tfsdk:"status"`
-	OrderDateTime       types.String   `tfsdk:"order_date_time"`
-	IMEI                []types.String `tfsdk:"imei"`
-	MEID                []types.String `tfsdk:"meid"`
-	EID                 types.String   `tfsdk:"eid"`
-	PurchaseSourceID    types.String   `tfsdk:"purchase_source_id"`
-	PurchaseSourceType  types.String   `tfsdk:"purchase_source_type"`
-	WifiMacAddress      types.String   `tfsdk:"wifi_mac_address"`
-	BluetoothMacAddress types.String   `tfsdk:"bluetooth_mac_address"`
+	ID                      types.String   `tfsdk:"id"`
+	Type                    types.String   `tfsdk:"type"`
+	SerialNumber            types.String   `tfsdk:"serial_number"`
+	AddedToOrgDateTime      types.String   `tfsdk:"added_to_org_date_time"`
+	ReleasedFromOrgDateTime types.String   `tfsdk:"released_from_org_date_time"`
+	UpdatedDateTime         types.String   `tfsdk:"updated_date_time"`
+	DeviceModel             types.String   `tfsdk:"device_model"`
+	ProductFamily           types.String   `tfsdk:"product_family"`
+	ProductType             types.String   `tfsdk:"product_type"`
+	DeviceCapacity          types.String   `tfsdk:"device_capacity"`
+	PartNumber              types.String   `tfsdk:"part_number"`
+	OrderNumber             types.String   `tfsdk:"order_number"`
+	Color                   types.String   `tfsdk:"color"`
+	Status                  types.String   `tfsdk:"status"`
+	OrderDateTime           types.String   `tfsdk:"order_date_time"`
+	IMEI                    []types.String `tfsdk:"imei"`
+	MEID                    []types.String `tfsdk:"meid"`
+	EID                     types.String   `tfsdk:"eid"`
+	PurchaseSourceID        types.String   `tfsdk:"purchase_source_id"`
+	PurchaseSourceType      types.String   `tfsdk:"purchase_source_type"`
+	WifiMacAddress          types.String   `tfsdk:"wifi_mac_address"`
+	BluetoothMacAddress     types.String   `tfsdk:"bluetooth_mac_address"`
 }
 
 func NewOrganizationDeviceDataSource() datasource.DataSource {
@@ -68,6 +69,10 @@ func (d *OrganizationDeviceDataSource) Schema(_ context.Context, _ datasource.Sc
 			"added_to_org_date_time": schema.StringAttribute{
 				Computed:    true,
 				Description: "The date and time when the device was added to the organization.",
+			},
+			"released_from_org_date_time": schema.StringAttribute{
+				Computed:    true,
+				Description: "The date and time when the device was released from the organization. Will be null if device hasn't been released.",
 			},
 			"updated_date_time": schema.StringAttribute{
 				Computed:    true,
@@ -183,6 +188,7 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 	state.Type = types.StringValue(device.Type)
 	state.SerialNumber = types.StringValue(device.Attributes.SerialNumber)
 	state.AddedToOrgDateTime = types.StringValue(device.Attributes.AddedToOrgDateTime)
+	state.ReleasedFromOrgDateTime = types.StringPointerValue(stringPointerOrNil(device.Attributes.ReleasedFromOrgDateTime))
 	state.UpdatedDateTime = types.StringValue(device.Attributes.UpdatedDateTime)
 	state.DeviceModel = types.StringValue(device.Attributes.DeviceModel)
 	state.ProductFamily = types.StringValue(device.Attributes.ProductFamily)
@@ -214,4 +220,12 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 	if resp.Diagnostics.HasError() {
 		return
 	}
+}
+
+// stringPointerOrNil returns a pointer to the string if it's not empty, otherwise returns nil
+func stringPointerOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

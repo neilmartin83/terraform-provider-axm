@@ -32,25 +32,26 @@ type OrgDevice struct {
 
 // DeviceAttribute represents attributes that describe an organization device resource.
 type DeviceAttribute struct {
-	SerialNumber        string   `json:"serialNumber"`
-	AddedToOrgDateTime  string   `json:"addedToOrgDateTime"`
-	UpdatedDateTime     string   `json:"updatedDateTime"`
-	DeviceModel         string   `json:"deviceModel"`
-	ProductFamily       string   `json:"productFamily"`
-	ProductType         string   `json:"productType"`
-	DeviceCapacity      string   `json:"deviceCapacity"`
-	PartNumber          string   `json:"partNumber"`
-	OrderNumber         string   `json:"orderNumber"`
-	Color               string   `json:"color"`
-	Status              string   `json:"status"`
-	OrderDateTime       string   `json:"orderDateTime"`
-	IMEI                []string `json:"imei"`
-	MEID                []string `json:"meid"`
-	EID                 string   `json:"eid"`
-	PurchaseSourceID    string   `json:"purchaseSourceId"`
-	PurchaseSourceType  string   `json:"purchaseSourceType"`
-	WifiMacAddress      string   `json:"wifiMacAddress"`
-	BluetoothMacAddress string   `json:"bluetoothMacAddress"`
+	SerialNumber            string   `json:"serialNumber"`
+	AddedToOrgDateTime      string   `json:"addedToOrgDateTime"`
+	ReleasedFromOrgDateTime string   `json:"releasedFromOrgDateTime,omitempty"`
+	UpdatedDateTime         string   `json:"updatedDateTime"`
+	DeviceModel             string   `json:"deviceModel"`
+	ProductFamily           string   `json:"productFamily"`
+	ProductType             string   `json:"productType"`
+	DeviceCapacity          string   `json:"deviceCapacity"`
+	PartNumber              string   `json:"partNumber,omitempty"`
+	OrderNumber             string   `json:"orderNumber,omitempty"`
+	Color                   string   `json:"color"`
+	Status                  string   `json:"status"`
+	OrderDateTime           string   `json:"orderDateTime,omitempty"`
+	IMEI                    []string `json:"imei,omitempty"`
+	MEID                    []string `json:"meid,omitempty"`
+	EID                     string   `json:"eid,omitempty"`
+	PurchaseSourceID        string   `json:"purchaseSourceId"`
+	PurchaseSourceType      string   `json:"purchaseSourceType"`
+	WifiMacAddress          string   `json:"wifiMacAddress,omitempty"`
+	BluetoothMacAddress     string   `json:"bluetoothMacAddress,omitempty"`
 }
 
 // OrgDeviceRelationships represents the relationships you include in the request, and those that you can operate on.
