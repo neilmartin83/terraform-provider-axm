@@ -46,6 +46,7 @@ output "example_device" {
 - `product_type` (String) The product type of the device.
 - `purchase_source_id` (String) The identifier of the purchase source.
 - `purchase_source_type` (String) The type of the purchase source.
+- `released_from_org_date_time` (String) The date and time when the device was released from the organization. Will be null if device hasn't been released.
 - `serial_number` (String) The serial number of the device.
 - `status` (String) The current status of the device.
 - `type` (String) The type of the device.

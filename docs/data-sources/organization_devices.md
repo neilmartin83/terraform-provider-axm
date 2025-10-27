@@ -49,6 +49,7 @@ Read-Only:
 - `product_type` (String) Product type.
 - `purchase_source_id` (String) Purchase source identifier.
 - `purchase_source_type` (String) Purchase source type.
+- `released_from_org_date_time` (String) Date and time when device was released from organization. Will be null if device hasn't been released.
 - `serial_number` (String) Device serial number.
 - `status` (String) Device status.
 - `type` (String) Device type.
