@@ -24,31 +24,18 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 
 	deviceIDs := extractStrings(data.DeviceIDs)
 
-	if errors := r.validateDevices(ctx, deviceIDs); len(errors) > 0 {
-		var errorMessages []string
-		for _, err := range errors {
-			errorMessages = append(errorMessages, err.Error())
-		}
-		resp.Diagnostics.AddError(
-			"Device Validation Errors",
-			fmt.Sprintf("Multiple devices failed validation:\n- %s",
-				strings.Join(errorMessages, "\n- ")),
-		)
-		return
-	}
-
 	activity, err := r.client.AssignDevicesToMDMServer(ctx, data.ID.ValueString(), deviceIDs, true)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to assign devices", err.Error())
 		return
 	}
 
-	if err := r.waitForActivityCompletion(ctx, activity.ID); err != nil {
+	if err := r.waitForActivityCompletion(ctx, activity.ID, &resp.Diagnostics); err != nil {
 		resp.Diagnostics.AddError("Failed to complete device assignment", err.Error())
 		return
 	}
 
-	tflog.Trace(ctx, "Assigned devices to MDM server", map[string]interface{}{
+	tflog.Debug(ctx, "Assigned devices to MDM server", map[string]interface{}{
 		"mdm_server_id": data.ID.ValueString(),
 		"device_ids":    deviceIDs,
 	})
@@ -146,28 +133,13 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 		}
 	}
 
-	if len(devicesToAssign) > 0 {
-		if errors := r.validateDevices(ctx, devicesToAssign); len(errors) > 0 {
-			var errorMessages []string
-			for _, err := range errors {
-				errorMessages = append(errorMessages, err.Error())
-			}
-			resp.Diagnostics.AddError(
-				"Device Validation Errors",
-				fmt.Sprintf("Multiple devices failed validation:\n- %s",
-					strings.Join(errorMessages, "\n- ")),
-			)
-			return
-		}
-	}
-
 	if len(devicesToUnassign) > 0 {
 		activity, err := r.client.AssignDevicesToMDMServer(ctx, plan.ID.ValueString(), devicesToUnassign, false)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to unassign devices", err.Error())
 			return
 		}
-		if err := r.waitForActivityCompletion(ctx, activity.ID); err != nil {
+		if err := r.waitForActivityCompletion(ctx, activity.ID, &resp.Diagnostics); err != nil {
 			resp.Diagnostics.AddError("Failed to complete device unassignment", err.Error())
 			return
 		}
@@ -179,12 +151,12 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 			resp.Diagnostics.AddError("Failed to assign devices", err.Error())
 			return
 		}
-		if err := r.waitForActivityCompletion(ctx, activity.ID); err != nil {
+		if err := r.waitForActivityCompletion(ctx, activity.ID, &resp.Diagnostics); err != nil {
 			resp.Diagnostics.AddError("Failed to complete device assignment", err.Error())
 			return
 		}
 	}
-	tflog.Trace(ctx, "Updated device assignments for MDM server", map[string]interface{}{
+	tflog.Debug(ctx, "Updated device assignments for MDM server", map[string]interface{}{
 		"mdm_server_id": plan.ID.ValueString(),
 		"assigned":      devicesToAssign,
 		"unassigned":    devicesToUnassign,
