@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -40,4 +41,43 @@ func (r *DeviceManagementServiceResource) validateDevices(ctx context.Context, d
 		}
 	}
 	return errors
+}
+
+// waitForActivityCompletion polls the activity status until it completes, fails, or times out
+func (r *DeviceManagementServiceResource) waitForActivityCompletion(ctx context.Context, activityID string) error {
+	maxAttempts := 30
+	retryInterval := 5 * time.Second
+
+	queryParams := url.Values{}
+	queryParams.Add("fields[orgDeviceActivities]", "status,subStatus")
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(retryInterval):
+		}
+
+		activity, err := r.client.GetOrgDeviceActivity(ctx, activityID, queryParams)
+		if err != nil {
+			return fmt.Errorf("error checking activity status: %w", err)
+		}
+
+		switch activity.Attributes.Status {
+		case "COMPLETED":
+			return nil
+		case "FAILED":
+			return fmt.Errorf("activity failed with sub-status: %s", activity.Attributes.SubStatus)
+		case "STOPPED":
+			return fmt.Errorf("activity stopped with sub-status: %s", activity.Attributes.SubStatus)
+		case "IN_PROGRESS", "PENDING":
+			if attempt == maxAttempts {
+				return fmt.Errorf("timed out waiting for activity to complete after %d attempts", maxAttempts)
+			}
+		default:
+			return fmt.Errorf("unknown activity status: %s", activity.Attributes.Status)
+		}
+	}
+
+	return fmt.Errorf("unexpected error monitoring activity status")
 }
