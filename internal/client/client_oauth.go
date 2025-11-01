@@ -72,6 +72,16 @@ type CachedAssertion struct {
 	KeyID     string    `json:"key_id"`
 }
 
+type CachedToken struct {
+	AccessToken string    `json:"access_token"`
+	TokenType   string    `json:"token_type"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	Scope       string    `json:"scope"`
+	ClientID    string    `json:"client_id"`
+	TeamID      string    `json:"team_id"`
+	KeyID       string    `json:"key_id"`
+}
+
 // NewAppleClient creates a new client with the provided configuration
 func NewAppleOAuthClient(config *ClientConfig) (*AppleOAuthClient, error) {
 	if err := validateConfig(config); err != nil {
@@ -85,6 +95,7 @@ func NewAppleOAuthClient(config *ClientConfig) (*AppleOAuthClient, error) {
 	}
 
 	_ = client.loadCachedAssertion()
+	_ = client.loadCachedToken()
 
 	return client, nil
 }
@@ -180,6 +191,9 @@ func (c *AppleOAuthClient) RequestNewToken(ctx context.Context) (*TokenInfo, err
 		Scope:       tokenResp.Scope,
 		ExpiresAt:   time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second),
 	}
+
+	c.token = token
+	_ = c.saveCachedToken()
 
 	return token, nil
 }
@@ -289,6 +303,23 @@ func (c *AppleOAuthClient) getCacheFilePath() (string, error) {
 	return cacheFile, nil
 }
 
+// getTokenCacheFilePath returns the path to the token cache file
+func (c *AppleOAuthClient) getTokenCacheFilePath() (string, error) {
+	var cacheDir string
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		cacheDir = filepath.Join(os.TempDir(), assertionCacheDir)
+	} else {
+		cacheDir = filepath.Join(homeDir, assertionCacheDir)
+	}
+
+	configHash := c.getConfigHash()
+	cacheFile := filepath.Join(cacheDir, fmt.Sprintf("token_%s.json", configHash))
+
+	return cacheFile, nil
+}
+
 // getConfigHash creates a unique hash from the client configuration
 func (c *AppleOAuthClient) getConfigHash() string {
 	data := fmt.Sprintf("%s:%s:%s", c.config.ClientID, c.config.TeamID, c.config.KeyID)
@@ -363,6 +394,84 @@ func (c *AppleOAuthClient) saveCachedAssertion() error {
 
 	if err := os.WriteFile(cacheFile, data, 0600); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
+	}
+
+	return nil
+}
+
+// loadCachedToken loads a cached token from disk if valid
+func (c *AppleOAuthClient) loadCachedToken() error {
+	cacheFile, err := c.getTokenCacheFilePath()
+	if err != nil {
+		return err
+	}
+
+	data, err := os.ReadFile(cacheFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to read token cache file: %w", err)
+	}
+
+	var cached CachedToken
+	if err := json.Unmarshal(data, &cached); err != nil {
+		return fmt.Errorf("failed to unmarshal token cache: %w", err)
+	}
+
+	if cached.ClientID != c.config.ClientID ||
+		cached.TeamID != c.config.TeamID ||
+		cached.KeyID != c.config.KeyID {
+		return fmt.Errorf("cached token config mismatch")
+	}
+
+	if time.Now().Before(cached.ExpiresAt.Add(-TokenRefreshBuffer)) {
+		c.token = &TokenInfo{
+			AccessToken: cached.AccessToken,
+			TokenType:   cached.TokenType,
+			Scope:       cached.Scope,
+			ExpiresAt:   cached.ExpiresAt,
+		}
+		return nil
+	}
+
+	_ = os.Remove(cacheFile)
+	return nil
+}
+
+// saveCachedToken saves the current token to disk
+func (c *AppleOAuthClient) saveCachedToken() error {
+	if c.token == nil {
+		return nil
+	}
+
+	cacheFile, err := c.getTokenCacheFilePath()
+	if err != nil {
+		return err
+	}
+
+	cacheDir := filepath.Dir(cacheFile)
+	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+		return fmt.Errorf("failed to create cache directory: %w", err)
+	}
+
+	cached := CachedToken{
+		AccessToken: c.token.AccessToken,
+		TokenType:   c.token.TokenType,
+		ExpiresAt:   c.token.ExpiresAt,
+		Scope:       c.token.Scope,
+		ClientID:    c.config.ClientID,
+		TeamID:      c.config.TeamID,
+		KeyID:       c.config.KeyID,
+	}
+
+	data, err := json.MarshalIndent(cached, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal token cache: %w", err)
+	}
+
+	if err := os.WriteFile(cacheFile, data, 0600); err != nil {
+		return fmt.Errorf("failed to write token cache file: %w", err)
 	}
 
 	return nil
