@@ -139,7 +139,7 @@ func (d *DeviceManagementServicesDataSource) Read(ctx context.Context, req datas
 
 	data.ID = types.StringValue("device_management_services")
 
-	tflog.Trace(ctx, "Read device management services", map[string]interface{}{
+	tflog.Debug(ctx, "Read device management services", map[string]interface{}{
 		"data": data,
 	})
 
