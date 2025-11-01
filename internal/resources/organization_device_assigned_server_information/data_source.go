@@ -7,16 +7,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
 var _ datasource.DataSource = &OrganizationDeviceAssignedServerInformationDataSource{}
 
+func NewOrganizationDeviceAssignedServerInformationDataSource() datasource.DataSource {
+	return &OrganizationDeviceAssignedServerInformationDataSource{}
+}
+
+// OrganizationDeviceAssignedServerInformationDataSource defines the data source implementation.
 type OrganizationDeviceAssignedServerInformationDataSource struct {
 	client *client.Client
 }
 
+// OrganizationDeviceAssignedServerInformationDataSourceModel describes the data source data model.
 type OrganizationDeviceAssignedServerInformationDataSourceModel struct {
 	ID              types.String `tfsdk:"id"`
 	DeviceID        types.String `tfsdk:"device_id"`
@@ -27,15 +34,11 @@ type OrganizationDeviceAssignedServerInformationDataSourceModel struct {
 	UpdatedDateTime types.String `tfsdk:"updated_date_time"`
 }
 
-func NewOrganizationDeviceAssignedServerInformationDataSource() datasource.DataSource {
-	return &OrganizationDeviceAssignedServerInformationDataSource{}
-}
-
-func (d *OrganizationDeviceAssignedServerInformationDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *OrganizationDeviceAssignedServerInformationDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_organization_device_assigned_server_information"
 }
 
-func (d *OrganizationDeviceAssignedServerInformationDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *OrganizationDeviceAssignedServerInformationDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Retrieves information about the MDM server assigned to a specific device.",
 		Attributes: map[string]schema.Attribute{
@@ -71,16 +74,17 @@ func (d *OrganizationDeviceAssignedServerInformationDataSource) Schema(_ context
 	}
 }
 
-func (d *OrganizationDeviceAssignedServerInformationDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *OrganizationDeviceAssignedServerInformationDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 
 	client, ok := req.ProviderData.(*client.Client)
+
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *Client, got: %T.", req.ProviderData),
+			fmt.Sprintf("Expected *Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
@@ -89,15 +93,16 @@ func (d *OrganizationDeviceAssignedServerInformationDataSource) Configure(_ cont
 }
 
 func (d *OrganizationDeviceAssignedServerInformationDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state OrganizationDeviceAssignedServerInformationDataSourceModel
+	var data OrganizationDeviceAssignedServerInformationDataSourceModel
 
-	diags := req.Config.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	server, err := d.client.GetOrgDeviceAssignedServer(ctx, state.DeviceID.ValueString(), nil)
+	server, err := d.client.GetOrgDeviceAssignedServer(ctx, data.DeviceID.ValueString(), nil)
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Device Assigned Server",
@@ -106,13 +111,16 @@ func (d *OrganizationDeviceAssignedServerInformationDataSource) Read(ctx context
 		return
 	}
 
-	state.ID = state.DeviceID
-	state.ServerID = types.StringValue(server.ID)
-	state.ServerName = types.StringValue(server.Attributes.ServerName)
-	state.ServerType = types.StringValue(server.Attributes.ServerType)
-	state.CreatedDateTime = types.StringValue(server.Attributes.CreatedDateTime)
-	state.UpdatedDateTime = types.StringValue(server.Attributes.UpdatedDateTime)
+	data.ID = data.DeviceID
+	data.ServerID = types.StringValue(server.ID)
+	data.ServerName = types.StringValue(server.Attributes.ServerName)
+	data.ServerType = types.StringValue(server.Attributes.ServerType)
+	data.CreatedDateTime = types.StringValue(server.Attributes.CreatedDateTime)
+	data.UpdatedDateTime = types.StringValue(server.Attributes.UpdatedDateTime)
 
-	diags = resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	tflog.Trace(ctx, "Read organization device assigned server information", map[string]interface{}{
+		"data": data,
+	})
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 }

@@ -7,19 +7,29 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
+var _ datasource.DataSource = &DeviceManagementServicesDataSource{}
+
+func NewDeviceManagementServicesDataSource() datasource.DataSource {
+	return &DeviceManagementServicesDataSource{}
+}
+
+// DeviceManagementServicesDataSource defines the data source implementation.
 type DeviceManagementServicesDataSource struct {
 	client *client.Client
 }
 
+// DeviceManagementServicesDataSourceModel describes the data source data model.
 type DeviceManagementServicesDataSourceModel struct {
 	ID      types.String                   `tfsdk:"id"`
 	Servers []DeviceManagementServiceModel `tfsdk:"servers"`
 }
 
+// DeviceManagementServiceModel describes a device management service.
 type DeviceManagementServiceModel struct {
 	ID              types.String `tfsdk:"id"`
 	Type            types.String `tfsdk:"type"`
@@ -29,15 +39,11 @@ type DeviceManagementServiceModel struct {
 	UpdatedDateTime types.String `tfsdk:"updated_date_time"`
 }
 
-func NewDeviceManagementServicesDataSource() datasource.DataSource {
-	return &DeviceManagementServicesDataSource{}
-}
-
-func (d *DeviceManagementServicesDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *DeviceManagementServicesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_device_management_services"
 }
 
-func (d *DeviceManagementServicesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *DeviceManagementServicesDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Fetches the list of device management services.",
 		Attributes: map[string]schema.Attribute{
@@ -81,16 +87,17 @@ func (d *DeviceManagementServicesDataSource) Schema(_ context.Context, _ datasou
 	}
 }
 
-func (d *DeviceManagementServicesDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *DeviceManagementServicesDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 
 	client, ok := req.ProviderData.(*client.Client)
+
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *Client, got: %T.", req.ProviderData),
+			fmt.Sprintf("Expected *Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 		return
 	}
@@ -99,9 +106,16 @@ func (d *DeviceManagementServicesDataSource) Configure(_ context.Context, req da
 }
 
 func (d *DeviceManagementServicesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state DeviceManagementServicesDataSourceModel
+	var data DeviceManagementServicesDataSourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	servers, err := d.client.GetDeviceManagementServices(ctx, nil)
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Device Management Services",
@@ -110,7 +124,7 @@ func (d *DeviceManagementServicesDataSource) Read(ctx context.Context, req datas
 		return
 	}
 
-	state.Servers = make([]DeviceManagementServiceModel, 0, len(servers))
+	data.Servers = make([]DeviceManagementServiceModel, 0, len(servers))
 	for _, server := range servers {
 		serverModel := DeviceManagementServiceModel{
 			ID:              types.StringValue(server.ID),
@@ -120,11 +134,14 @@ func (d *DeviceManagementServicesDataSource) Read(ctx context.Context, req datas
 			CreatedDateTime: types.StringValue(server.Attributes.CreatedDateTime),
 			UpdatedDateTime: types.StringValue(server.Attributes.UpdatedDateTime),
 		}
-		state.Servers = append(state.Servers, serverModel)
+		data.Servers = append(data.Servers, serverModel)
 	}
 
-	state.ID = types.StringValue("device_management_services")
+	data.ID = types.StringValue("device_management_services")
 
-	diags := resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	tflog.Trace(ctx, "Read device management services", map[string]interface{}{
+		"data": data,
+	})
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

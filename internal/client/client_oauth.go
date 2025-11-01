@@ -2,10 +2,14 @@ package client
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +23,7 @@ const (
 	audienceURL        = "https://account.apple.com/auth/oauth2/v2/token"
 	AssertionExpiry    = 180 * 24 * time.Hour
 	TokenRefreshBuffer = 5 * time.Minute
+	assertionCacheDir  = ".axm/cache"
 )
 
 type AppleOAuthClient struct {
@@ -59,17 +64,29 @@ type AuthErrorResponse struct {
 	ErrorURI         string `json:"error_uri,omitempty"`
 }
 
+type CachedAssertion struct {
+	Assertion string    `json:"assertion"`
+	ExpiresAt time.Time `json:"expires_at"`
+	ClientID  string    `json:"client_id"`
+	TeamID    string    `json:"team_id"`
+	KeyID     string    `json:"key_id"`
+}
+
 // NewAppleClient creates a new client with the provided configuration
 func NewAppleOAuthClient(config *ClientConfig) (*AppleOAuthClient, error) {
 	if err := validateConfig(config); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	return &AppleOAuthClient{
+	client := &AppleOAuthClient{
 		config:     config,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 		mu:         sync.RWMutex{},
-	}, nil
+	}
+
+	_ = client.loadCachedAssertion()
+
+	return client, nil
 }
 
 // CreateClientAssertion generates a signed JWT token
@@ -207,6 +224,8 @@ func (c *AppleOAuthClient) createOrGetAssertion() (string, error) {
 	c.assertion = newAssertion
 	c.assertionExpiry = time.Now().Add(AssertionExpiry)
 
+	_ = c.saveCachedAssertion()
+
 	return c.assertion, nil
 }
 
@@ -250,5 +269,101 @@ func (c *AppleOAuthClient) Authenticate(ctx context.Context, req *http.Request) 
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
+	return nil
+}
+
+// getCacheFilePath returns the path to the assertion cache file
+func (c *AppleOAuthClient) getCacheFilePath() (string, error) {
+	var cacheDir string
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		cacheDir = filepath.Join(os.TempDir(), assertionCacheDir)
+	} else {
+		cacheDir = filepath.Join(homeDir, assertionCacheDir)
+	}
+
+	configHash := c.getConfigHash()
+	cacheFile := filepath.Join(cacheDir, fmt.Sprintf("assertion_%s.json", configHash))
+
+	return cacheFile, nil
+}
+
+// getConfigHash creates a unique hash from the client configuration
+func (c *AppleOAuthClient) getConfigHash() string {
+	data := fmt.Sprintf("%s:%s:%s", c.config.ClientID, c.config.TeamID, c.config.KeyID)
+	hash := sha256.Sum256([]byte(data))
+	return hex.EncodeToString(hash[:])[:16] // Use first 16 chars
+}
+
+// loadCachedAssertion loads a cached assertion from disk if valid
+func (c *AppleOAuthClient) loadCachedAssertion() error {
+	cacheFile, err := c.getCacheFilePath()
+	if err != nil {
+		return err
+	}
+
+	data, err := os.ReadFile(cacheFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to read cache file: %w", err)
+	}
+
+	var cached CachedAssertion
+	if err := json.Unmarshal(data, &cached); err != nil {
+		return fmt.Errorf("failed to unmarshal cache: %w", err)
+	}
+
+	if cached.ClientID != c.config.ClientID ||
+		cached.TeamID != c.config.TeamID ||
+		cached.KeyID != c.config.KeyID {
+		return fmt.Errorf("cached assertion config mismatch")
+	}
+
+	if time.Now().Before(cached.ExpiresAt.Add(-TokenRefreshBuffer)) {
+		c.assertion = cached.Assertion
+		c.assertionExpiry = cached.ExpiresAt
+		return nil
+	}
+
+	_ = os.Remove(cacheFile)
+	return nil
+}
+
+// saveCachedAssertion saves the current assertion to disk
+func (c *AppleOAuthClient) saveCachedAssertion() error {
+	if c.assertion == "" {
+		return nil
+	}
+
+	cacheFile, err := c.getCacheFilePath()
+	if err != nil {
+		return err
+	}
+
+	cacheDir := filepath.Dir(cacheFile)
+	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+		return fmt.Errorf("failed to create cache directory: %w", err)
+	}
+
+	cached := CachedAssertion{
+		Assertion: c.assertion,
+		ExpiresAt: c.assertionExpiry,
+		ClientID:  c.config.ClientID,
+		TeamID:    c.config.TeamID,
+		KeyID:     c.config.KeyID,
+	}
+
+	data, err := json.MarshalIndent(cached, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal cache: %w", err)
+	}
+
+	if err := os.WriteFile(cacheFile, data, 0600); err != nil {
+		return fmt.Errorf("failed to write cache file: %w", err)
+	}
+
 	return nil
 }

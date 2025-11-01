@@ -7,16 +7,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
 var _ datasource.DataSource = &OrganizationDeviceDataSource{}
 
+func NewOrganizationDeviceDataSource() datasource.DataSource {
+	return &OrganizationDeviceDataSource{}
+}
+
+// OrganizationDeviceDataSource defines the data source implementation.
 type OrganizationDeviceDataSource struct {
 	client *client.Client
 }
 
+// OrganizationDeviceDataSourceModel describes the data source data model.
 type OrganizationDeviceDataSourceModel struct {
 	ID                      types.String   `tfsdk:"id"`
 	Type                    types.String   `tfsdk:"type"`
@@ -42,15 +49,11 @@ type OrganizationDeviceDataSourceModel struct {
 	BluetoothMacAddress     types.String   `tfsdk:"bluetooth_mac_address"`
 }
 
-func NewOrganizationDeviceDataSource() datasource.DataSource {
-	return &OrganizationDeviceDataSource{}
-}
-
-func (d *OrganizationDeviceDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *OrganizationDeviceDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_organization_device"
 }
 
-func (d *OrganizationDeviceDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *OrganizationDeviceDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Fetches information about a specific device from Apple Business or School Manager.",
 		Attributes: map[string]schema.Attribute{
@@ -148,12 +151,13 @@ func (d *OrganizationDeviceDataSource) Schema(_ context.Context, _ datasource.Sc
 	}
 }
 
-func (d *OrganizationDeviceDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *OrganizationDeviceDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 
 	client, ok := req.ProviderData.(*client.Client)
+
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -166,16 +170,16 @@ func (d *OrganizationDeviceDataSource) Configure(_ context.Context, req datasour
 }
 
 func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state OrganizationDeviceDataSourceModel
+	var data OrganizationDeviceDataSourceModel
 
-	var config OrganizationDeviceDataSourceModel
-	diags := req.Config.Get(ctx, &config)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	device, err := d.client.GetOrgDevice(ctx, config.ID.ValueString(), nil)
+	device, err := d.client.GetOrgDevice(ctx, data.ID.ValueString(), nil)
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Organization Device",
@@ -184,42 +188,43 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 		return
 	}
 
-	state.ID = types.StringValue(device.ID)
-	state.Type = types.StringValue(device.Type)
-	state.SerialNumber = types.StringValue(device.Attributes.SerialNumber)
-	state.AddedToOrgDateTime = types.StringValue(device.Attributes.AddedToOrgDateTime)
-	state.ReleasedFromOrgDateTime = types.StringPointerValue(stringPointerOrNil(device.Attributes.ReleasedFromOrgDateTime))
-	state.UpdatedDateTime = types.StringValue(device.Attributes.UpdatedDateTime)
-	state.DeviceModel = types.StringValue(device.Attributes.DeviceModel)
-	state.ProductFamily = types.StringValue(device.Attributes.ProductFamily)
-	state.ProductType = types.StringValue(device.Attributes.ProductType)
-	state.DeviceCapacity = types.StringValue(device.Attributes.DeviceCapacity)
-	state.PartNumber = types.StringValue(device.Attributes.PartNumber)
-	state.OrderNumber = types.StringValue(device.Attributes.OrderNumber)
-	state.Color = types.StringValue(device.Attributes.Color)
-	state.Status = types.StringValue(device.Attributes.Status)
-	state.OrderDateTime = types.StringValue(device.Attributes.OrderDateTime)
-	state.EID = types.StringValue(device.Attributes.EID)
-	state.PurchaseSourceID = types.StringValue(device.Attributes.PurchaseSourceID)
-	state.PurchaseSourceType = types.StringValue(device.Attributes.PurchaseSourceType)
-	state.WifiMacAddress = types.StringValue(device.Attributes.WifiMacAddress)
-	state.BluetoothMacAddress = types.StringValue(device.Attributes.BluetoothMacAddress)
+	data.ID = types.StringValue(device.ID)
+	data.Type = types.StringValue(device.Type)
+	data.SerialNumber = types.StringValue(device.Attributes.SerialNumber)
+	data.AddedToOrgDateTime = types.StringValue(device.Attributes.AddedToOrgDateTime)
+	data.ReleasedFromOrgDateTime = types.StringPointerValue(stringPointerOrNil(device.Attributes.ReleasedFromOrgDateTime))
+	data.UpdatedDateTime = types.StringValue(device.Attributes.UpdatedDateTime)
+	data.DeviceModel = types.StringValue(device.Attributes.DeviceModel)
+	data.ProductFamily = types.StringValue(device.Attributes.ProductFamily)
+	data.ProductType = types.StringValue(device.Attributes.ProductType)
+	data.DeviceCapacity = types.StringValue(device.Attributes.DeviceCapacity)
+	data.PartNumber = types.StringValue(device.Attributes.PartNumber)
+	data.OrderNumber = types.StringValue(device.Attributes.OrderNumber)
+	data.Color = types.StringValue(device.Attributes.Color)
+	data.Status = types.StringValue(device.Attributes.Status)
+	data.OrderDateTime = types.StringValue(device.Attributes.OrderDateTime)
+	data.EID = types.StringValue(device.Attributes.EID)
+	data.PurchaseSourceID = types.StringValue(device.Attributes.PurchaseSourceID)
+	data.PurchaseSourceType = types.StringValue(device.Attributes.PurchaseSourceType)
+	data.WifiMacAddress = types.StringValue(device.Attributes.WifiMacAddress)
+	data.BluetoothMacAddress = types.StringValue(device.Attributes.BluetoothMacAddress)
 
-	state.IMEI = make([]types.String, len(device.Attributes.IMEI))
+	data.IMEI = make([]types.String, len(device.Attributes.IMEI))
 	for i, imei := range device.Attributes.IMEI {
-		state.IMEI[i] = types.StringValue(imei)
+		data.IMEI[i] = types.StringValue(imei)
 	}
 
-	state.MEID = make([]types.String, len(device.Attributes.MEID))
+	data.MEID = make([]types.String, len(device.Attributes.MEID))
 	for i, meid := range device.Attributes.MEID {
-		state.MEID[i] = types.StringValue(meid)
+		data.MEID[i] = types.StringValue(meid)
 	}
 
-	diags = resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	tflog.Trace(ctx, "Read organization device", map[string]interface{}{
+		"device_id":     data.ID.ValueString(),
+		"serial_number": data.SerialNumber.ValueString(),
+	})
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // stringPointerOrNil returns a pointer to the string if it's not empty, otherwise returns nil
