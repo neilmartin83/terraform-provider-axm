@@ -288,15 +288,7 @@ func (c *AppleOAuthClient) Authenticate(ctx context.Context, req *http.Request) 
 
 // getCacheFilePath returns the path to the assertion cache file
 func (c *AppleOAuthClient) getCacheFilePath() (string, error) {
-	var cacheDir string
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		cacheDir = filepath.Join(os.TempDir(), assertionCacheDir)
-	} else {
-		cacheDir = filepath.Join(homeDir, assertionCacheDir)
-	}
-
+	cacheDir := filepath.Join(os.TempDir(), assertionCacheDir)
 	configHash := c.getConfigHash()
 	cacheFile := filepath.Join(cacheDir, fmt.Sprintf("assertion_%s.json", configHash))
 
@@ -305,15 +297,7 @@ func (c *AppleOAuthClient) getCacheFilePath() (string, error) {
 
 // getTokenCacheFilePath returns the path to the token cache file
 func (c *AppleOAuthClient) getTokenCacheFilePath() (string, error) {
-	var cacheDir string
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		cacheDir = filepath.Join(os.TempDir(), assertionCacheDir)
-	} else {
-		cacheDir = filepath.Join(homeDir, assertionCacheDir)
-	}
-
+	cacheDir := filepath.Join(os.TempDir(), assertionCacheDir)
 	configHash := c.getConfigHash()
 	cacheFile := filepath.Join(cacheDir, fmt.Sprintf("token_%s.json", configHash))
 
