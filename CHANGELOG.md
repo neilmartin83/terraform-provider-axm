@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.10](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.9...v1.2.10) (2025-11-01)
+
+
+### Features
+
+* enhance logging by including response headers in LogResponse method ([520181a](https://github.com/neilmartin83/terraform-provider-axm/commit/520181acb27b76429854f1a984886bd3a542390a))
+
+
+### Miscellaneous Chores
+
+* release 1.2.10 ([bf57779](https://github.com/neilmartin83/terraform-provider-axm/commit/bf577795389bc77e7139e424539865fcbceb5fad))
+
 ## [1.2.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.0...v1.2.1) (2025-08-04)
 
 
