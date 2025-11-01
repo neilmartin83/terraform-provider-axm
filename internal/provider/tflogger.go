@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
@@ -49,15 +50,26 @@ func (l *TerraformLogger) LogRequest(ctx context.Context, method, url string, bo
 }
 
 // LogResponse logs HTTP response details using tflog at DEBUG level
-func (l *TerraformLogger) LogResponse(ctx context.Context, statusCode int, body []byte) {
+func (l *TerraformLogger) LogResponse(ctx context.Context, statusCode int, headers http.Header, body []byte) {
 	fields := map[string]interface{}{
 		"status_code": statusCode,
+	}
+
+	if len(headers) > 0 {
+		headerMap := make(map[string]interface{})
+		for key, values := range headers {
+			if len(values) == 1 {
+				headerMap[key] = values[0]
+			} else {
+				headerMap[key] = values
+			}
+		}
+		fields["headers"] = headerMap
 	}
 
 	if len(body) > 0 {
 		bodyStr := string(body)
 		if len(bodyStr) > 5000 {
-			// For large responses, truncate before pretty printing
 			bodyStr = bodyStr[:5000] + "... (truncated)"
 			fields["response_body"] = bodyStr
 		} else {

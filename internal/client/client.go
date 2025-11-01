@@ -13,7 +13,7 @@ import (
 // Logger is an interface for logging HTTP requests, responses, and authentication events
 type Logger interface {
 	LogRequest(ctx context.Context, method, url string, body []byte)
-	LogResponse(ctx context.Context, statusCode int, body []byte)
+	LogResponse(ctx context.Context, statusCode int, headers http.Header, body []byte)
 	LogAuth(ctx context.Context, message string, fields map[string]interface{})
 }
 
@@ -187,10 +187,18 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 						"error": err.Error(),
 					})
 				}
-				c.logger.LogResponse(ctx, resp.StatusCode, responseBody)
+				c.logger.LogResponse(ctx, resp.StatusCode, resp.Header, responseBody)
 				resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
 			}
 			return resp, nil
+		}
+
+		if c.logger != nil {
+			responseBody := []byte{}
+			if resp.Body != nil {
+				responseBody, _ = io.ReadAll(resp.Body)
+			}
+			c.logger.LogResponse(ctx, resp.StatusCode, resp.Header, responseBody)
 		}
 
 		retryAfter := resp.Header.Get("Retry-After")
