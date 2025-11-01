@@ -174,6 +174,8 @@ func (p *AxmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
+	clientObj.SetLogger(NewTerraformLogger())
+
 	p.client = clientObj
 	resp.DataSourceData = clientObj
 	resp.ResourceData = clientObj

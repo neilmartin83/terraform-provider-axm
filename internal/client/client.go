@@ -1,17 +1,27 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
+
+// Logger is an interface for logging HTTP requests, responses, and authentication events
+type Logger interface {
+	LogRequest(ctx context.Context, method, url string, body []byte)
+	LogResponse(ctx context.Context, statusCode int, body []byte)
+	LogAuth(ctx context.Context, message string, fields map[string]interface{})
+}
 
 // Client represents the Apple Device Management API client.
 type Client struct {
 	auth    *AppleOAuthClient
 	baseURL string
+	logger  Logger
 }
 
 // ErrorResponse represents the error details that an API returns in the response body whenever the API request isn’t successful.
@@ -112,6 +122,14 @@ func NewClient(baseURL, teamID, clientID, keyID, scope, p8Key string) (*Client, 
 	}, nil
 }
 
+// SetLogger sets the logger for the client
+func (c *Client) SetLogger(logger Logger) {
+	c.logger = logger
+	if c.auth != nil {
+		c.auth.logger = logger
+	}
+}
+
 // handleErrorResponse processes error responses from the API.
 func (c *Client) handleErrorResponse(resp *http.Response) error {
 	var errResp ErrorResponse
@@ -130,6 +148,25 @@ func (c *Client) handleErrorResponse(resp *http.Response) error {
 
 // doRequest performs an authenticated HTTP request and handles rate limiting via Retry-After.
 func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	var requestBody []byte
+	if req.Body != nil {
+		var err error
+		requestBody, err = io.ReadAll(req.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read request body: %w", err)
+		}
+		if err := req.Body.Close(); err != nil && c.logger != nil {
+			c.logger.LogAuth(ctx, "Failed to close request body", map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+	}
+
+	if c.logger != nil {
+		c.logger.LogRequest(ctx, req.Method, req.URL.String(), requestBody)
+	}
+
 	for {
 		if err := c.auth.Authenticate(ctx, req); err != nil {
 			return nil, fmt.Errorf("authentication failed: %w", err)
@@ -140,21 +177,57 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 		}
 
 		if resp.StatusCode != http.StatusTooManyRequests {
+			if c.logger != nil && resp.Body != nil {
+				responseBody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read response body: %w", err)
+				}
+				if err := resp.Body.Close(); err != nil {
+					c.logger.LogAuth(ctx, "Failed to close response body", map[string]interface{}{
+						"error": err.Error(),
+					})
+				}
+				c.logger.LogResponse(ctx, resp.StatusCode, responseBody)
+				resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
+			}
 			return resp, nil
 		}
 
 		retryAfter := resp.Header.Get("Retry-After")
 
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("warning: failed to close response body: %v\n", err)
+		if err := resp.Body.Close(); err != nil && c.logger != nil {
+			c.logger.LogAuth(ctx, "Failed to close response body", map[string]interface{}{
+				"error": err.Error(),
+			})
 		}
 
 		if retryAfter != "" {
 			seconds, err := time.ParseDuration(retryAfter + "s")
 			if err == nil {
+				if seconds > 60*time.Second {
+					if c.logger != nil {
+						c.logger.LogAuth(ctx, "Retry-After exceeded maximum wait time", map[string]interface{}{
+							"retry_after_seconds": seconds.Seconds(),
+							"max_wait_seconds":    60,
+						})
+					}
+					return nil, fmt.Errorf("received 429 Too Many Requests with Retry-After of %v)", seconds)
+				}
+
+				if c.logger != nil {
+					c.logger.LogAuth(ctx, "Rate limited, waiting before retry", map[string]interface{}{
+						"retry_after_seconds": seconds.Seconds(),
+					})
+				}
 				fmt.Printf("Received 429. Retrying after %s...\n", seconds)
 				time.Sleep(seconds)
 				continue
+			}
+
+			if c.logger != nil {
+				c.logger.LogAuth(ctx, "Failed to parse Retry-After header", map[string]interface{}{
+					"retry_after_header": retryAfter,
+				})
 			}
 		}
 

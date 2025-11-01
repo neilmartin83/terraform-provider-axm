@@ -28,7 +28,7 @@ resource "axm_device_management_service" "example" {
 
 ### Required
 
-- `device_ids` (List of String) A list of device IDs to assign to the MDM server. These are device serial numbers.
+- `device_ids` (Set of String) A set of device IDs to assign to the MDM server. These are device serial numbers.
 
 ### Optional
 

@@ -100,7 +100,7 @@ func (d *DeviceManagementServiceSerialNumbersDataSource) Read(ctx context.Contex
 
 	data.ID = data.ServerID
 
-	tflog.Trace(ctx, "Read device management service serial numbers", map[string]interface{}{
+	tflog.Debug(ctx, "Read device management service serial numbers", map[string]interface{}{
 		"server_id":      data.ServerID.ValueString(),
 		"serial_numbers": serialNumbers,
 	})

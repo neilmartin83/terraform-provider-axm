@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 // OrgDeviceActivity represents the data structure that represents an organization device activity resource.
@@ -66,7 +65,8 @@ type OrgDeviceActivityCreateRequestDataRelationships struct {
 	Data []Data `json:"data"`
 }
 
-// AssignDevicesToMDMServer assigns or unassigns devices to/from an MDM server and monitors the operation until completion
+// AssignDevicesToMDMServer assigns or unassigns devices to/from an MDM server
+// Returns the created activity. Caller is responsible for polling activity status if needed.
 func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, deviceIDs []string, assign bool) (*OrgDeviceActivity, error) {
 	activityType := "ASSIGN_DEVICES"
 	if !assign {
@@ -134,56 +134,7 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
-	if response.Data.Attributes.Status == "COMPLETED" {
-		return &response.Data, nil
-	}
-
-	switch response.Data.Attributes.Status {
-	case "FAILED":
-		return nil, fmt.Errorf("activity failed with sub-status: %s", response.Data.Attributes.SubStatus)
-	case "STOPPED":
-		return nil, fmt.Errorf("activity stopped with sub-status: %s", response.Data.Attributes.SubStatus)
-	}
-
-	maxAttempts := 30
-	retryInterval := time.Second * 5
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case <-time.After(retryInterval):
-	}
-
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		q := url.Values{}
-		q.Set("fields[orgDeviceActivities]", "status,subStatus")
-		status, err := c.GetOrgDeviceActivity(ctx, response.Data.ID, q)
-		if err != nil {
-			return nil, fmt.Errorf("error checking activity status: %w", err)
-		}
-
-		switch status.Attributes.Status {
-		case "COMPLETED":
-			return status, nil
-		case "FAILED":
-			return nil, fmt.Errorf("activity failed with sub-status: %s", status.Attributes.SubStatus)
-		case "STOPPED":
-			return nil, fmt.Errorf("activity stopped with sub-status: %s", status.Attributes.SubStatus)
-		}
-
-		if attempt == maxAttempts {
-			return nil, fmt.Errorf("timed out waiting for activity to complete after %d attempts", maxAttempts)
-		}
-
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(retryInterval):
-			continue
-		}
-	}
-
-	return nil, fmt.Errorf("unexpected error monitoring activity status")
+	return &response.Data, nil
 }
 
 // GetOrgDeviceActivity retrieves information about a specific organization device activity
