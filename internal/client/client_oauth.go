@@ -33,6 +33,7 @@ type AppleOAuthClient struct {
 	assertion       string
 	assertionExpiry time.Time
 	mu              sync.RWMutex
+	logger          Logger
 }
 
 type ClientConfig struct {
@@ -205,6 +206,11 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 	c.mu.RUnlock()
 
 	if token != nil && time.Now().Before(token.ExpiresAt.Add(-TokenRefreshBuffer)) {
+		if c.logger != nil {
+			c.logger.LogAuth(ctx, "Using cached access token", map[string]interface{}{
+				"expires_at": token.ExpiresAt,
+			})
+		}
 		return token, nil
 	}
 
@@ -212,7 +218,18 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 	defer c.mu.Unlock()
 
 	if c.token != nil && time.Now().Before(c.token.ExpiresAt.Add(-TokenRefreshBuffer)) {
+		if c.logger != nil {
+			c.logger.LogAuth(ctx, "Using cached access token (after lock)", map[string]interface{}{
+				"expires_at": c.token.ExpiresAt,
+			})
+		}
 		return c.token, nil
+	}
+
+	if c.logger != nil {
+		c.logger.LogAuth(ctx, "Requesting new access token", map[string]interface{}{
+			"reason": "token expired or missing",
+		})
 	}
 
 	newToken, err := c.RequestNewToken(ctx)
@@ -221,13 +238,30 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 	}
 	c.token = newToken
 
+	if c.logger != nil {
+		c.logger.LogAuth(ctx, "Successfully obtained new access token", map[string]interface{}{
+			"expires_at": newToken.ExpiresAt,
+		})
+	}
+
 	return c.token, nil
 }
 
 // createOrGetAssertion is a lock-free version for use when already holding a lock
 func (c *AppleOAuthClient) createOrGetAssertion() (string, error) {
 	if c.assertion != "" && time.Now().Before(c.assertionExpiry.Add(-TokenRefreshBuffer)) {
+		if c.logger != nil {
+			c.logger.LogAuth(context.Background(), "Using cached client assertion", map[string]interface{}{
+				"expires_at": c.assertionExpiry,
+			})
+		}
 		return c.assertion, nil
+	}
+
+	if c.logger != nil {
+		c.logger.LogAuth(context.Background(), "Creating new client assertion", map[string]interface{}{
+			"reason": "assertion expired or missing",
+		})
 	}
 
 	newAssertion, err := c.CreateClientAssertion()
@@ -239,6 +273,12 @@ func (c *AppleOAuthClient) createOrGetAssertion() (string, error) {
 	c.assertionExpiry = time.Now().Add(AssertionExpiry)
 
 	_ = c.saveCachedAssertion()
+
+	if c.logger != nil {
+		c.logger.LogAuth(context.Background(), "Successfully created new client assertion", map[string]interface{}{
+			"expires_at": c.assertionExpiry,
+		})
+	}
 
 	return c.assertion, nil
 }
@@ -321,6 +361,11 @@ func (c *AppleOAuthClient) loadCachedAssertion() error {
 	data, err := os.ReadFile(cacheFile)
 	if err != nil {
 		if os.IsNotExist(err) {
+			if c.logger != nil {
+				c.logger.LogAuth(context.Background(), "No cached assertion found on disk", map[string]interface{}{
+					"cache_file": cacheFile,
+				})
+			}
 			return nil
 		}
 		return fmt.Errorf("failed to read cache file: %w", err)
@@ -334,15 +379,32 @@ func (c *AppleOAuthClient) loadCachedAssertion() error {
 	if cached.ClientID != c.config.ClientID ||
 		cached.TeamID != c.config.TeamID ||
 		cached.KeyID != c.config.KeyID {
+		if c.logger != nil {
+			c.logger.LogAuth(context.Background(), "Cached assertion config mismatch", map[string]interface{}{
+				"cache_file": cacheFile,
+			})
+		}
 		return fmt.Errorf("cached assertion config mismatch")
 	}
 
 	if time.Now().Before(cached.ExpiresAt.Add(-TokenRefreshBuffer)) {
 		c.assertion = cached.Assertion
 		c.assertionExpiry = cached.ExpiresAt
+		if c.logger != nil {
+			c.logger.LogAuth(context.Background(), "Loaded valid cached assertion from disk", map[string]interface{}{
+				"cache_file": cacheFile,
+				"expires_at": cached.ExpiresAt,
+			})
+		}
 		return nil
 	}
 
+	if c.logger != nil {
+		c.logger.LogAuth(context.Background(), "Cached assertion expired, removing", map[string]interface{}{
+			"cache_file": cacheFile,
+			"expires_at": cached.ExpiresAt,
+		})
+	}
 	_ = os.Remove(cacheFile)
 	return nil
 }
@@ -380,6 +442,13 @@ func (c *AppleOAuthClient) saveCachedAssertion() error {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
 
+	if c.logger != nil {
+		c.logger.LogAuth(context.Background(), "Saved assertion to disk cache", map[string]interface{}{
+			"cache_file": cacheFile,
+			"expires_at": c.assertionExpiry,
+		})
+	}
+
 	return nil
 }
 
@@ -393,6 +462,11 @@ func (c *AppleOAuthClient) loadCachedToken() error {
 	data, err := os.ReadFile(cacheFile)
 	if err != nil {
 		if os.IsNotExist(err) {
+			if c.logger != nil {
+				c.logger.LogAuth(context.Background(), "No cached token found on disk", map[string]interface{}{
+					"cache_file": cacheFile,
+				})
+			}
 			return nil
 		}
 		return fmt.Errorf("failed to read token cache file: %w", err)
@@ -406,6 +480,11 @@ func (c *AppleOAuthClient) loadCachedToken() error {
 	if cached.ClientID != c.config.ClientID ||
 		cached.TeamID != c.config.TeamID ||
 		cached.KeyID != c.config.KeyID {
+		if c.logger != nil {
+			c.logger.LogAuth(context.Background(), "Cached token config mismatch", map[string]interface{}{
+				"cache_file": cacheFile,
+			})
+		}
 		return fmt.Errorf("cached token config mismatch")
 	}
 
@@ -416,9 +495,21 @@ func (c *AppleOAuthClient) loadCachedToken() error {
 			Scope:       cached.Scope,
 			ExpiresAt:   cached.ExpiresAt,
 		}
+		if c.logger != nil {
+			c.logger.LogAuth(context.Background(), "Loaded valid cached token from disk", map[string]interface{}{
+				"cache_file": cacheFile,
+				"expires_at": cached.ExpiresAt,
+			})
+		}
 		return nil
 	}
 
+	if c.logger != nil {
+		c.logger.LogAuth(context.Background(), "Cached token expired, removing", map[string]interface{}{
+			"cache_file": cacheFile,
+			"expires_at": cached.ExpiresAt,
+		})
+	}
 	_ = os.Remove(cacheFile)
 	return nil
 }
@@ -456,6 +547,13 @@ func (c *AppleOAuthClient) saveCachedToken() error {
 
 	if err := os.WriteFile(cacheFile, data, 0600); err != nil {
 		return fmt.Errorf("failed to write token cache file: %w", err)
+	}
+
+	if c.logger != nil {
+		c.logger.LogAuth(context.Background(), "Saved token to disk cache", map[string]interface{}{
+			"cache_file": cacheFile,
+			"expires_at": c.token.ExpiresAt,
+		})
 	}
 
 	return nil
