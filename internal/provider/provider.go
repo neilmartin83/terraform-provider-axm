@@ -1,10 +1,11 @@
-package axm
+package provider
 
 import (
 	"context"
 	"fmt"
 	"os"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
@@ -30,7 +31,17 @@ const (
 	envScope      = "AXM_SCOPE"
 )
 
-type providerModel struct {
+// Ensure AxmProvider satisfies the provider.Provider interface.
+var _ provider.Provider = &AxmProvider{}
+
+// AxmProvider defines the provider implementation.
+type AxmProvider struct {
+	client  *client.Client
+	version string
+}
+
+// AxmProviderModel describes the provider data model for configuration.
+type AxmProviderModel struct {
 	TeamID     types.String `tfsdk:"team_id"`
 	ClientID   types.String `tfsdk:"client_id"`
 	KeyID      types.String `tfsdk:"key_id"`
@@ -38,15 +49,12 @@ type providerModel struct {
 	Scope      types.String `tfsdk:"scope"`
 }
 
-type axmProvider struct {
-	client *client.Client
-}
-
-func (p *axmProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+func (p *AxmProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "axm"
+	resp.Version = p.version
 }
 
-func (p *axmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *AxmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Automate device management actions and access data about devices that enroll using Automated Device Enrollment with the Apple School and Business Manager API. https://developer.apple.com/documentation/apple-school-and-business-manager-api",
 		Attributes: map[string]schema.Attribute{
@@ -71,38 +79,40 @@ func (p *axmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *
 				Optional:    true,
 				Description: "API scope to use. Valid values are 'business.api' or 'school.api'. Can also be set via the AXM_SCOPE environment variable.",
 				Validators: []validator.String{
-					ScopeValidator{},
+					stringvalidator.OneOf("business.api", "school.api"),
 				},
 			},
 		},
 	}
 }
 
-func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var config providerModel
-	diags := req.Config.Get(ctx, &config)
+func (p *AxmProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data AxmProviderModel
+
+	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	teamID := config.TeamID.ValueString()
+	teamID := data.TeamID.ValueString()
 	if teamID == "" {
 		teamID = getenv(envTeamID)
 	}
-	clientID := config.ClientID.ValueString()
+	clientID := data.ClientID.ValueString()
 	if clientID == "" {
 		clientID = getenv(envClientID)
 	}
-	keyID := config.KeyID.ValueString()
+	keyID := data.KeyID.ValueString()
 	if keyID == "" {
 		keyID = getenv(envKeyID)
 	}
-	privateKey := config.PrivateKey.ValueString()
+	privateKey := data.PrivateKey.ValueString()
 	if privateKey == "" {
 		privateKey = getenv(envPrivateKey)
 	}
-	scope := config.Scope.ValueString()
+	scope := data.Scope.ValueString()
 	if scope == "" {
 		scope = getenv(envScope)
 	}
@@ -169,54 +179,32 @@ func (p *axmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	resp.ResourceData = clientObj
 }
 
-// getenv is a helper to get an environment variable, returns empty string if not set.
-func getenv(key string) string {
-	v, _ := os.LookupEnv(key)
-	return v
-}
-
-func (p *axmProvider) Resources(_ context.Context) []func() resource.Resource {
+func (p *AxmProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		func() resource.Resource {
-			return device_management_service.NewDeviceManagementServiceResource(p.client)
-		},
+		device_management_service.NewDeviceManagementServiceResource,
 	}
 }
 
-func (p *axmProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+func (p *AxmProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		organization_devices.NewOrganizationDevicesDataSource,
 		organization_device.NewOrganizationDeviceDataSource,
+		organization_devices.NewOrganizationDevicesDataSource,
 		device_management_services.NewDeviceManagementServicesDataSource,
 		device_management_service_serialnumbers.NewDeviceManagementServiceSerialNumbersDataSource,
 		organization_device_assigned_server_information.NewOrganizationDeviceAssignedServerInformationDataSource,
 	}
 }
 
-func New() provider.Provider {
-	return &axmProvider{}
-}
-
-type ScopeValidator struct{}
-
-func (v ScopeValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	value := req.ConfigValue.ValueString()
-	if value != "business.api" && value != "school.api" {
-		resp.Diagnostics.AddError(
-			"Invalid Scope",
-			"Scope must be either 'business.api' or 'school.api'",
-		)
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &AxmProvider{
+			version: version,
+		}
 	}
 }
 
-func (v ScopeValidator) Description(ctx context.Context) string {
-	return "Validates that the scope is either 'business.api' or 'school.api'"
-}
-
-func (v ScopeValidator) MarkdownDescription(ctx context.Context) string {
-	return "Validates that the scope is either `business.api` or `school.api`"
+// getenv is a helper to get an environment variable, returns empty string if not set.
+func getenv(key string) string {
+	v, _ := os.LookupEnv(key)
+	return v
 }

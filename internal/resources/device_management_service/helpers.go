@@ -8,14 +8,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// extractStrings converts a types.List containing string values into a slice of strings,
+// extractStrings converts a types.Set containing string values into a slice of strings,
 // handling null and unknown values appropriately.
-func extractStrings(list types.List) []string {
+func extractStrings(set types.Set) []string {
 	var result []string
-	if list.IsNull() || list.IsUnknown() {
+	if set.IsNull() || set.IsUnknown() {
 		return result
 	}
-	for _, v := range list.Elements() {
+	for _, v := range set.Elements() {
 		if strVal, ok := v.(types.String); ok && !strVal.IsUnknown() && !strVal.IsNull() {
 			result = append(result, strVal.ValueString())
 		}
@@ -23,22 +23,8 @@ func extractStrings(list types.List) []string {
 	return result
 }
 
-// setsEqual compares two sets represented as maps and returns true if they contain
-// exactly the same elements, false otherwise.
-func setsEqual(a, b map[string]struct{}) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for k := range a {
-		if _, exists := b[k]; !exists {
-			return false
-		}
-	}
-	return true
-}
-
 // validateDevices checks all devices and returns a list of validation errors
-func (r *deviceManagementServiceResource) validateDevices(ctx context.Context, deviceIDs []string) []error {
+func (r *DeviceManagementServiceResource) validateDevices(ctx context.Context, deviceIDs []string) []error {
 	queryParams := url.Values{}
 	queryParams.Add("fields[orgDevices]", "serialNumber")
 
