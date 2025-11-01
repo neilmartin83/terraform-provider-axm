@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.8...v1.3.0) (2025-11-01)
+
+
+### Features
+
+* enhance client logging, provider warning and error handling ([#25](https://github.com/neilmartin83/terraform-provider-axm/issues/25)) ([18aecd8](https://github.com/neilmartin83/terraform-provider-axm/commit/18aecd8e35c0da6dd170b2e278c0fd62ad858f32))
+
 ## [1.2.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.0...v1.2.1) (2025-08-04)
 
 
