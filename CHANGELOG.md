@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.11](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.10...v1.2.11) (2025-11-03)
+
+
+### Bug Fixes
+
+* update Schema method signature to include context and request parameters ([#28](https://github.com/neilmartin83/terraform-provider-axm/issues/28)) ([ec75b50](https://github.com/neilmartin83/terraform-provider-axm/commit/ec75b50e2298613af90a0df90344ee7181da3d32))
+
 ## [1.2.10](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.9...v1.2.10) (2025-11-01)
 
 
