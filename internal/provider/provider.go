@@ -54,7 +54,7 @@ func (p *AxmProvider) Metadata(ctx context.Context, req provider.MetadataRequest
 	resp.Version = p.version
 }
 
-func (p *AxmProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *AxmProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Automate device management actions and access data about devices that enroll using Automated Device Enrollment with the Apple School and Business Manager API. https://developer.apple.com/documentation/apple-school-and-business-manager-api",
 		Attributes: map[string]schema.Attribute{
