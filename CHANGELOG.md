@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.11...v1.3.0) (2025-11-06)
+
+
+### Features
+
+* add AppleCare coverage data source and client implementation ([#30](https://github.com/neilmartin83/terraform-provider-axm/issues/30)) ([574703a](https://github.com/neilmartin83/terraform-provider-axm/commit/574703a44ea895e6e3575c9518c28b864f3ae337))
+
 ## [1.2.11](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.10...v1.2.11) (2025-11-03)
 
 
