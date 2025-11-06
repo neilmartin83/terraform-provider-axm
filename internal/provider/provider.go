@@ -18,6 +18,7 @@ import (
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_service_serialnumbers"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_services"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device_applecare_coverage"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device_assigned_server_information"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_devices"
 )
@@ -194,6 +195,7 @@ func (p *AxmProvider) DataSources(ctx context.Context) []func() datasource.DataS
 		device_management_services.NewDeviceManagementServicesDataSource,
 		device_management_service_serialnumbers.NewDeviceManagementServiceSerialNumbersDataSource,
 		organization_device_assigned_server_information.NewOrganizationDeviceAssignedServerInformationDataSource,
+		organization_device_applecare_coverage.NewOrganizationDeviceAppleCareCoverageDataSource,
 	}
 }
 

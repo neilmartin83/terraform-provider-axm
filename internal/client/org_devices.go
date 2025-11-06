@@ -54,6 +54,33 @@ type DeviceAttribute struct {
 	BluetoothMacAddress     string   `json:"bluetoothMacAddress,omitempty"`
 }
 
+// AppleCareCoverageResponse represents a response that contains AppleCare Coverage for an organization device.
+type AppleCareCoverageResponse struct {
+	Data  []AppleCareCoverage `json:"data"`
+	Links DocumentLinks       `json:"links"`
+	Meta  Meta                `json:"meta"`
+}
+
+// AppleCareCoverage represents AppleCare Coverage for an organization device.
+type AppleCareCoverage struct {
+	Attributes AppleCareCoverageAttribute `json:"attributes"`
+	ID         string                     `json:"id"`
+	Type       string                     `json:"type"`
+}
+
+// AppleCareCoverageAttribute represents AppleCare Coverage resources for an organization device.
+type AppleCareCoverageAttribute struct {
+	Status                 string `json:"status"`
+	PaymentType            string `json:"paymentType"`
+	Description            string `json:"description"`
+	StartDateTime          string `json:"startDateTime"`
+	EndDateTime            string `json:"endDateTime"`
+	IsRenewable            bool   `json:"isRenewable"`
+	IsCanceled             bool   `json:"isCanceled"`
+	ContractCancelDateTime string `json:"contractCancelDateTime"`
+	AgreementNumber        string `json:"agreementNumber"`
+}
+
 // OrgDeviceRelationships represents the relationships you include in the request, and those that you can operate on.
 type OrgDeviceRelationships struct {
 	AssignedServer OrgDeviceRelationshipsAssignedServer `json:"assignedServer"`
@@ -237,4 +264,70 @@ func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string
 	}
 
 	return &response.Data, nil
+
+}
+
+// GetOrgDeviceAppleCareCoverage retrieves the AppleCare coverage details for a specific device.
+func (c *Client) GetOrgDeviceAppleCareCoverage(ctx context.Context, deviceID string, queryParams url.Values) ([]AppleCareCoverage, error) {
+	var allCoverages []AppleCareCoverage
+	nextCursor := ""
+	limit := 1000
+
+	for {
+		baseURL := fmt.Sprintf("%s/v1/orgDevices/%s/appleCareCoverage", c.baseURL, deviceID)
+		if len(queryParams) > 0 {
+			baseURL += "?" + queryParams.Encode()
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		q := req.URL.Query()
+		q.Add("limit", fmt.Sprintf("%d", limit))
+		if nextCursor != "" {
+			q.Add("cursor", nextCursor)
+		}
+		req.URL.RawQuery = q.Encode()
+
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := c.doRequest(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+
+		func() {
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					fmt.Printf("warning: failed to close response body: %v\n", err)
+				}
+			}()
+
+			if resp.StatusCode != http.StatusOK {
+				err = c.handleErrorResponse(resp)
+				return
+			}
+
+			var response AppleCareCoverageResponse
+			if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+				err = fmt.Errorf("failed to decode response JSON: %w", err)
+				return
+			}
+
+			allCoverages = append(allCoverages, response.Data...)
+			nextCursor = response.Meta.Paging.NextCursor
+		}()
+
+		if err != nil {
+			return nil, err
+		}
+
+		if nextCursor == "" {
+			break
+		}
+	}
+
+	return allCoverages, nil
 }
