@@ -27,28 +27,29 @@ output "example_device" {
 
 ### Required
 
-- `id` (String) The identifier of the device to lookup.
+- `id` (String) The opaque resource ID that uniquely identifies the resource.
 
 ### Read-Only
 
-- `added_to_org_date_time` (String) The date and time when the device was added to the organization.
-- `bluetooth_mac_address` (String) Bluetooth MAC address.
+- `added_to_org_date_time` (String) The date and time of adding the device to an organization.
+- `bluetooth_mac_address` (String) The device's Bluetooth MAC address.
 - `color` (String) The color of the device.
-- `device_capacity` (String) The storage capacity of the device.
-- `device_model` (String) The model of the device.
-- `eid` (String) The EID of the device.
-- `imei` (List of String) The IMEI numbers associated with the device.
-- `meid` (List of String) The MEID numbers associated with the device.
-- `order_date_time` (String) The date and time when the device was ordered.
-- `order_number` (String) The order number associated with the device.
+- `device_capacity` (String) The capacity of the device.
+- `device_model` (String) The model name.
+- `eid` (String) The device's EID (if available).
+- `ethernet_mac_address` (List of String) The device's built-in Ethernet MAC addresses.
+- `imei` (List of String) The device's IMEI (if available).
+- `meid` (List of String) The device's MEID (if available).
+- `order_date_time` (String) The date and time of placing the device's order.
+- `order_number` (String) The order number of the device.
 - `part_number` (String) The part number of the device.
-- `product_family` (String) The product family of the device.
-- `product_type` (String) The product type of the device.
-- `purchase_source_id` (String) The identifier of the purchase source.
+- `product_family` (String) The device's Apple product family: iPhone, iPad,Mac, AppleTV, Watch, or Vision.
+- `product_type` (String) The device's product type: (examples: iPhone14,3, iPad13,4, MacBookPro14,2).
+- `purchase_source_id` (String) The unique ID of the purchase source type: Apple Customer Number or Reseller Number.
 - `purchase_source_type` (String) The type of the purchase source.
-- `released_from_org_date_time` (String) The date and time when the device was released from the organization. Will be null if device hasn't been released.
-- `serial_number` (String) The serial number of the device.
-- `status` (String) The current status of the device.
+- `released_from_org_date_time` (String) The date and time the device was released from an organization. This will be null if the device hasn't been released. Currently only querying by a single device is supported. Batch device queries aren’t currently supported for this property.
+- `serial_number` (String) The device's serial number.
+- `status` (String) The device's status: ASSIGNED or UNASSIGNED. If ASSIGNED, use a separate API to get the information of the assigned server.
 - `type` (String) The type of the device.
-- `updated_date_time` (String) The date and time when the device was last updated.
-- `wifi_mac_address` (String) Wi-Fi MAC address.
+- `updated_date_time` (String) The date and time of the most-recent update for the device.
+- `wifi_mac_address` (String) The device's Wi-Fi MAC address.

@@ -54,6 +54,7 @@ type OrganizationDeviceModel struct {
 	PurchaseSourceType  types.String   `tfsdk:"purchase_source_type"`
 	WifiMacAddress      types.String   `tfsdk:"wifi_mac_address"`
 	BluetoothMacAddress types.String   `tfsdk:"bluetooth_mac_address"`
+	EthernetMacAddress  []types.String `tfsdk:"ethernet_mac_address"`
 }
 
 func (d *OrganizationDevicesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -74,94 +75,99 @@ func (d *OrganizationDevicesDataSource) Schema(ctx context.Context, req datasour
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Description: "Device identifier.",
-							Computed:    true,
+							Required:    true,
+							Description: "The opaque resource ID that uniquely identifies the resource.",
 						},
 						"type": schema.StringAttribute{
-							Description: "Device type.",
 							Computed:    true,
+							Description: "The type of the device.",
 						},
 						"serial_number": schema.StringAttribute{
-							Description: "Device serial number.",
 							Computed:    true,
+							Description: "The device's serial number.",
 						},
 						"added_to_org_date_time": schema.StringAttribute{
-							Description: "Date and time when device was added to organization.",
 							Computed:    true,
+							Description: "The date and time of adding the device to an organization.",
 						},
 						"released_from_org_date_time": schema.StringAttribute{
-							Description: "Date and time when device was released from organization. Will be null if device hasn't been released.",
 							Computed:    true,
+							Description: "The date and time the device was released from an organization. This will be null if the device hasn't been released. Currently only querying by a single device is supported. Batch device queries aren’t currently supported for this property.",
 						},
 						"updated_date_time": schema.StringAttribute{
-							Description: "Last update date and time.",
 							Computed:    true,
+							Description: "The date and time of the most-recent update for the device.",
 						},
 						"device_model": schema.StringAttribute{
-							Description: "Device model.",
 							Computed:    true,
+							Description: "The model name.",
 						},
 						"product_family": schema.StringAttribute{
-							Description: "Product family.",
 							Computed:    true,
+							Description: "The device's Apple product family: iPhone, iPad,Mac, AppleTV, Watch, or Vision.",
 						},
 						"product_type": schema.StringAttribute{
-							Description: "Product type.",
 							Computed:    true,
+							Description: "The device's product type: (examples: iPhone14,3, iPad13,4, MacBookPro14,2).",
 						},
 						"device_capacity": schema.StringAttribute{
-							Description: "Device capacity.",
 							Computed:    true,
+							Description: "The capacity of the device.",
 						},
 						"part_number": schema.StringAttribute{
-							Description: "Part number.",
 							Computed:    true,
+							Description: "The part number of the device.",
 						},
 						"order_number": schema.StringAttribute{
-							Description: "Order number.",
 							Computed:    true,
+							Description: "The order number of the device.",
 						},
 						"color": schema.StringAttribute{
-							Description: "Device color.",
 							Computed:    true,
+							Description: "The color of the device.",
 						},
 						"status": schema.StringAttribute{
-							Description: "Device status.",
 							Computed:    true,
+							Description: "The device's status: ASSIGNED or UNASSIGNED. If ASSIGNED, use a separate API to get the information of the assigned server.",
 						},
 						"order_date_time": schema.StringAttribute{
-							Description: "Order date and time.",
 							Computed:    true,
+							Description: "The date and time of placing the device's order.",
 						},
 						"imei": schema.ListAttribute{
-							Description: "IMEI numbers.",
-							Computed:    true,
 							ElementType: types.StringType,
+							Computed:    true,
+							Description: "The device's IMEI (if available).",
 						},
 						"meid": schema.ListAttribute{
-							Description: "MEID numbers.",
-							Computed:    true,
 							ElementType: types.StringType,
+							Computed:    true,
+							Description: "The device's MEID (if available).",
 						},
 						"eid": schema.StringAttribute{
-							Description: "EID number.",
 							Computed:    true,
+							Description: "The device's EID (if available).",
 						},
 						"purchase_source_id": schema.StringAttribute{
-							Description: "Purchase source identifier.",
 							Computed:    true,
+							Description: "The unique ID of the purchase source type: Apple Customer Number or Reseller Number.",
 						},
 						"purchase_source_type": schema.StringAttribute{
-							Description: "Purchase source type.",
 							Computed:    true,
+							Description: "The type of the purchase source.",
 						},
 						"wifi_mac_address": schema.StringAttribute{
-							Description: "Wi-Fi MAC address.",
+							Description: "The device's Wi-Fi MAC address.",
 							Computed:    true,
 						},
 						"bluetooth_mac_address": schema.StringAttribute{
-							Description: "Bluetooth MAC address.",
+							Description: "The device's Bluetooth MAC address.",
 							Computed:    true,
+						},
+						"ethernet_mac_address": schema.ListAttribute{
+							ElementType: types.StringType,
+							Computed:    true,
+							Description: "The device's built-in Ethernet MAC addresses.",
 						},
 					},
 				},
@@ -229,6 +235,11 @@ func (d *OrganizationDevicesDataSource) Read(ctx context.Context, req datasource
 			PurchaseSourceType:  types.StringValue(device.Attributes.PurchaseSourceType),
 			WifiMacAddress:      types.StringValue(device.Attributes.WifiMacAddress),
 			BluetoothMacAddress: types.StringValue(device.Attributes.BluetoothMacAddress),
+		}
+
+		deviceModel.EthernetMacAddress = make([]types.String, len(device.Attributes.EthernetMacAddress))
+		for i, ethernetMacAddress := range device.Attributes.EthernetMacAddress {
+			deviceModel.EthernetMacAddress[i] = types.StringValue(ethernetMacAddress)
 		}
 
 		deviceModel.IMEI = make([]types.String, len(device.Attributes.IMEI))

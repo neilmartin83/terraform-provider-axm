@@ -31,27 +31,31 @@ output "all" {
 <a id="nestedatt--devices"></a>
 ### Nested Schema for `devices`
 
+Required:
+
+- `id` (String) The opaque resource ID that uniquely identifies the resource.
+
 Read-Only:
 
-- `added_to_org_date_time` (String) Date and time when device was added to organization.
-- `bluetooth_mac_address` (String) Bluetooth MAC address.
-- `color` (String) Device color.
-- `device_capacity` (String) Device capacity.
-- `device_model` (String) Device model.
-- `eid` (String) EID number.
-- `id` (String) Device identifier.
-- `imei` (List of String) IMEI numbers.
-- `meid` (List of String) MEID numbers.
-- `order_date_time` (String) Order date and time.
-- `order_number` (String) Order number.
-- `part_number` (String) Part number.
-- `product_family` (String) Product family.
-- `product_type` (String) Product type.
-- `purchase_source_id` (String) Purchase source identifier.
-- `purchase_source_type` (String) Purchase source type.
-- `released_from_org_date_time` (String) Date and time when device was released from organization. Will be null if device hasn't been released.
-- `serial_number` (String) Device serial number.
-- `status` (String) Device status.
-- `type` (String) Device type.
-- `updated_date_time` (String) Last update date and time.
-- `wifi_mac_address` (String) Wi-Fi MAC address.
+- `added_to_org_date_time` (String) The date and time of adding the device to an organization.
+- `bluetooth_mac_address` (String) The device's Bluetooth MAC address.
+- `color` (String) The color of the device.
+- `device_capacity` (String) The capacity of the device.
+- `device_model` (String) The model name.
+- `eid` (String) The device's EID (if available).
+- `ethernet_mac_address` (List of String) The device's built-in Ethernet MAC addresses.
+- `imei` (List of String) The device's IMEI (if available).
+- `meid` (List of String) The device's MEID (if available).
+- `order_date_time` (String) The date and time of placing the device's order.
+- `order_number` (String) The order number of the device.
+- `part_number` (String) The part number of the device.
+- `product_family` (String) The device's Apple product family: iPhone, iPad,Mac, AppleTV, Watch, or Vision.
+- `product_type` (String) The device's product type: (examples: iPhone14,3, iPad13,4, MacBookPro14,2).
+- `purchase_source_id` (String) The unique ID of the purchase source type: Apple Customer Number or Reseller Number.
+- `purchase_source_type` (String) The type of the purchase source.
+- `released_from_org_date_time` (String) The date and time the device was released from an organization. This will be null if the device hasn't been released. Currently only querying by a single device is supported. Batch device queries aren’t currently supported for this property.
+- `serial_number` (String) The device's serial number.
+- `status` (String) The device's status: ASSIGNED or UNASSIGNED. If ASSIGNED, use a separate API to get the information of the assigned server.
+- `type` (String) The type of the device.
+- `updated_date_time` (String) The date and time of the most-recent update for the device.
+- `wifi_mac_address` (String) The device's Wi-Fi MAC address.
