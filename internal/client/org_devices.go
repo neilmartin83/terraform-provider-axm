@@ -52,6 +52,7 @@ type DeviceAttribute struct {
 	PurchaseSourceType      string   `json:"purchaseSourceType"`
 	WifiMacAddress          string   `json:"wifiMacAddress,omitempty"`
 	BluetoothMacAddress     string   `json:"bluetoothMacAddress,omitempty"`
+	EthernetMacAddress      []string `json:"ethernetMacAddress,omitempty"`
 }
 
 // AppleCareCoverageResponse represents a response that contains AppleCare Coverage for an organization device.
