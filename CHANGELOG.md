@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.3.1...v1.4.0) (2025-12-18)
+
+
+### Features
+
+* add EthernetMacAddress field to DeviceAttribute struct ([66a49a7](https://github.com/neilmartin83/terraform-provider-axm/commit/66a49a7718b3d43d94ea059ae6daeb8679e667e1))
+* enhance organization device data source with Ethernet MAC address and improved descriptions ([703f5f6](https://github.com/neilmartin83/terraform-provider-axm/commit/703f5f64742afc4064f7e9311806029bb5dc57f9))
+
 ## [1.2.11](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.2.10...v1.2.11) (2025-11-03)
 
 
