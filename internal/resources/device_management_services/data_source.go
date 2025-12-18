@@ -57,7 +57,7 @@ func (d *DeviceManagementServicesDataSource) Schema(ctx context.Context, req dat
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Description: "The identifier of the MDM server.",
+							Description: "The opaque resource ID that uniquely identifies the resource.",
 							Computed:    true,
 						},
 						"type": schema.StringAttribute{
@@ -65,19 +65,19 @@ func (d *DeviceManagementServicesDataSource) Schema(ctx context.Context, req dat
 							Computed:    true,
 						},
 						"server_name": schema.StringAttribute{
-							Description: "The name of the MDM server.",
+							Description: "The device management service's name.",
 							Computed:    true,
 						},
 						"server_type": schema.StringAttribute{
-							Description: "The type of the server (MDM, APPLE_CONFIGURATOR, APPLE_MDM).",
+							Description: "The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM.",
 							Computed:    true,
 						},
 						"created_date_time": schema.StringAttribute{
-							Description: "The creation date and time of the server.",
+							Description: "The date and time of the creation of the resource.",
 							Computed:    true,
 						},
 						"updated_date_time": schema.StringAttribute{
-							Description: "The last update date and time of the server.",
+							Description: "The date and time of the most-recent update for the resource.",
 							Computed:    true,
 						},
 					},

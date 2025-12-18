@@ -60,43 +60,43 @@ func (d *OrganizationDeviceAppleCareCoverageDataSource) Schema(ctx context.Conte
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Description: "The unique identifier for the AppleCare coverage.",
+							Description: "The opaque resource ID that uniquely identifies the resource.",
 							Computed:    true,
 						},
 						"agreement_number": schema.StringAttribute{
-							Description: "The agreement number associated with the AppleCare coverage.",
+							Description: "Agreement number associated with device coverage. This field isn't applicable for Limited Warranty and AppleCare+ for Business Essentials.",
 							Computed:    true,
 						},
 						"contract_cancel_date_time": schema.StringAttribute{
-							Description: "The date and time when the AppleCare contract was canceled, if applicable.",
+							Description: "UTC date when coverage was canceled for the device. This field isn't applicable for Limited Warranty and AppleCare+ for Business Essentials.",
 							Computed:    true,
 						},
 						"description": schema.StringAttribute{
-							Description: "A description of the AppleCare coverage.",
+							Description: "Description of device coverage.",
 							Computed:    true,
 						},
 						"end_date_time": schema.StringAttribute{
-							Description: "The end date and time of the AppleCare coverage.",
+							Description: "UTC date when coverage period ends for the device. This field isn't applicable for AppleCare+ for Business Essentials.",
 							Computed:    true,
 						},
 						"is_canceled": schema.BoolAttribute{
-							Description: "Indicates whether the AppleCare coverage has been canceled.",
+							Description: "Indicates whether coverage is canceled for the device. This field isn't applicable for Limited Warranty and AppleCare+ for Business Essentials.",
 							Computed:    true,
 						},
 						"is_renewable": schema.BoolAttribute{
-							Description: "Indicates whether the AppleCare coverage is renewable.",
+							Description: "Indicates whether coverage renews after endDateTime for the device. This field isn't applicable for Limited Warranty.",
 							Computed:    true,
 						},
 						"payment_type": schema.StringAttribute{
-							Description: "The payment type for the AppleCare coverage.",
+							Description: "Payment type of device coverage. Possible values: 'ABE_SUBSCRIPTION', 'PAID_UP_FRONT', 'SUBSCRIPTION', 'NONE'.",
 							Computed:    true,
 						},
 						"start_date_time": schema.StringAttribute{
-							Description: "The start date and time of the AppleCare coverage.",
+							Description: "UTC date when coverage period commenced. For AppleCare+ for Business Essentials, it's UTC date when a device enrolls into the plan.",
 							Computed:    true,
 						},
 						"status": schema.StringAttribute{
-							Description: "The status of the AppleCare coverage.",
+							Description: "The current status of device coverage. Possible values: 'ACTIVE', 'INACTIVE'",
 							Computed:    true,
 						},
 					},

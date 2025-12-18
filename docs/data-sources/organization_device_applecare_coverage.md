@@ -38,13 +38,13 @@ output "applecare_coverage" {
 
 Read-Only:
 
-- `agreement_number` (String) The agreement number associated with the AppleCare coverage.
-- `contract_cancel_date_time` (String) The date and time when the AppleCare contract was canceled, if applicable.
-- `description` (String) A description of the AppleCare coverage.
-- `end_date_time` (String) The end date and time of the AppleCare coverage.
-- `id` (String) The unique identifier for the AppleCare coverage.
-- `is_canceled` (Boolean) Indicates whether the AppleCare coverage has been canceled.
-- `is_renewable` (Boolean) Indicates whether the AppleCare coverage is renewable.
-- `payment_type` (String) The payment type for the AppleCare coverage.
-- `start_date_time` (String) The start date and time of the AppleCare coverage.
-- `status` (String) The status of the AppleCare coverage.
+- `agreement_number` (String) Agreement number associated with device coverage. This field isn't applicable for Limited Warranty and AppleCare+ for Business Essentials.
+- `contract_cancel_date_time` (String) UTC date when coverage was canceled for the device. This field isn't applicable for Limited Warranty and AppleCare+ for Business Essentials.
+- `description` (String) Description of device coverage.
+- `end_date_time` (String) UTC date when coverage period ends for the device. This field isn't applicable for AppleCare+ for Business Essentials.
+- `id` (String) The opaque resource ID that uniquely identifies the resource.
+- `is_canceled` (Boolean) Indicates whether coverage is canceled for the device. This field isn't applicable for Limited Warranty and AppleCare+ for Business Essentials.
+- `is_renewable` (Boolean) Indicates whether coverage renews after endDateTime for the device. This field isn't applicable for Limited Warranty.
+- `payment_type` (String) Payment type of device coverage. Possible values: 'ABE_SUBSCRIPTION', 'PAID_UP_FRONT', 'SUBSCRIPTION', 'NONE'.
+- `start_date_time` (String) UTC date when coverage period commenced. For AppleCare+ for Business Essentials, it's UTC date when a device enrolls into the plan.
+- `status` (String) The current status of device coverage. Possible values: 'ACTIVE', 'INACTIVE'

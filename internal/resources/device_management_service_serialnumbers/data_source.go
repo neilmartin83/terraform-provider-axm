@@ -39,15 +39,15 @@ func (d *DeviceManagementServiceSerialNumbersDataSource) Schema(ctx context.Cont
 		Description: "Retrieves the list of device serial numbers assigned to a specific device management service.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "Identifier for this data source.",
+				Description: "The opaque resource ID that uniquely identifies the resource.",
 				Computed:    true,
 			},
 			"server_id": schema.StringAttribute{
-				Description: "The identifier of the MDM server to get serial numbers for.",
+				Description: "The opaque resource ID that uniquely identifies the device management service to get serial numbers for.",
 				Required:    true,
 			},
 			"serial_numbers": schema.ListAttribute{
-				Description: "List of device serial numbers assigned to this MDM server.",
+				Description: "List of device serial numbers assigned to this device management service.",
 				Computed:    true,
 				ElementType: types.StringType,
 			},

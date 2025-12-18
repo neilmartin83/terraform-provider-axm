@@ -40,12 +40,12 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Optional:    true,
-				Description: "MDM server ID. This is a unique ID for the server and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.",
+				Description: "Device management service ID. This is a unique ID for the service and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.",
 			},
 			"device_ids": schema.SetAttribute{
 				ElementType: types.StringType,
 				Required:    true,
-				Description: "A set of device IDs to assign to the MDM server. These are device serial numbers.",
+				Description: "A set of device IDs to assign to the device management service. These are device serial numbers.",
 			},
 		},
 	}

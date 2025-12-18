@@ -27,9 +27,9 @@ output "device_serial_numbers" {
 
 ### Required
 
-- `server_id` (String) The identifier of the MDM server to get serial numbers for.
+- `server_id` (String) The opaque resource ID that uniquely identifies the device management service to get serial numbers for.
 
 ### Read-Only
 
-- `id` (String) Identifier for this data source.
-- `serial_numbers` (List of String) List of device serial numbers assigned to this MDM server.
+- `id` (String) The opaque resource ID that uniquely identifies the resource.
+- `serial_numbers` (List of String) List of device serial numbers assigned to this device management service.

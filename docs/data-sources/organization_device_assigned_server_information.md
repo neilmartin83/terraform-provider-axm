@@ -27,13 +27,13 @@ output "assigned_server" {
 
 ### Required
 
-- `device_id` (String) The identifier (serial number) of the device to look up.
+- `device_id` (String) The opaque resource ID that uniquely identifies the device.
 
 ### Read-Only
 
-- `created_date_time` (String) The creation date and time of the server assignment.
-- `id` (String) Identifier for this data source.
-- `server_id` (String) The identifier of the assigned MDM server.
-- `server_name` (String) The name of the assigned MDM server.
-- `server_type` (String) The type of the assigned server (MDM, APPLE_CONFIGURATOR, APPLE_MDM).
-- `updated_date_time` (String) The last update date and time of the server assignment.
+- `created_date_time` (String) The date and time of the creation of the resource.
+- `id` (String) The opaque resource ID that uniquely identifies the resource.
+- `server_id` (String) The opaque resource ID that uniquely identifies the assigned device management service.
+- `server_name` (String) The device management service's name.
+- `server_type` (String) The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM.
+- `updated_date_time` (String) The date and time of the most-recent update for the resource.

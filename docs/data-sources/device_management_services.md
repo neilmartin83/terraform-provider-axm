@@ -33,9 +33,9 @@ output "all_mdm_servers" {
 
 Read-Only:
 
-- `created_date_time` (String) The creation date and time of the server.
-- `id` (String) The identifier of the MDM server.
-- `server_name` (String) The name of the MDM server.
-- `server_type` (String) The type of the server (MDM, APPLE_CONFIGURATOR, APPLE_MDM).
+- `created_date_time` (String) The date and time of the creation of the resource.
+- `id` (String) The opaque resource ID that uniquely identifies the resource.
+- `server_name` (String) The device management service's name.
+- `server_type` (String) The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM.
 - `type` (String) The type of the resource (mdmServers).
-- `updated_date_time` (String) The last update date and time of the server.
+- `updated_date_time` (String) The date and time of the most-recent update for the resource.

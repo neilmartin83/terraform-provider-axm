@@ -28,8 +28,8 @@ resource "axm_device_management_service" "example" {
 
 ### Required
 
-- `device_ids` (Set of String) A set of device IDs to assign to the MDM server. These are device serial numbers.
+- `device_ids` (Set of String) A set of device IDs to assign to the device management service. These are device serial numbers.
 
 ### Optional
 
-- `id` (String) MDM server ID. This is a unique ID for the server and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.
+- `id` (String) Device management service ID. This is a unique ID for the service and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.
