@@ -3,7 +3,9 @@ package organization_device_assigned_server_information
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -13,6 +15,8 @@ import (
 )
 
 var _ datasource.DataSource = &OrganizationDeviceAssignedServerInformationDataSource{}
+
+const defaultReadTimeout = 90 * time.Second
 
 func NewOrganizationDeviceAssignedServerInformationDataSource() datasource.DataSource {
 	return &OrganizationDeviceAssignedServerInformationDataSource{}
@@ -25,13 +29,14 @@ type OrganizationDeviceAssignedServerInformationDataSource struct {
 
 // OrganizationDeviceAssignedServerInformationDataSourceModel describes the data source data model.
 type OrganizationDeviceAssignedServerInformationDataSourceModel struct {
-	ID              types.String `tfsdk:"id"`
-	DeviceID        types.String `tfsdk:"device_id"`
-	ServerID        types.String `tfsdk:"server_id"`
-	ServerName      types.String `tfsdk:"server_name"`
-	ServerType      types.String `tfsdk:"server_type"`
-	CreatedDateTime types.String `tfsdk:"created_date_time"`
-	UpdatedDateTime types.String `tfsdk:"updated_date_time"`
+	ID              types.String   `tfsdk:"id"`
+	Timeouts        timeouts.Value `tfsdk:"timeouts"`
+	DeviceID        types.String   `tfsdk:"device_id"`
+	ServerID        types.String   `tfsdk:"server_id"`
+	ServerName      types.String   `tfsdk:"server_name"`
+	ServerType      types.String   `tfsdk:"server_type"`
+	CreatedDateTime types.String   `tfsdk:"created_date_time"`
+	UpdatedDateTime types.String   `tfsdk:"updated_date_time"`
 }
 
 func (d *OrganizationDeviceAssignedServerInformationDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -46,6 +51,7 @@ func (d *OrganizationDeviceAssignedServerInformationDataSource) Schema(ctx conte
 				Description: "The opaque resource ID that uniquely identifies the resource.",
 				Computed:    true,
 			},
+			"timeouts": timeouts.Attributes(ctx),
 			"device_id": schema.StringAttribute{
 				Description: "The opaque resource ID that uniquely identifies the device.",
 				Required:    true,
@@ -101,7 +107,20 @@ func (d *OrganizationDeviceAssignedServerInformationDataSource) Read(ctx context
 		return
 	}
 
-	server, err := d.client.GetOrgDeviceAssignedServer(ctx, data.DeviceID.ValueString(), nil)
+	readTimeout := defaultReadTimeout
+	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		readTimeout = configuredTimeout
+	}
+
+	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	server, err := d.client.GetOrgDeviceAssignedServer(readCtx, data.DeviceID.ValueString(), nil)
 
 	if err != nil {
 		resp.Diagnostics.AddError(

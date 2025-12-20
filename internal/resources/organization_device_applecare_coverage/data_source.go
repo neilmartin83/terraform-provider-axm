@@ -3,7 +3,9 @@ package organization_device_applecare_coverage
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -13,6 +15,8 @@ import (
 )
 
 var _ datasource.DataSource = &OrganizationDeviceAppleCareCoverageDataSource{}
+
+const defaultReadTimeout = 90 * time.Second
 
 func NewOrganizationDeviceAppleCareCoverageDataSource() datasource.DataSource {
 	return &OrganizationDeviceAppleCareCoverageDataSource{}
@@ -26,6 +30,7 @@ type OrganizationDeviceAppleCareCoverageDataSource struct {
 // OrganizationDeviceAppleCareCoverageDataSourceModel describes the data source data model.
 type OrganizationDeviceAppleCareCoverageDataSourceModel struct {
 	ID                         types.String                               `tfsdk:"id"`
+	Timeouts                   timeouts.Value                             `tfsdk:"timeouts"`
 	AppleCareCoverageResources []OrganizationDeviceAppleCareCoverageModel `tfsdk:"applecare_coverage_resources"`
 }
 
@@ -54,6 +59,7 @@ func (d *OrganizationDeviceAppleCareCoverageDataSource) Schema(ctx context.Conte
 				Description: "Device Identifier.",
 				Required:    true,
 			},
+			"timeouts": timeouts.Attributes(ctx),
 			"applecare_coverage_resources": schema.ListNestedAttribute{
 				Description: "List of AppleCare coverage resources associated with the device.",
 				Computed:    true,
@@ -133,7 +139,20 @@ func (d *OrganizationDeviceAppleCareCoverageDataSource) Read(ctx context.Context
 		return
 	}
 
-	applecarecoverage, err := d.client.GetOrgDeviceAppleCareCoverage(ctx, data.ID.ValueString(), nil)
+	readTimeout := defaultReadTimeout
+	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		readTimeout = configuredTimeout
+	}
+
+	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	applecarecoverage, err := d.client.GetOrgDeviceAppleCareCoverage(readCtx, data.ID.ValueString(), nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Organization Device AppleCare Coverage",

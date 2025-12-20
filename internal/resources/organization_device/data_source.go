@@ -3,7 +3,9 @@ package organization_device
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -13,6 +15,8 @@ import (
 )
 
 var _ datasource.DataSource = &OrganizationDeviceDataSource{}
+
+const defaultReadTimeout = 90 * time.Second
 
 func NewOrganizationDeviceDataSource() datasource.DataSource {
 	return &OrganizationDeviceDataSource{}
@@ -26,6 +30,7 @@ type OrganizationDeviceDataSource struct {
 // OrganizationDeviceDataSourceModel describes the data source data model.
 type OrganizationDeviceDataSourceModel struct {
 	ID                      types.String   `tfsdk:"id"`
+	Timeouts                timeouts.Value `tfsdk:"timeouts"`
 	Type                    types.String   `tfsdk:"type"`
 	SerialNumber            types.String   `tfsdk:"serial_number"`
 	AddedToOrgDateTime      types.String   `tfsdk:"added_to_org_date_time"`
@@ -62,6 +67,7 @@ func (d *OrganizationDeviceDataSource) Schema(ctx context.Context, req datasourc
 				Required:    true,
 				Description: "The opaque resource ID that uniquely identifies the resource.",
 			},
+			"timeouts": timeouts.Attributes(ctx),
 			"type": schema.StringAttribute{
 				Computed:    true,
 				Description: "The type of the device.",
@@ -184,7 +190,20 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 		return
 	}
 
-	device, err := d.client.GetOrgDevice(ctx, data.ID.ValueString(), nil)
+	readTimeout := defaultReadTimeout
+	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		readTimeout = configuredTimeout
+	}
+
+	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	device, err := d.client.GetOrgDevice(readCtx, data.ID.ValueString(), nil)
 
 	if err != nil {
 		resp.Diagnostics.AddError(

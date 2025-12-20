@@ -29,7 +29,18 @@ output "device_serial_numbers" {
 
 - `server_id` (String) The opaque resource ID that uniquely identifies the device management service to get serial numbers for.
 
+### Optional
+
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
+
 ### Read-Only
 
 - `id` (String) The opaque resource ID that uniquely identifies the resource.
 - `serial_numbers` (List of String) List of device serial numbers assigned to this device management service.
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).

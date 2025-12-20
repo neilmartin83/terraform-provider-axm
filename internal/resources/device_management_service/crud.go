@@ -22,15 +22,28 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 		return
 	}
 
+	createTimeout := defaultCreateTimeout
+	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := data.Timeouts.Create(ctx, defaultCreateTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		createTimeout = configuredTimeout
+	}
+
+	createCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
+
 	deviceIDs := extractStrings(data.DeviceIDs)
 
-	activity, err := r.client.AssignDevicesToMDMServer(ctx, data.ID.ValueString(), deviceIDs, true)
+	activity, err := r.client.AssignDevicesToMDMServer(createCtx, data.ID.ValueString(), deviceIDs, true)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to assign devices", err.Error())
 		return
 	}
 
-	if err := r.waitForActivityCompletion(ctx, activity.ID, &resp.Diagnostics); err != nil {
+	if err := r.waitForActivityCompletion(createCtx, activity.ID, &resp.Diagnostics); err != nil {
 		resp.Diagnostics.AddError("Failed to complete device assignment", err.Error())
 		return
 	}
@@ -53,7 +66,20 @@ func (r *DeviceManagementServiceResource) Read(ctx context.Context, req resource
 		return
 	}
 
-	deviceIDs, err := r.client.GetDeviceManagementServiceSerialNumbers(ctx, data.ID.ValueString())
+	readTimeout := defaultReadTimeout
+	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		readTimeout = configuredTimeout
+	}
+
+	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	deviceIDs, err := r.client.GetDeviceManagementServiceSerialNumbers(readCtx, data.ID.ValueString())
 	if err != nil {
 		if strings.Contains(err.Error(), "NOT_FOUND") {
 			resp.State.RemoveResource(ctx)
@@ -91,7 +117,20 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 		return
 	}
 
-	currentDeviceIDs, err := r.client.GetDeviceManagementServiceSerialNumbers(ctx, plan.ID.ValueString())
+	updateTimeout := defaultUpdateTimeout
+	if !plan.Timeouts.IsNull() && !plan.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := plan.Timeouts.Update(ctx, defaultUpdateTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		updateTimeout = configuredTimeout
+	}
+
+	updateCtx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
+	currentDeviceIDs, err := r.client.GetDeviceManagementServiceSerialNumbers(updateCtx, plan.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get current device assignments", err.Error())
 		return
@@ -134,24 +173,24 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 	}
 
 	if len(devicesToUnassign) > 0 {
-		activity, err := r.client.AssignDevicesToMDMServer(ctx, plan.ID.ValueString(), devicesToUnassign, false)
+		activity, err := r.client.AssignDevicesToMDMServer(updateCtx, plan.ID.ValueString(), devicesToUnassign, false)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to unassign devices", err.Error())
 			return
 		}
-		if err := r.waitForActivityCompletion(ctx, activity.ID, &resp.Diagnostics); err != nil {
+		if err := r.waitForActivityCompletion(updateCtx, activity.ID, &resp.Diagnostics); err != nil {
 			resp.Diagnostics.AddError("Failed to complete device unassignment", err.Error())
 			return
 		}
 	}
 
 	if len(devicesToAssign) > 0 {
-		activity, err := r.client.AssignDevicesToMDMServer(ctx, plan.ID.ValueString(), devicesToAssign, true)
+		activity, err := r.client.AssignDevicesToMDMServer(updateCtx, plan.ID.ValueString(), devicesToAssign, true)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to assign devices", err.Error())
 			return
 		}
-		if err := r.waitForActivityCompletion(ctx, activity.ID, &resp.Diagnostics); err != nil {
+		if err := r.waitForActivityCompletion(updateCtx, activity.ID, &resp.Diagnostics); err != nil {
 			resp.Diagnostics.AddError("Failed to complete device assignment", err.Error())
 			return
 		}

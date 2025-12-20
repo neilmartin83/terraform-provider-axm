@@ -3,7 +3,9 @@ package device_management_service
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -13,6 +15,12 @@ import (
 
 var _ resource.Resource = &DeviceManagementServiceResource{}
 var _ resource.ResourceWithImportState = &DeviceManagementServiceResource{}
+
+const (
+	defaultCreateTimeout = 90 * time.Second
+	defaultReadTimeout   = 90 * time.Second
+	defaultUpdateTimeout = 90 * time.Second
+)
 
 func NewDeviceManagementServiceResource() resource.Resource {
 	return &DeviceManagementServiceResource{}
@@ -24,8 +32,9 @@ type DeviceManagementServiceResource struct {
 
 // MdmDeviceAssignmentModel describes the resource data model.
 type MdmDeviceAssignmentModel struct {
-	ID        types.String `tfsdk:"id"`
-	DeviceIDs types.Set    `tfsdk:"device_ids"`
+	ID        types.String   `tfsdk:"id"`
+	Timeouts  timeouts.Value `tfsdk:"timeouts"`
+	DeviceIDs types.Set      `tfsdk:"device_ids"`
 }
 
 func (r *DeviceManagementServiceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -42,6 +51,11 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 				Optional:    true,
 				Description: "Device management service ID. This is a unique ID for the service and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.",
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+			}),
 			"device_ids": schema.SetAttribute{
 				ElementType: types.StringType,
 				Required:    true,
