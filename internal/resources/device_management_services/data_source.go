@@ -3,7 +3,9 @@ package device_management_services
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -13,6 +15,8 @@ import (
 )
 
 var _ datasource.DataSource = &DeviceManagementServicesDataSource{}
+
+const defaultReadTimeout = 90 * time.Second
 
 func NewDeviceManagementServicesDataSource() datasource.DataSource {
 	return &DeviceManagementServicesDataSource{}
@@ -25,8 +29,9 @@ type DeviceManagementServicesDataSource struct {
 
 // DeviceManagementServicesDataSourceModel describes the data source data model.
 type DeviceManagementServicesDataSourceModel struct {
-	ID      types.String                   `tfsdk:"id"`
-	Servers []DeviceManagementServiceModel `tfsdk:"servers"`
+	ID       types.String                   `tfsdk:"id"`
+	Timeouts timeouts.Value                 `tfsdk:"timeouts"`
+	Servers  []DeviceManagementServiceModel `tfsdk:"servers"`
 }
 
 // DeviceManagementServiceModel describes a device management service.
@@ -51,6 +56,7 @@ func (d *DeviceManagementServicesDataSource) Schema(ctx context.Context, req dat
 				Description: "Identifier for this data source.",
 				Computed:    true,
 			},
+			"timeouts": timeouts.Attributes(ctx),
 			"servers": schema.ListNestedAttribute{
 				Description: "List of device management services.",
 				Computed:    true,
@@ -114,7 +120,20 @@ func (d *DeviceManagementServicesDataSource) Read(ctx context.Context, req datas
 		return
 	}
 
-	servers, err := d.client.GetDeviceManagementServices(ctx, nil)
+	readTimeout := defaultReadTimeout
+	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		readTimeout = configuredTimeout
+	}
+
+	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	servers, err := d.client.GetDeviceManagementServices(readCtx, nil)
 
 	if err != nil {
 		resp.Diagnostics.AddError(

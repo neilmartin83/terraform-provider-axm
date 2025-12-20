@@ -29,6 +29,10 @@ output "assigned_server" {
 
 - `device_id` (String) The opaque resource ID that uniquely identifies the device.
 
+### Optional
+
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
+
 ### Read-Only
 
 - `created_date_time` (String) The date and time of the creation of the resource.
@@ -37,3 +41,10 @@ output "assigned_server" {
 - `server_name` (String) The device management service's name.
 - `server_type` (String) The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM.
 - `updated_date_time` (String) The date and time of the most-recent update for the resource.
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).

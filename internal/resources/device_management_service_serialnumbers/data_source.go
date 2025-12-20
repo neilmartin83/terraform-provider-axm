@@ -3,7 +3,9 @@ package device_management_service_serialnumbers
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -13,6 +15,8 @@ import (
 )
 
 var _ datasource.DataSource = &DeviceManagementServiceSerialNumbersDataSource{}
+
+const defaultReadTimeout = 90 * time.Second
 
 func NewDeviceManagementServiceSerialNumbersDataSource() datasource.DataSource {
 	return &DeviceManagementServiceSerialNumbersDataSource{}
@@ -26,6 +30,7 @@ type DeviceManagementServiceSerialNumbersDataSource struct {
 // DeviceManagementServiceSerialNumbersDataSourceModel describes the data source data model.
 type DeviceManagementServiceSerialNumbersDataSourceModel struct {
 	ID            types.String   `tfsdk:"id"`
+	Timeouts      timeouts.Value `tfsdk:"timeouts"`
 	ServerID      types.String   `tfsdk:"server_id"`
 	SerialNumbers []types.String `tfsdk:"serial_numbers"`
 }
@@ -42,6 +47,7 @@ func (d *DeviceManagementServiceSerialNumbersDataSource) Schema(ctx context.Cont
 				Description: "The opaque resource ID that uniquely identifies the resource.",
 				Computed:    true,
 			},
+			"timeouts": timeouts.Attributes(ctx),
 			"server_id": schema.StringAttribute{
 				Description: "The opaque resource ID that uniquely identifies the device management service to get serial numbers for.",
 				Required:    true,
@@ -82,7 +88,20 @@ func (d *DeviceManagementServiceSerialNumbersDataSource) Read(ctx context.Contex
 		return
 	}
 
-	serialNumbers, err := d.client.GetDeviceManagementServiceSerialNumbers(ctx, data.ServerID.ValueString())
+	readTimeout := defaultReadTimeout
+	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		readTimeout = configuredTimeout
+	}
+
+	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	serialNumbers, err := d.client.GetDeviceManagementServiceSerialNumbers(readCtx, data.ServerID.ValueString())
 
 	if err != nil {
 		resp.Diagnostics.AddError(

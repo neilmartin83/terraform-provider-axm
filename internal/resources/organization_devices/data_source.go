@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -14,6 +15,8 @@ import (
 )
 
 var _ datasource.DataSource = &OrganizationDevicesDataSource{}
+
+const defaultReadTimeout = 90 * time.Second
 
 func NewOrganizationDevicesDataSource() datasource.DataSource {
 	return &OrganizationDevicesDataSource{}
@@ -26,8 +29,9 @@ type OrganizationDevicesDataSource struct {
 
 // OrganizationDevicesDataSourceModel describes the data source data model.
 type OrganizationDevicesDataSourceModel struct {
-	ID      types.String              `tfsdk:"id"`
-	Devices []OrganizationDeviceModel `tfsdk:"devices"`
+	ID       types.String              `tfsdk:"id"`
+	Timeouts timeouts.Value            `tfsdk:"timeouts"`
+	Devices  []OrganizationDeviceModel `tfsdk:"devices"`
 }
 
 // OrganizationDeviceModel describes an organization device.
@@ -69,6 +73,7 @@ func (d *OrganizationDevicesDataSource) Schema(ctx context.Context, req datasour
 				Description: "Identifier of the data source.",
 				Computed:    true,
 			},
+			"timeouts": timeouts.Attributes(ctx),
 			"devices": schema.ListNestedAttribute{
 				Description: "List of organization devices.",
 				Computed:    true,
@@ -203,7 +208,20 @@ func (d *OrganizationDevicesDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	devices, err := d.client.GetOrgDevices(ctx, nil)
+	readTimeout := defaultReadTimeout
+	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		readTimeout = configuredTimeout
+	}
+
+	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
+	devices, err := d.client.GetOrgDevices(readCtx, nil)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Organization Devices",

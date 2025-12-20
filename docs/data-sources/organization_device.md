@@ -29,6 +29,10 @@ output "example_device" {
 
 - `id` (String) The opaque resource ID that uniquely identifies the resource.
 
+### Optional
+
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
+
 ### Read-Only
 
 - `added_to_org_date_time` (String) The date and time of adding the device to an organization.
@@ -53,3 +57,10 @@ output "example_device" {
 - `type` (String) The type of the device.
 - `updated_date_time` (String) The date and time of the most-recent update for the device.
 - `wifi_mac_address` (String) The device's Wi-Fi MAC address.
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
