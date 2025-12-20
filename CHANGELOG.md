@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.4.0...v1.4.1) (2025-12-20)
+
+
+### Features
+
+* add user-configurable timeouts nested attribute to all resources and data sources ([#40](https://github.com/neilmartin83/terraform-provider-axm/issues/40)) ([a3ec6a1](https://github.com/neilmartin83/terraform-provider-axm/commit/a3ec6a18ac879e9929cd989c930bd353cb5f2706))
+
+
+### Miscellaneous Chores
+
+* release 1.4.1 ([aab5f4f](https://github.com/neilmartin83/terraform-provider-axm/commit/aab5f4fe79e3d54837cc858aa9ad673d32c2e89e))
+
 ## [1.4.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.3.1...v1.4.0) (2025-12-18)
 
 
