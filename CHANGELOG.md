@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.2](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.4.1...v1.4.2) (2025-12-23)
+
+
+### Features
+
+* enhance error handling and retry logic for API requests ([a2903dc](https://github.com/neilmartin83/terraform-provider-axm/commit/a2903dc4379f26144bb7a36fbd9f36debaf733d3))
+
+
+### Miscellaneous Chores
+
+* release 1.4.2 ([5e21d36](https://github.com/neilmartin83/terraform-provider-axm/commit/5e21d36e3b0b331b8c688a6059278eee6305805d))
+
 ## [1.4.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.4.0...v1.4.1) (2025-12-20)
 
 
