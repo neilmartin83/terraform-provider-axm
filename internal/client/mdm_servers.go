@@ -88,24 +88,30 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context, queryParams ur
 		if err != nil {
 			return nil, err
 		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				fmt.Printf("warning: failed to close response body: %v\n", err)
+
+		if err := func() error {
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					fmt.Printf("warning: failed to close response body: %v\n", err)
+				}
+			}()
+
+			if resp.StatusCode != http.StatusOK {
+				return c.handleErrorResponse(resp)
 			}
-		}()
 
-		if resp.StatusCode != http.StatusOK {
-			return nil, c.handleErrorResponse(resp)
+			var response MdmServersResponse
+			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+				return fmt.Errorf("failed to decode response JSON: %w", err)
+			}
+
+			allServers = append(allServers, response.Data...)
+			nextCursor = response.Meta.Paging.NextCursor
+			return nil
+		}(); err != nil {
+			return nil, err
 		}
 
-		var response MdmServersResponse
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			return nil, fmt.Errorf("failed to decode response JSON: %w", err)
-		}
-
-		allServers = append(allServers, response.Data...)
-
-		nextCursor = response.Meta.Paging.NextCursor
 		if nextCursor == "" {
 			break
 		}
@@ -140,28 +146,35 @@ func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, se
 		if err != nil {
 			return nil, err
 		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				fmt.Printf("warning: failed to close response body: %v\n", err)
+
+		if err := func() error {
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					fmt.Printf("warning: failed to close response body: %v\n", err)
+				}
+			}()
+
+			if resp.StatusCode != http.StatusOK {
+				return c.handleErrorResponse(resp)
 			}
-		}()
 
-		if resp.StatusCode != http.StatusOK {
-			return nil, c.handleErrorResponse(resp)
-		}
-
-		var response MdmServerDevicesLinkagesResponse
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			return nil, fmt.Errorf("failed to decode response JSON: %w", err)
-		}
-
-		for _, device := range response.Data {
-			if device.Type == "orgDevices" {
-				allSerialNumbers = append(allSerialNumbers, device.ID)
+			var response MdmServerDevicesLinkagesResponse
+			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
+
+			for _, device := range response.Data {
+				if device.Type == "orgDevices" {
+					allSerialNumbers = append(allSerialNumbers, device.ID)
+				}
+			}
+
+			nextCursor = response.Meta.Paging.NextCursor
+			return nil
+		}(); err != nil {
+			return nil, err
 		}
 
-		nextCursor = response.Meta.Paging.NextCursor
 		if nextCursor == "" {
 			break
 		}

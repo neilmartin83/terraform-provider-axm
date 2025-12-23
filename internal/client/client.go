@@ -7,7 +7,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
+)
+
+const (
+	maxRateLimitRetries   = 5
+	maxRetryAfterDuration = 60 * time.Second
 )
 
 // Logger is an interface for logging HTTP requests, responses, and authentication events
@@ -163,11 +169,22 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 	}
 
-	if c.logger != nil {
-		c.logger.LogRequest(ctx, req.Method, req.URL.String(), requestBody)
-	}
+	attempts := 0
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if requestBody != nil {
+			req.Body = io.NopCloser(bytes.NewReader(requestBody))
+			req.ContentLength = int64(len(requestBody))
+		}
+
+		if c.logger != nil {
+			c.logger.LogRequest(ctx, req.Method, req.URL.String(), requestBody)
+		}
+
 		if err := c.auth.Authenticate(ctx, req); err != nil {
 			return nil, fmt.Errorf("authentication failed: %w", err)
 		}
@@ -193,15 +210,15 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 			return resp, nil
 		}
 
-		if c.logger != nil {
-			responseBody := []byte{}
-			if resp.Body != nil {
+		var responseBody []byte
+		if resp.Body != nil {
+			if c.logger != nil {
 				responseBody, _ = io.ReadAll(resp.Body)
+				c.logger.LogResponse(ctx, resp.StatusCode, resp.Header, responseBody)
+			} else {
+				_, _ = io.Copy(io.Discard, resp.Body)
 			}
-			c.logger.LogResponse(ctx, resp.StatusCode, resp.Header, responseBody)
 		}
-
-		retryAfter := resp.Header.Get("Retry-After")
 
 		if err := resp.Body.Close(); err != nil && c.logger != nil {
 			c.logger.LogAuth(ctx, "Failed to close response body", map[string]interface{}{
@@ -209,36 +226,66 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 			})
 		}
 
-		if retryAfter != "" {
-			seconds, err := time.ParseDuration(retryAfter + "s")
-			if err == nil {
-				if seconds > 60*time.Second {
-					if c.logger != nil {
-						c.logger.LogAuth(ctx, "Retry-After exceeded maximum wait time", map[string]interface{}{
-							"retry_after_seconds": seconds.Seconds(),
-							"max_wait_seconds":    60,
-						})
-					}
-					return nil, fmt.Errorf("received 429 Too Many Requests with Retry-After of %v)", seconds)
-				}
-
-				if c.logger != nil {
-					c.logger.LogAuth(ctx, "Rate limited, waiting before retry", map[string]interface{}{
-						"retry_after_seconds": seconds.Seconds(),
-					})
-				}
-				fmt.Printf("Received 429. Retrying after %s...\n", seconds)
-				time.Sleep(seconds)
-				continue
-			}
-
-			if c.logger != nil {
-				c.logger.LogAuth(ctx, "Failed to parse Retry-After header", map[string]interface{}{
-					"retry_after_header": retryAfter,
-				})
-			}
+		retryAfterDuration, err := parseRetryAfter(resp.Header.Get("Retry-After"))
+		if err != nil {
+			return nil, fmt.Errorf("received 429 Too Many Requests: %w", err)
 		}
 
-		return nil, fmt.Errorf("received 429 Too Many Requests, and no valid Retry-After header")
+		if retryAfterDuration > maxRetryAfterDuration {
+			return nil, fmt.Errorf("received 429 Too Many Requests with Retry-After of %v)", retryAfterDuration)
+		}
+
+		attempts++
+		if attempts >= maxRateLimitRetries {
+			return nil, fmt.Errorf("received 429 Too Many Requests after %d retries", attempts)
+		}
+
+		if c.logger != nil {
+			c.logger.LogAuth(ctx, "Rate limited, waiting before retry", map[string]interface{}{
+				"retry_after_seconds": retryAfterDuration.Seconds(),
+				"attempt":             attempts,
+			})
+		}
+
+		fmt.Printf("Received 429. Retrying after %s...\n", retryAfterDuration)
+		if err := waitWithContext(ctx, retryAfterDuration); err != nil {
+			return nil, err
+		}
+	}
+}
+
+func parseRetryAfter(header string) (time.Duration, error) {
+	if header == "" {
+		return 0, fmt.Errorf("missing Retry-After header")
+	}
+
+	if seconds, err := strconv.Atoi(header); err == nil {
+		return time.Duration(seconds) * time.Second, nil
+	}
+
+	if retryTime, err := http.ParseTime(header); err == nil {
+		delay := time.Until(retryTime)
+		if delay <= 0 {
+			return 0, fmt.Errorf("Retry-After time already elapsed")
+		}
+		return delay, nil
+	}
+
+	return 0, fmt.Errorf("invalid Retry-After header: %s", header)
+}
+
+func waitWithContext(ctx context.Context, d time.Duration) error {
+	if d <= 0 {
+		return nil
+	}
+
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
 }
