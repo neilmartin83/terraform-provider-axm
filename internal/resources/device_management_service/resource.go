@@ -33,6 +33,8 @@ type DeviceManagementServiceResource struct {
 // MdmDeviceAssignmentModel describes the resource data model.
 type MdmDeviceAssignmentModel struct {
 	ID        types.String   `tfsdk:"id"`
+	Name      types.String   `tfsdk:"name"`
+	Type      types.String   `tfsdk:"type"`
 	Timeouts  timeouts.Value `tfsdk:"timeouts"`
 	DeviceIDs types.Set      `tfsdk:"device_ids"`
 }
@@ -50,6 +52,14 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 				Computed:    true,
 				Optional:    true,
 				Description: "Device management service ID. This is a unique ID for the service and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.",
+			},
+			"name": schema.StringAttribute{
+				Computed:    true,
+				Description: "Device management service name as reported by Apple Business Manager.",
+			},
+			"type": schema.StringAttribute{
+				Computed:    true,
+				Description: "Device management service type (for example MDM, APPLE_CONFIGURATOR).",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,

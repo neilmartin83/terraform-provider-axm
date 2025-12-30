@@ -48,6 +48,22 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 		return
 	}
 
+	service, found, err := r.fetchDeviceManagementService(createCtx, data.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to read device management service", err.Error())
+		return
+	}
+	if !found {
+		resp.Diagnostics.AddError(
+			"Device management service not found",
+			fmt.Sprintf("The device management service with ID %q could not be located via the GET_COLLECTION API.", data.ID.ValueString()),
+		)
+		return
+	}
+
+	data.Name = types.StringValue(service.Attributes.ServerName)
+	data.Type = types.StringValue(service.Attributes.ServerType)
+
 	tflog.Debug(ctx, "Assigned devices to MDM server", map[string]interface{}{
 		"mdm_server_id": data.ID.ValueString(),
 		"device_ids":    deviceIDs,
@@ -103,6 +119,22 @@ func (r *DeviceManagementServiceResource) Read(ctx context.Context, req resource
 	}
 
 	data.DeviceIDs = deviceSet
+
+	service, found, err := r.fetchDeviceManagementService(readCtx, data.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading device management service",
+			fmt.Sprintf("Failed to get device management service: %s", err),
+		)
+		return
+	}
+	if !found {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	data.Name = types.StringValue(service.Attributes.ServerName)
+	data.Type = types.StringValue(service.Attributes.ServerType)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -195,6 +227,19 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 			return
 		}
 	}
+
+	service, found, err := r.fetchDeviceManagementService(updateCtx, plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to read device management service", err.Error())
+		return
+	}
+	if !found {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	plan.Name = types.StringValue(service.Attributes.ServerName)
+	plan.Type = types.StringValue(service.Attributes.ServerType)
 	tflog.Debug(ctx, "Updated device assignments for MDM server", map[string]interface{}{
 		"mdm_server_id": plan.ID.ValueString(),
 		"assigned":      devicesToAssign,
