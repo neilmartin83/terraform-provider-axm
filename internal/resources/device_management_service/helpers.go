@@ -10,8 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
 // extractStrings converts a types.Set containing string values into a slice of strings,
@@ -27,6 +30,15 @@ func extractStrings(set types.Set) []string {
 		}
 	}
 	return result
+}
+
+func stringsToSet(values []string) (types.Set, diag.Diagnostics) {
+	elements := make([]attr.Value, len(values))
+	for i, value := range values {
+		elements[i] = types.StringValue(value)
+	}
+
+	return types.SetValue(types.StringType, elements)
 }
 
 // downloadAndParseActivityLog downloads the CSV from a pre-signed URL and parses it into a summary.
@@ -136,6 +148,24 @@ func downloadAndParseActivityLog(ctx context.Context, downloadURL string) (strin
 	}
 
 	return summary.String(), nil
+}
+
+// fetchDeviceManagementService retrieves metadata for a specific MDM server by scanning the available
+// collection endpoint (GET_INSTANCE is not permitted by the upstream API).
+func (r *DeviceManagementServiceResource) fetchDeviceManagementService(ctx context.Context, serverID string) (*client.MdmServer, bool, error) {
+	servers, err := r.client.GetDeviceManagementServices(ctx, nil)
+	if err != nil {
+		return nil, false, err
+	}
+
+	for i := range servers {
+		if servers[i].ID == serverID {
+			server := servers[i]
+			return &server, true, nil
+		}
+	}
+
+	return nil, false, nil
 }
 
 // waitForActivityCompletion polls the activity status until it completes, fails, or times out

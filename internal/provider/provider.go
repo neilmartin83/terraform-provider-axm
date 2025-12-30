@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/list"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -32,8 +33,9 @@ const (
 	envScope      = "AXM_SCOPE"
 )
 
-// Ensure AxmProvider satisfies the provider.Provider interface.
+// Ensure AxmProvider satisfies the provider.Provider interfaces.
 var _ provider.Provider = &AxmProvider{}
+var _ provider.ProviderWithListResources = &AxmProvider{}
 
 // AxmProvider defines the provider implementation.
 type AxmProvider struct {
@@ -180,6 +182,7 @@ func (p *AxmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	p.client = clientObj
 	resp.DataSourceData = clientObj
 	resp.ResourceData = clientObj
+	resp.ListResourceData = clientObj
 }
 
 func (p *AxmProvider) Resources(ctx context.Context) []func() resource.Resource {
@@ -196,6 +199,12 @@ func (p *AxmProvider) DataSources(ctx context.Context) []func() datasource.DataS
 		device_management_service_serialnumbers.NewDeviceManagementServiceSerialNumbersDataSource,
 		organization_device_assigned_server_information.NewOrganizationDeviceAssignedServerInformationDataSource,
 		organization_device_applecare_coverage.NewOrganizationDeviceAppleCareCoverageDataSource,
+	}
+}
+
+func (p *AxmProvider) ListResources(ctx context.Context) []func() list.ListResource {
+	return []func() list.ListResource{
+		device_management_service.NewDeviceManagementServiceListResource,
 	}
 }
 

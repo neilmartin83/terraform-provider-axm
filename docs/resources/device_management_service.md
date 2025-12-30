@@ -35,6 +35,11 @@ resource "axm_device_management_service" "example" {
 - `id` (String) Device management service ID. This is a unique ID for the service and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
+### Read-Only
+
+- `name` (String) Device management service name as reported by Apple Business Manager.
+- `type` (String) Device management service type (for example MDM, APPLE_CONFIGURATOR).
+
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`
 
