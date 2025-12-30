@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.3](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.4.2...v1.4.3) (2025-12-30)
+
+
+### Features
+
+* add device management service list resource and computed name/type fields to resource schema ([#43](https://github.com/neilmartin83/terraform-provider-axm/issues/43)) ([6e11730](https://github.com/neilmartin83/terraform-provider-axm/commit/6e1173051c484f85936eef361b2e8cc786d895bf))
+
+
+### Miscellaneous Chores
+
+* release 1.4.3 ([a850eb5](https://github.com/neilmartin83/terraform-provider-axm/commit/a850eb51af158dde427b17473fb0890cb3ecb4ee))
+
 ## [1.4.2](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.4.1...v1.4.2) (2025-12-23)
 
 
