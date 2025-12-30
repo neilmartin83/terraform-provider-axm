@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -29,6 +30,15 @@ func extractStrings(set types.Set) []string {
 		}
 	}
 	return result
+}
+
+func stringsToSet(values []string) (types.Set, diag.Diagnostics) {
+	elements := make([]attr.Value, len(values))
+	for i, value := range values {
+		elements[i] = types.StringValue(value)
+	}
+
+	return types.SetValue(types.StringType, elements)
 }
 
 // downloadAndParseActivityLog downloads the CSV from a pre-signed URL and parses it into a summary.

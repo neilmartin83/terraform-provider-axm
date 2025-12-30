@@ -8,12 +8,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
 var _ resource.Resource = &DeviceManagementServiceResource{}
+var _ resource.ResourceWithIdentity = &DeviceManagementServiceResource{}
 var _ resource.ResourceWithImportState = &DeviceManagementServiceResource{}
 
 const (
@@ -70,6 +72,17 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 				ElementType: types.StringType,
 				Required:    true,
 				Description: "A set of device IDs to assign to the device management service. These are device serial numbers.",
+			},
+		},
+	}
+}
+
+func (r *DeviceManagementServiceResource) IdentitySchema(ctx context.Context, req resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {
+	resp.IdentitySchema = identityschema.Schema{
+		Attributes: map[string]identityschema.Attribute{
+			"id": identityschema.StringAttribute{
+				Description:       "Device management service ID used to uniquely identify the Apple Business Manager server.",
+				RequiredForImport: true,
 			},
 		},
 	}
