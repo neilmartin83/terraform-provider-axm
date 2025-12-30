@@ -17,7 +17,7 @@ func newDeviceManagementServiceTimeoutsNullValue() timeouts.Value {
 }
 
 func ensureDeviceManagementServiceTimeouts(value timeouts.Value) timeouts.Value {
-	if value.Object.IsNull() && !value.Object.IsUnknown() {
+	if value.IsNull() && !value.IsUnknown() {
 		value.Object = types.ObjectNull(deviceManagementServiceTimeoutAttributeTypes)
 	}
 	return value
