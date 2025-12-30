@@ -32,15 +32,6 @@ type DeviceManagementServiceResource struct {
 	client *client.Client
 }
 
-// MdmDeviceAssignmentModel describes the resource data model.
-type MdmDeviceAssignmentModel struct {
-	ID        types.String   `tfsdk:"id"`
-	Name      types.String   `tfsdk:"name"`
-	Type      types.String   `tfsdk:"type"`
-	Timeouts  timeouts.Value `tfsdk:"timeouts"`
-	DeviceIDs types.Set      `tfsdk:"device_ids"`
-}
-
 func (r *DeviceManagementServiceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_device_management_service"
 }

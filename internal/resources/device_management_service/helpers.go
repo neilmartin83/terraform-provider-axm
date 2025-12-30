@@ -10,12 +10,33 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
+
+var deviceManagementServiceTimeoutAttributeTypes = map[string]attr.Type{
+	"create": types.StringType,
+	"read":   types.StringType,
+	"update": types.StringType,
+}
+
+// newDeviceManagementServiceTimeoutsNullValue returns a timeouts.Value with all attributes set to null.
+func newDeviceManagementServiceTimeoutsNullValue() timeouts.Value {
+	return ensureDeviceManagementServiceTimeouts(timeouts.Value{})
+}
+
+// ensureDeviceManagementServiceTimeouts ensures that the timeouts.Value is not null by
+// initializing it with null attributes if necessary.
+func ensureDeviceManagementServiceTimeouts(value timeouts.Value) timeouts.Value {
+	if value.IsNull() && !value.IsUnknown() {
+		value.Object = types.ObjectNull(deviceManagementServiceTimeoutAttributeTypes)
+	}
+	return value
+}
 
 // extractStrings converts a types.Set containing string values into a slice of strings,
 // handling null and unknown values appropriately.
@@ -32,6 +53,7 @@ func extractStrings(set types.Set) []string {
 	return result
 }
 
+// stringsToSet converts a slice of strings into a types.Set of string values.
 func stringsToSet(values []string) (types.Set, diag.Diagnostics) {
 	elements := make([]attr.Value, len(values))
 	for i, value := range values {
