@@ -2,7 +2,9 @@
 
 Terraform Provider for the Apple School and Business Manager API
 
-[Read the documentation to get started with using it in Terraform!](https://registry.terraform.io/providers/neilmartin83/axm/latest/docs)
+If you're new to Terraform, [check out this excellent tutorial series](https://macadminmusings.com/blog/2025/10/14/terraform-101-introduction/) by Scott Blake.
+
+[Read the documentation to get stuck in!](https://registry.terraform.io/providers/neilmartin83/axm/latest/docs)
 
 ## API Rate Limit Information
 
