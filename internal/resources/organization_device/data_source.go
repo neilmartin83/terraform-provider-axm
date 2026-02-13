@@ -249,7 +249,7 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 		data.MEID[i] = types.StringValue(meid)
 	}
 
-	tflog.Debug(ctx, "Read organization device", map[string]interface{}{
+	tflog.Debug(ctx, "Read organization device", map[string]any{
 		"device_id":     data.ID.ValueString(),
 		"serial_number": data.SerialNumber.ValueString(),
 	})

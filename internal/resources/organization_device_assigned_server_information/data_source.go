@@ -137,7 +137,7 @@ func (d *OrganizationDeviceAssignedServerInformationDataSource) Read(ctx context
 	data.CreatedDateTime = types.StringValue(server.Attributes.CreatedDateTime)
 	data.UpdatedDateTime = types.StringValue(server.Attributes.UpdatedDateTime)
 
-	tflog.Debug(ctx, "Read organization device assigned server information", map[string]interface{}{
+	tflog.Debug(ctx, "Read organization device assigned server information", map[string]any{
 		"data": data,
 	})
 

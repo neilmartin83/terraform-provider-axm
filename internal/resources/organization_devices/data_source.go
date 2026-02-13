@@ -275,7 +275,7 @@ func (d *OrganizationDevicesDataSource) Read(ctx context.Context, req datasource
 
 	data.ID = types.StringValue(time.Now().UTC().String())
 
-	tflog.Debug(ctx, "Read organization devices", map[string]interface{}{
+	tflog.Debug(ctx, "Read organization devices", map[string]any{
 		"device_count": len(data.Devices),
 	})
 

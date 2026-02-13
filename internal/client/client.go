@@ -20,7 +20,7 @@ const (
 type Logger interface {
 	LogRequest(ctx context.Context, method, url string, body []byte)
 	LogResponse(ctx context.Context, statusCode int, headers http.Header, body []byte)
-	LogAuth(ctx context.Context, message string, fields map[string]interface{})
+	LogAuth(ctx context.Context, message string, fields map[string]any)
 }
 
 // Client represents the Apple Device Management API client.
@@ -44,7 +44,7 @@ type Error struct {
 	Detail string       `json:"detail"`
 	Source *ErrorSource `json:"source,omitempty"`
 	Links  *ErrorLinks  `json:"links,omitempty"`
-	Meta   interface{}  `json:"meta,omitempty"`
+	Meta   any          `json:"meta,omitempty"`
 }
 
 // ErrorSource represents one of two possible types of values — source.Parameter when a query parameter produces the error, or source.JsonPointer when a problem with the entity produces the error.
@@ -61,8 +61,8 @@ type ErrorLinks struct {
 
 // ErrorLinksAssociated provides additional information about associated errors.
 type ErrorLinksAssociated struct {
-	Href string                 `json:"href"`
-	Meta map[string]interface{} `json:"meta,omitempty"`
+	Href string         `json:"href"`
+	Meta map[string]any `json:"meta,omitempty"`
 }
 
 // PagedDocumentLinks represents links related to the response document, including paging links.
@@ -162,7 +162,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 			return nil, fmt.Errorf("failed to read request body: %w", err)
 		}
 		if err := req.Body.Close(); err != nil && c.logger != nil {
-			c.logger.LogAuth(ctx, "Failed to close request body", map[string]interface{}{
+			c.logger.LogAuth(ctx, "Failed to close request body", map[string]any{
 				"error": err.Error(),
 			})
 		}
@@ -200,7 +200,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 					return nil, fmt.Errorf("failed to read response body: %w", err)
 				}
 				if err := resp.Body.Close(); err != nil {
-					c.logger.LogAuth(ctx, "Failed to close response body", map[string]interface{}{
+					c.logger.LogAuth(ctx, "Failed to close response body", map[string]any{
 						"error": err.Error(),
 					})
 				}
@@ -221,7 +221,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 		}
 
 		if err := resp.Body.Close(); err != nil && c.logger != nil {
-			c.logger.LogAuth(ctx, "Failed to close response body", map[string]interface{}{
+			c.logger.LogAuth(ctx, "Failed to close response body", map[string]any{
 				"error": err.Error(),
 			})
 		}
@@ -241,7 +241,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 		}
 
 		if c.logger != nil {
-			c.logger.LogAuth(ctx, "Rate limited, waiting before retry", map[string]interface{}{
+			c.logger.LogAuth(ctx, "Rate limited, waiting before retry", map[string]any{
 				"retry_after_seconds": retryAfterDuration.Seconds(),
 				"attempt":             attempts,
 			})

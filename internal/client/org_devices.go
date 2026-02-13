@@ -110,7 +110,7 @@ func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]O
 			baseURL += "?" + queryParams.Encode()
 		}
 
-		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +170,7 @@ func (c *Client) GetOrgDevice(ctx context.Context, id string, queryParams url.Va
 		baseURL += "?" + queryParams.Encode()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func (c *Client) GetOrgDevice(ctx context.Context, id string, queryParams url.Va
 
 // GetOrgDeviceAssignedServerID retrieves the MDM server ID assigned to a specific device.
 func (c *Client) GetOrgDeviceAssignedServerID(ctx context.Context, deviceID string) (*Data, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET",
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 		fmt.Sprintf("%s/v1/orgDevices/%s/relationships/assignedServer", c.baseURL, deviceID), nil)
 	if err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string
 		baseURL += "?" + queryParams.Encode()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +280,7 @@ func (c *Client) GetOrgDeviceAppleCareCoverage(ctx context.Context, deviceID str
 			baseURL += "?" + queryParams.Encode()
 		}
 
-		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 		if err != nil {
 			return nil, err
 		}

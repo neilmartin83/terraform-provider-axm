@@ -151,7 +151,7 @@ func (c *AppleOAuthClient) RequestNewToken(ctx context.Context) (*TokenInfo, err
 
 	req, err := http.NewRequestWithContext(
 		ctx,
-		"POST",
+		http.MethodPost,
 		defaultTokenURL,
 		strings.NewReader(data.Encode()),
 	)
@@ -207,7 +207,7 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 
 	if token != nil && time.Now().Before(token.ExpiresAt.Add(-TokenRefreshBuffer)) {
 		if c.logger != nil {
-			c.logger.LogAuth(ctx, "Using cached access token", map[string]interface{}{
+			c.logger.LogAuth(ctx, "Using cached access token", map[string]any{
 				"expires_at": token.ExpiresAt,
 			})
 		}
@@ -219,7 +219,7 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 
 	if c.token != nil && time.Now().Before(c.token.ExpiresAt.Add(-TokenRefreshBuffer)) {
 		if c.logger != nil {
-			c.logger.LogAuth(ctx, "Using cached access token (after lock)", map[string]interface{}{
+			c.logger.LogAuth(ctx, "Using cached access token (after lock)", map[string]any{
 				"expires_at": c.token.ExpiresAt,
 			})
 		}
@@ -227,7 +227,7 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 	}
 
 	if c.logger != nil {
-		c.logger.LogAuth(ctx, "Requesting new access token", map[string]interface{}{
+		c.logger.LogAuth(ctx, "Requesting new access token", map[string]any{
 			"reason": "token expired or missing",
 		})
 	}
@@ -239,7 +239,7 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 	c.token = newToken
 
 	if c.logger != nil {
-		c.logger.LogAuth(ctx, "Successfully obtained new access token", map[string]interface{}{
+		c.logger.LogAuth(ctx, "Successfully obtained new access token", map[string]any{
 			"expires_at": newToken.ExpiresAt,
 		})
 	}
@@ -251,7 +251,7 @@ func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error
 func (c *AppleOAuthClient) createOrGetAssertion() (string, error) {
 	if c.assertion != "" && time.Now().Before(c.assertionExpiry.Add(-TokenRefreshBuffer)) {
 		if c.logger != nil {
-			c.logger.LogAuth(context.Background(), "Using cached client assertion", map[string]interface{}{
+			c.logger.LogAuth(context.Background(), "Using cached client assertion", map[string]any{
 				"expires_at": c.assertionExpiry,
 			})
 		}
@@ -259,7 +259,7 @@ func (c *AppleOAuthClient) createOrGetAssertion() (string, error) {
 	}
 
 	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Creating new client assertion", map[string]interface{}{
+		c.logger.LogAuth(context.Background(), "Creating new client assertion", map[string]any{
 			"reason": "assertion expired or missing",
 		})
 	}
@@ -275,7 +275,7 @@ func (c *AppleOAuthClient) createOrGetAssertion() (string, error) {
 	_ = c.saveCachedAssertion()
 
 	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Successfully created new client assertion", map[string]interface{}{
+		c.logger.LogAuth(context.Background(), "Successfully created new client assertion", map[string]any{
 			"expires_at": c.assertionExpiry,
 		})
 	}
@@ -362,7 +362,7 @@ func (c *AppleOAuthClient) loadCachedAssertion() error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			if c.logger != nil {
-				c.logger.LogAuth(context.Background(), "No cached assertion found on disk", map[string]interface{}{
+				c.logger.LogAuth(context.Background(), "No cached assertion found on disk", map[string]any{
 					"cache_file": cacheFile,
 				})
 			}
@@ -380,7 +380,7 @@ func (c *AppleOAuthClient) loadCachedAssertion() error {
 		cached.TeamID != c.config.TeamID ||
 		cached.KeyID != c.config.KeyID {
 		if c.logger != nil {
-			c.logger.LogAuth(context.Background(), "Cached assertion config mismatch", map[string]interface{}{
+			c.logger.LogAuth(context.Background(), "Cached assertion config mismatch", map[string]any{
 				"cache_file": cacheFile,
 			})
 		}
@@ -391,7 +391,7 @@ func (c *AppleOAuthClient) loadCachedAssertion() error {
 		c.assertion = cached.Assertion
 		c.assertionExpiry = cached.ExpiresAt
 		if c.logger != nil {
-			c.logger.LogAuth(context.Background(), "Loaded valid cached assertion from disk", map[string]interface{}{
+			c.logger.LogAuth(context.Background(), "Loaded valid cached assertion from disk", map[string]any{
 				"cache_file": cacheFile,
 				"expires_at": cached.ExpiresAt,
 			})
@@ -400,7 +400,7 @@ func (c *AppleOAuthClient) loadCachedAssertion() error {
 	}
 
 	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Cached assertion expired, removing", map[string]interface{}{
+		c.logger.LogAuth(context.Background(), "Cached assertion expired, removing", map[string]any{
 			"cache_file": cacheFile,
 			"expires_at": cached.ExpiresAt,
 		})
@@ -443,7 +443,7 @@ func (c *AppleOAuthClient) saveCachedAssertion() error {
 	}
 
 	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Saved assertion to disk cache", map[string]interface{}{
+		c.logger.LogAuth(context.Background(), "Saved assertion to disk cache", map[string]any{
 			"cache_file": cacheFile,
 			"expires_at": c.assertionExpiry,
 		})
@@ -463,7 +463,7 @@ func (c *AppleOAuthClient) loadCachedToken() error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			if c.logger != nil {
-				c.logger.LogAuth(context.Background(), "No cached token found on disk", map[string]interface{}{
+				c.logger.LogAuth(context.Background(), "No cached token found on disk", map[string]any{
 					"cache_file": cacheFile,
 				})
 			}
@@ -481,7 +481,7 @@ func (c *AppleOAuthClient) loadCachedToken() error {
 		cached.TeamID != c.config.TeamID ||
 		cached.KeyID != c.config.KeyID {
 		if c.logger != nil {
-			c.logger.LogAuth(context.Background(), "Cached token config mismatch", map[string]interface{}{
+			c.logger.LogAuth(context.Background(), "Cached token config mismatch", map[string]any{
 				"cache_file": cacheFile,
 			})
 		}
@@ -496,7 +496,7 @@ func (c *AppleOAuthClient) loadCachedToken() error {
 			ExpiresAt:   cached.ExpiresAt,
 		}
 		if c.logger != nil {
-			c.logger.LogAuth(context.Background(), "Loaded valid cached token from disk", map[string]interface{}{
+			c.logger.LogAuth(context.Background(), "Loaded valid cached token from disk", map[string]any{
 				"cache_file": cacheFile,
 				"expires_at": cached.ExpiresAt,
 			})
@@ -505,7 +505,7 @@ func (c *AppleOAuthClient) loadCachedToken() error {
 	}
 
 	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Cached token expired, removing", map[string]interface{}{
+		c.logger.LogAuth(context.Background(), "Cached token expired, removing", map[string]any{
 			"cache_file": cacheFile,
 			"expires_at": cached.ExpiresAt,
 		})
@@ -550,7 +550,7 @@ func (c *AppleOAuthClient) saveCachedToken() error {
 	}
 
 	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Saved token to disk cache", map[string]interface{}{
+		c.logger.LogAuth(context.Background(), "Saved token to disk cache", map[string]any{
 			"cache_file": cacheFile,
 			"expires_at": c.token.ExpiresAt,
 		})

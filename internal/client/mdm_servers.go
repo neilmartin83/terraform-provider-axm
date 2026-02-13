@@ -48,7 +48,7 @@ type MdmServerRelationships struct {
 type MdmServerRelationshipsDevices struct {
 	Data  []Data            `json:"data,omitempty"`
 	Links RelationshipLinks `json:"links"`
-	Meta  Meta              `json:"meta,omitempty"`
+	Meta  Meta              `json:"meta"`
 }
 
 // MdmServerDevicesLinkagesResponse represents the data and links that describe the relationship between the resources
@@ -70,7 +70,7 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context, queryParams ur
 			baseURL += "?" + queryParams.Encode()
 		}
 
-		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -127,7 +127,7 @@ func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, se
 	limit := 100
 
 	for {
-		req, err := http.NewRequestWithContext(ctx, "GET",
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/mdmServers/%s/relationships/devices", c.baseURL, serverID), nil)
 		if err != nil {
 			return nil, err

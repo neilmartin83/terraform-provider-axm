@@ -106,7 +106,7 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 		return nil, fmt.Errorf("failed to marshal request payload: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST",
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		fmt.Sprintf("%s/v1/orgDeviceActivities", c.baseURL), bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
@@ -144,7 +144,7 @@ func (c *Client) GetOrgDeviceActivity(ctx context.Context, activityID string, qu
 		baseURL += "?" + queryParams.Encode()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 	if err != nil {
 		return nil, err
 	}
