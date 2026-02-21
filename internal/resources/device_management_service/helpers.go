@@ -127,11 +127,11 @@ func downloadAndParseActivityLog(ctx context.Context, downloadURL string) (strin
 	if errorCount == 0 {
 		summary.WriteString("Activity completed but detailed results are available in the activity log.")
 	} else {
-		summary.WriteString(fmt.Sprintf("Activity completed with %d error(s):\n\n", errorCount))
+		fmt.Fprintf(&summary, "Activity completed with %d error(s):\n\n", errorCount)
 
 		for i, errRow := range errors {
 			if i >= 10 {
-				summary.WriteString(fmt.Sprintf("... and %d more error(s). Check Apple Business Manager console for full details.\n", errorCount-10))
+				fmt.Fprintf(&summary, "... and %d more error(s). Check Apple Business Manager console for full details.\n", errorCount-10)
 				break
 			}
 
@@ -139,7 +139,7 @@ func downloadAndParseActivityLog(ctx context.Context, downloadURL string) (strin
 			status := errRow["operation_status"]
 			subStatus := errRow["operation_substatus"]
 
-			summary.WriteString(fmt.Sprintf("  • Serial: %s - Status: %s", serial, status))
+			fmt.Fprintf(&summary, "  • Serial: %s - Status: %s", serial, status)
 			if subStatus != "" {
 				summary.WriteString(fmt.Sprintf(" (%s)", subStatus))
 			}
