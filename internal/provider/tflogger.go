@@ -22,7 +22,7 @@ func NewTerraformLogger() *TerraformLogger {
 
 // prettyPrintJSON attempts to format JSON for better readability
 func prettyPrintJSON(data []byte) string {
-	var obj interface{}
+	var obj any
 	if err := json.Unmarshal(data, &obj); err != nil {
 		return string(data)
 	}
@@ -37,7 +37,7 @@ func prettyPrintJSON(data []byte) string {
 
 // LogRequest logs HTTP request details using tflog at DEBUG level
 func (l *TerraformLogger) LogRequest(ctx context.Context, method, url string, body []byte) {
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"method": method,
 		"url":    url,
 	}
@@ -51,12 +51,12 @@ func (l *TerraformLogger) LogRequest(ctx context.Context, method, url string, bo
 
 // LogResponse logs HTTP response details using tflog at DEBUG level
 func (l *TerraformLogger) LogResponse(ctx context.Context, statusCode int, headers http.Header, body []byte) {
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"status_code": statusCode,
 	}
 
 	if len(headers) > 0 {
-		headerMap := make(map[string]interface{})
+		headerMap := make(map[string]any)
 		for key, values := range headers {
 			if len(values) == 1 {
 				headerMap[key] = values[0]
@@ -81,6 +81,6 @@ func (l *TerraformLogger) LogResponse(ctx context.Context, statusCode int, heade
 }
 
 // LogAuth logs authentication-related events using tflog at DEBUG level
-func (l *TerraformLogger) LogAuth(ctx context.Context, message string, fields map[string]interface{}) {
+func (l *TerraformLogger) LogAuth(ctx context.Context, message string, fields map[string]any) {
 	tflog.Debug(ctx, message, fields)
 }

@@ -179,7 +179,7 @@ func (d *OrganizationDeviceAppleCareCoverageDataSource) Read(ctx context.Context
 		data.AppleCareCoverageResources = append(data.AppleCareCoverageResources, coverageModel)
 	}
 
-	tflog.Debug(ctx, "Read organization device applecare coverage information", map[string]interface{}{
+	tflog.Debug(ctx, "Read organization device applecare coverage information", map[string]any{
 		"resource_count": len(data.AppleCareCoverageResources),
 	})
 

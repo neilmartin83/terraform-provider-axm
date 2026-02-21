@@ -170,7 +170,7 @@ func (r *DeviceManagementServiceListResource) List(ctx context.Context, req list
 		emitted++
 	}
 
-	tflog.Debug(ctx, "Listed device management services", map[string]interface{}{
+	tflog.Debug(ctx, "Listed device management services", map[string]any{
 		"requested_limit": req.Limit,
 		"returned":        len(results),
 		"filters": map[string]string{

@@ -162,15 +162,25 @@ func (c *Client) TestAuth() (assertion string, assertionExpiry time.Time, token 
 
 // handleErrorResponse processes error responses from the API.
 func (c *Client) handleErrorResponse(resp *http.Response) error {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("HTTP %d: failed to read error response body: %w", resp.StatusCode, err)
+	}
+
 	var errResp ErrorResponse
-	if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
-		return fmt.Errorf("failed to decode error response: %w", err)
+	if err := json.Unmarshal(body, &errResp); err != nil {
+		// Response is not JSON (e.g. HTML error page from auth failure or wrong URL)
+		snippet := string(body)
+		if len(snippet) > 200 {
+			snippet = snippet[:200] + "..."
+		}
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, snippet)
 	}
 
 	if len(errResp.Errors) > 0 {
-		err := errResp.Errors[0]
+		e := errResp.Errors[0]
 		return fmt.Errorf("%s: %s (code: %s, status: %s, id: %s)",
-			err.Title, err.Detail, err.Code, err.Status, err.ID)
+			e.Title, e.Detail, e.Code, e.Status, e.ID)
 	}
 
 	return fmt.Errorf("unknown error occurred with status %d", resp.StatusCode)

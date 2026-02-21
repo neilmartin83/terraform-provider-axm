@@ -71,7 +71,7 @@ func downloadAndParseActivityLog(ctx context.Context, downloadURL string) (strin
 		return "", fmt.Errorf("no download URL provided")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", downloadURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -80,11 +80,7 @@ func downloadAndParseActivityLog(ctx context.Context, downloadURL string) (strin
 	if err != nil {
 		return "", fmt.Errorf("failed to download activity log: %w", err)
 	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			_ = closeErr
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("failed to download activity log: HTTP %d", resp.StatusCode)

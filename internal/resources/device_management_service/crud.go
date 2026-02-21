@@ -74,7 +74,7 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 		}
 	}
 
-	tflog.Debug(ctx, "Assigned devices to MDM server", map[string]interface{}{
+	tflog.Debug(ctx, "Assigned devices to MDM server", map[string]any{
 		"mdm_server_id": data.ID.ValueString(),
 		"device_ids":    deviceIDs,
 	})
@@ -300,7 +300,7 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 			return
 		}
 	}
-	tflog.Debug(ctx, "Updated device assignments for MDM server", map[string]interface{}{
+	tflog.Debug(ctx, "Updated device assignments for MDM server", map[string]any{
 		"mdm_server_id": plan.ID.ValueString(),
 		"assigned":      devicesToAssign,
 		"unassigned":    devicesToUnassign,
