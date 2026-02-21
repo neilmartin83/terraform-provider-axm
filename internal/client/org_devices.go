@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // OrgDevicesResponse represents a response that contains a list of organization device resources.
@@ -110,13 +111,13 @@ func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]O
 			baseURL += "?" + queryParams.Encode()
 		}
 
-		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 		if err != nil {
 			return nil, err
 		}
 
 		q := req.URL.Query()
-		q.Add("limit", fmt.Sprintf("%d", limit))
+		q.Add("limit", strconv.Itoa(limit))
 		if nextCursor != "" {
 			q.Add("cursor", nextCursor)
 		}
@@ -129,29 +130,22 @@ func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]O
 			return nil, err
 		}
 
-		func() {
-			defer func() {
-				if err := resp.Body.Close(); err != nil {
-					fmt.Printf("warning: failed to close response body: %v\n", err)
-				}
-			}()
+		if err := func() error {
+			defer func() { _ = resp.Body.Close() }()
 
 			if resp.StatusCode != http.StatusOK {
-				err = c.handleErrorResponse(resp)
-				return
+				return c.handleErrorResponse(resp)
 			}
 
 			var response OrgDevicesResponse
-			if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
-				err = fmt.Errorf("failed to decode response JSON: %w", err)
-				return
+			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
 			allDevices = append(allDevices, response.Data...)
 			nextCursor = response.Meta.Paging.NextCursor
-		}()
-
-		if err != nil {
+			return nil
+		}(); err != nil {
 			return nil, err
 		}
 
@@ -170,7 +164,7 @@ func (c *Client) GetOrgDevice(ctx context.Context, id string, queryParams url.Va
 		baseURL += "?" + queryParams.Encode()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -181,11 +175,7 @@ func (c *Client) GetOrgDevice(ctx context.Context, id string, queryParams url.Va
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("warning: failed to close response body: %v\n", err)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.handleErrorResponse(resp)
@@ -201,7 +191,7 @@ func (c *Client) GetOrgDevice(ctx context.Context, id string, queryParams url.Va
 
 // GetOrgDeviceAssignedServerID retrieves the MDM server ID assigned to a specific device.
 func (c *Client) GetOrgDeviceAssignedServerID(ctx context.Context, deviceID string) (*Data, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET",
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 		fmt.Sprintf("%s/v1/orgDevices/%s/relationships/assignedServer", c.baseURL, deviceID), nil)
 	if err != nil {
 		return nil, err
@@ -213,11 +203,7 @@ func (c *Client) GetOrgDeviceAssignedServerID(ctx context.Context, deviceID stri
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("warning: failed to close response body: %v\n", err)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.handleErrorResponse(resp)
@@ -238,7 +224,7 @@ func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string
 		baseURL += "?" + queryParams.Encode()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -249,11 +235,7 @@ func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("warning: failed to close response body: %v\n", err)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.handleErrorResponse(resp)
@@ -265,7 +247,6 @@ func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string
 	}
 
 	return &response.Data, nil
-
 }
 
 // GetOrgDeviceAppleCareCoverage retrieves the AppleCare coverage details for a specific device.
@@ -280,13 +261,13 @@ func (c *Client) GetOrgDeviceAppleCareCoverage(ctx context.Context, deviceID str
 			baseURL += "?" + queryParams.Encode()
 		}
 
-		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 		if err != nil {
 			return nil, err
 		}
 
 		q := req.URL.Query()
-		q.Add("limit", fmt.Sprintf("%d", limit))
+		q.Add("limit", strconv.Itoa(limit))
 		if nextCursor != "" {
 			q.Add("cursor", nextCursor)
 		}
@@ -299,29 +280,22 @@ func (c *Client) GetOrgDeviceAppleCareCoverage(ctx context.Context, deviceID str
 			return nil, err
 		}
 
-		func() {
-			defer func() {
-				if err := resp.Body.Close(); err != nil {
-					fmt.Printf("warning: failed to close response body: %v\n", err)
-				}
-			}()
+		if err := func() error {
+			defer func() { _ = resp.Body.Close() }()
 
 			if resp.StatusCode != http.StatusOK {
-				err = c.handleErrorResponse(resp)
-				return
+				return c.handleErrorResponse(resp)
 			}
 
 			var response AppleCareCoverageResponse
-			if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
-				err = fmt.Errorf("failed to decode response JSON: %w", err)
-				return
+			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
 			allCoverages = append(allCoverages, response.Data...)
 			nextCursor = response.Meta.Paging.NextCursor
-		}()
-
-		if err != nil {
+			return nil
+		}(); err != nil {
 			return nil, err
 		}
 

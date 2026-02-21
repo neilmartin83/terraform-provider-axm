@@ -4,36 +4,32 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
 func main() {
-	teamID := "BUSINESSAPI.123e4567-e89b-12d3-a456-426614174000"
-	clientID := "BUSINESSAPI.123e4567-e89b-12d3-a456-426614174000"
-	keyID := "123e4567-e89b-12d3-a456-426614174000"
-	privateKey := `-----BEGIN EC PRIVATE KEY-----
-FAKEAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wTESTBAQQgZxY8ytVhyXPLdHlj
-TESTx9TSUTcFK29+lHvA1DybmFAKEyhRANCAAQXv+VXUiVv511AIa4nEXBrTESTD+
-FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
------END EC PRIVATE KEY-----`
-	baseURL := "https://api-business.apple.com"
-	scope := "business.api"
-
-	if teamID == "" || clientID == "" || keyID == "" || privateKey == "" || baseURL == "" {
-		log.Fatal("Missing required environment variables: AXM_TEAM_ID, AXM_CLIENT_ID, AXM_KEY_ID, AXM_PRIVATE_KEY, AXM_BASE_URL")
-	}
-
-	client, err := client.NewClient(baseURL, teamID, clientID, keyID, scope, privateKey)
+	c, err := client.NewClient(
+		envOrDefault("AXM_BASE_URL", "https://api-business.apple.com"),
+		requireEnv("AXM_TEAM_ID"),
+		requireEnv("AXM_CLIENT_ID"),
+		requireEnv("AXM_KEY_ID"),
+		envOrDefault("AXM_SCOPE", "business.api"),
+		requireEnv("AXM_PRIVATE_KEY"),
+	)
 	if err != nil {
 		log.Fatalf("Failed to initialize client: %v", err)
 	}
 
-	serverID := "FAKE98765432TEST98765432DUMMY0000"
-	deviceIDs := []string{"FAKE12345678"}
+	if len(os.Args) < 3 {
+		log.Fatal("Usage: Unassign <server-id> <device-id> [device-id...]")
+	}
+	serverID := os.Args[1]
+	deviceIDs := os.Args[2:]
 
 	fmt.Println("Unassigning devices from MDM server...")
-	activity, err := client.AssignDevicesToMDMServer(context.Background(), serverID, deviceIDs, false)
+	activity, err := c.AssignDevicesToMDMServer(context.Background(), serverID, deviceIDs, false)
 	if err != nil {
 		log.Fatalf("Error unassigning devices: %v", err)
 	}
@@ -52,4 +48,19 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 	if activity.Attributes.DownloadURL != "" {
 		fmt.Printf("Results available at: %s\n", activity.Attributes.DownloadURL)
 	}
+}
+
+func requireEnv(key string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		log.Fatalf("Required environment variable %s is not set", key)
+	}
+	return v
+}
+
+func envOrDefault(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultValue
 }

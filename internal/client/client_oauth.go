@@ -2,40 +2,33 @@ package client
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
+	"golang.org/x/oauth2"
 )
 
 const (
-	defaultTokenURL    = "https://account.apple.com/auth/oauth2/token"
-	audienceURL        = "https://account.apple.com/auth/oauth2/v2/token"
-	AssertionExpiry    = 180 * 24 * time.Hour
-	TokenRefreshBuffer = 5 * time.Minute
-	assertionCacheDir  = ".axm/cache"
+	defaultTokenURL      = "https://account.apple.com/auth/oauth2/token"
+	audienceURL          = "https://account.apple.com/auth/oauth2/v2/token"
+	assertionMaxLifetime = 180 * 24 * time.Hour
+	tokenRefreshBuffer   = 5 * time.Minute
+	assertionCacheDir    = ".axm/cache"
 )
 
-type AppleOAuthClient struct {
-	config          *ClientConfig
-	httpClient      *http.Client
-	token           *TokenInfo
-	assertion       string
-	assertionExpiry time.Time
-	mu              sync.RWMutex
-	logger          Logger
-}
-
+// ClientConfig holds the credentials and settings required to authenticate with the Apple API.
 type ClientConfig struct {
 	ClientID   string `json:"client_id"`
 	TeamID     string `json:"team_id"`
@@ -44,14 +37,7 @@ type ClientConfig struct {
 	Scope      string `json:"scope"`
 }
 
-type TokenInfo struct {
-	AccessToken string    `json:"access_token"`
-	TokenType   string    `json:"token_type"`
-	ExpiresIn   int       `json:"expires_in"`
-	Scope       string    `json:"scope"`
-	ExpiresAt   time.Time `json:"-"`
-}
-
+// TokenResponse represents the JSON response from Apple's OAuth token endpoint.
 type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
@@ -59,12 +45,14 @@ type TokenResponse struct {
 	Scope       string `json:"scope"`
 }
 
+// AuthErrorResponse represents an error response from Apple's OAuth token endpoint.
 type AuthErrorResponse struct {
 	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description,omitempty"`
 	ErrorURI         string `json:"error_uri,omitempty"`
 }
 
+// CachedAssertion represents a JWT client assertion persisted to disk for reuse across provider runs.
 type CachedAssertion struct {
 	Assertion string    `json:"assertion"`
 	ExpiresAt time.Time `json:"expires_at"`
@@ -73,6 +61,7 @@ type CachedAssertion struct {
 	KeyID     string    `json:"key_id"`
 }
 
+// CachedToken represents an OAuth access token persisted to disk for reuse across provider runs.
 type CachedToken struct {
 	AccessToken string    `json:"access_token"`
 	TokenType   string    `json:"token_type"`
@@ -83,41 +72,132 @@ type CachedToken struct {
 	KeyID       string    `json:"key_id"`
 }
 
-// NewAppleClient creates a new client with the provided configuration
-func NewAppleOAuthClient(config *ClientConfig) (*AppleOAuthClient, error) {
-	if err := validateConfig(config); err != nil {
-		return nil, fmt.Errorf("invalid config: %w", err)
-	}
-
-	client := &AppleOAuthClient{
-		config:     config,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
-		mu:         sync.RWMutex{},
-	}
-
-	_ = client.loadCachedAssertion()
-	_ = client.loadCachedToken()
-
-	return client, nil
+// appleTokenSource implements oauth2.TokenSource by creating JWT client assertions
+// and exchanging them for access tokens at Apple's OAuth endpoint.
+type appleTokenSource struct {
+	config          *ClientConfig
+	tokenClient     *http.Client
+	assertion       string
+	assertionExpiry time.Time
+	logger          Logger
 }
 
-// CreateClientAssertion generates a signed JWT token
-func (c *AppleOAuthClient) CreateClientAssertion() (string, error) {
+// Token creates a new access token by generating or reusing a JWT client assertion
+// and exchanging it at Apple's token endpoint.
+func (s *appleTokenSource) Token() (*oauth2.Token, error) {
+	assertion, err := s.createOrGetAssertion()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get valid assertion: %w", err)
+	}
+
+	if s.logger != nil {
+		s.logger.LogAuth(context.Background(), "Requesting new access token", map[string]any{
+			"reason": "token expired or missing",
+		})
+	}
+
+	data := url.Values{}
+	data.Set("grant_type", "client_credentials")
+	data.Set("client_id", s.config.ClientID)
+	data.Set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
+	data.Set("client_assertion", assertion)
+	data.Set("scope", s.config.Scope)
+
+	req, err := http.NewRequest(http.MethodPost, defaultTokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create token request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := s.tokenClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("token request failed: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		var apiErr AuthErrorResponse
+		if err := json.NewDecoder(resp.Body).Decode(&apiErr); err != nil {
+			return nil, fmt.Errorf("token request failed with status %d", resp.StatusCode)
+		}
+		return nil, fmt.Errorf("token request failed: %s - %s", apiErr.Error, apiErr.ErrorDescription)
+	}
+
+	var tokenResp TokenResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return nil, fmt.Errorf("failed to parse token response: %w", err)
+	}
+
+	token := &oauth2.Token{
+		AccessToken: tokenResp.AccessToken,
+		TokenType:   tokenResp.TokenType,
+		Expiry:      time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second).Add(-tokenRefreshBuffer),
+	}
+
+	_ = s.saveCachedToken(token)
+
+	if s.logger != nil {
+		s.logger.LogAuth(context.Background(), "Successfully obtained new access token", map[string]any{
+			"expires_at": token.Expiry.Add(tokenRefreshBuffer),
+		})
+	}
+
+	return token, nil
+}
+
+// createOrGetAssertion returns a valid JWT assertion, creating a new one if necessary.
+func (s *appleTokenSource) createOrGetAssertion() (string, error) {
+	if s.assertion != "" && time.Now().Before(s.assertionExpiry.Add(-tokenRefreshBuffer)) {
+		if s.logger != nil {
+			s.logger.LogAuth(context.Background(), "Using cached client assertion", map[string]any{
+				"expires_at": s.assertionExpiry,
+			})
+		}
+		return s.assertion, nil
+	}
+
+	if s.logger != nil {
+		s.logger.LogAuth(context.Background(), "Creating new client assertion", map[string]any{
+			"reason": "assertion expired or missing",
+		})
+	}
+
+	newAssertion, err := s.createClientAssertion()
+	if err != nil {
+		return "", fmt.Errorf("failed to create client assertion: %w", err)
+	}
+
+	s.assertion = newAssertion
+	s.assertionExpiry = time.Now().Add(assertionMaxLifetime)
+
+	_ = s.saveCachedAssertion()
+
+	if s.logger != nil {
+		s.logger.LogAuth(context.Background(), "Successfully created new client assertion", map[string]any{
+			"expires_at": s.assertionExpiry,
+		})
+	}
+
+	return s.assertion, nil
+}
+
+// createClientAssertion generates a signed JWT client assertion for Apple's OAuth endpoint.
+func (s *appleTokenSource) createClientAssertion() (string, error) {
 	now := time.Now()
 
 	claims := jwt.RegisteredClaims{
-		Issuer:    c.config.TeamID,
-		Subject:   c.config.ClientID,
+		Issuer:    s.config.TeamID,
+		Subject:   s.config.ClientID,
 		Audience:  jwt.ClaimStrings{audienceURL},
 		IssuedAt:  jwt.NewNumericDate(now),
-		ExpiresAt: jwt.NewNumericDate(now.Add(AssertionExpiry)),
-		ID:        uuid.New().String(),
+		ExpiresAt: jwt.NewNumericDate(now.Add(assertionMaxLifetime)),
+		ID:        newUUIDv4(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
-	token.Header["kid"] = c.config.KeyID
+	token.Header["kid"] = s.config.KeyID
 
-	key, err := jwt.ParseECPrivateKeyFromPEM(c.config.PrivateKey)
+	key, err := jwt.ParseECPrivateKeyFromPEM(s.config.PrivateKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse private key: %w", err)
 	}
@@ -130,239 +210,139 @@ func (c *AppleOAuthClient) CreateClientAssertion() (string, error) {
 	return signedToken, nil
 }
 
-// GetHTTPClient returns the configured HTTP client
-func (c *AppleOAuthClient) GetHTTPClient() *http.Client {
-	return c.httpClient
+// newUUIDv4 generates a random UUID v4 string using crypto/rand.
+func newUUIDv4() string {
+	var uuid [16]byte
+	_, _ = rand.Read(uuid[:])
+	uuid[6] = (uuid[6] & 0x0f) | 0x40
+	uuid[8] = (uuid[8] & 0x3f) | 0x80
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:16])
 }
 
-// RequestNewToken gets a new access token using the client assertion
-func (c *AppleOAuthClient) RequestNewToken(ctx context.Context) (*TokenInfo, error) {
-	assertion, err := c.createOrGetAssertion()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get valid assertion: %w", err)
-	}
-
-	data := url.Values{}
-	data.Set("grant_type", "client_credentials")
-	data.Set("client_id", c.config.ClientID)
-	data.Set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
-	data.Set("client_assertion", assertion)
-	data.Set("scope", c.config.Scope)
-
-	req, err := http.NewRequestWithContext(
-		ctx,
-		"POST",
-		defaultTokenURL,
-		strings.NewReader(data.Encode()),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make request: %w", err)
-	}
-
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("warning: failed to close response body: %v\n", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		var apiErr AuthErrorResponse
-		if err := json.NewDecoder(resp.Body).Decode(&apiErr); err != nil {
-			return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-		}
-		return nil, fmt.Errorf("token request failed: %s - %s", apiErr.Error, apiErr.ErrorDescription)
-	}
-
-	var tokenResp TokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	token := &TokenInfo{
-		AccessToken: tokenResp.AccessToken,
-		TokenType:   tokenResp.TokenType,
-		ExpiresIn:   tokenResp.ExpiresIn,
-		Scope:       tokenResp.Scope,
-		ExpiresAt:   time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second),
-	}
-
-	c.token = token
-	_ = c.saveCachedToken()
-
-	return token, nil
-}
-
-// GetValidToken returns a valid token, refreshing if necessary
-func (c *AppleOAuthClient) GetValidToken(ctx context.Context) (*TokenInfo, error) {
-	c.mu.RLock()
-	token := c.token
-	c.mu.RUnlock()
-
-	if token != nil && time.Now().Before(token.ExpiresAt.Add(-TokenRefreshBuffer)) {
-		if c.logger != nil {
-			c.logger.LogAuth(ctx, "Using cached access token", map[string]interface{}{
-				"expires_at": token.ExpiresAt,
-			})
-		}
-		return token, nil
-	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.token != nil && time.Now().Before(c.token.ExpiresAt.Add(-TokenRefreshBuffer)) {
-		if c.logger != nil {
-			c.logger.LogAuth(ctx, "Using cached access token (after lock)", map[string]interface{}{
-				"expires_at": c.token.ExpiresAt,
-			})
-		}
-		return c.token, nil
-	}
-
-	if c.logger != nil {
-		c.logger.LogAuth(ctx, "Requesting new access token", map[string]interface{}{
-			"reason": "token expired or missing",
-		})
-	}
-
-	newToken, err := c.RequestNewToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-	c.token = newToken
-
-	if c.logger != nil {
-		c.logger.LogAuth(ctx, "Successfully obtained new access token", map[string]interface{}{
-			"expires_at": newToken.ExpiresAt,
-		})
-	}
-
-	return c.token, nil
-}
-
-// createOrGetAssertion is a lock-free version for use when already holding a lock
-func (c *AppleOAuthClient) createOrGetAssertion() (string, error) {
-	if c.assertion != "" && time.Now().Before(c.assertionExpiry.Add(-TokenRefreshBuffer)) {
-		if c.logger != nil {
-			c.logger.LogAuth(context.Background(), "Using cached client assertion", map[string]interface{}{
-				"expires_at": c.assertionExpiry,
-			})
-		}
-		return c.assertion, nil
-	}
-
-	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Creating new client assertion", map[string]interface{}{
-			"reason": "assertion expired or missing",
-		})
-	}
-
-	newAssertion, err := c.CreateClientAssertion()
-	if err != nil {
-		return "", fmt.Errorf("failed to create client assertion: %w", err)
-	}
-
-	c.assertion = newAssertion
-	c.assertionExpiry = time.Now().Add(AssertionExpiry)
-
-	_ = c.saveCachedAssertion()
-
-	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Successfully created new client assertion", map[string]interface{}{
-			"expires_at": c.assertionExpiry,
-		})
-	}
-
-	return c.assertion, nil
-}
-
-// IsTokenValid checks if the current token is valid
-func (c *AppleOAuthClient) IsTokenValid() bool {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	if c.token == nil {
-		return false
-	}
-
-	return time.Now().Before(c.token.ExpiresAt.Add(-TokenRefreshBuffer))
-}
-
-// Helper function to validate client configuration
+// validateConfig checks that all required fields are present in the client configuration.
 func validateConfig(config *ClientConfig) error {
 	if config.ClientID == "" {
-		return fmt.Errorf("client_id is required")
+		return errors.New("client_id is required")
 	}
 	if config.TeamID == "" {
-		return fmt.Errorf("team_id is required")
+		return errors.New("team_id is required")
 	}
 	if config.KeyID == "" {
-		return fmt.Errorf("key_id is required")
+		return errors.New("key_id is required")
 	}
 	if len(config.PrivateKey) == 0 {
-		return fmt.Errorf("private_key is required")
+		return errors.New("private_key is required")
 	}
 	if config.Scope == "" {
-		return fmt.Errorf("scope is required")
+		return errors.New("scope is required")
 	}
 	return nil
 }
 
-// Authenticate adds authentication to an HTTP request
-func (c *AppleOAuthClient) Authenticate(ctx context.Context, req *http.Request) error {
-	token, err := c.GetValidToken(ctx)
+// newTokenSource creates and initializes an appleTokenSource with disk-cached assertion.
+func newTokenSource(config *ClientConfig) *appleTokenSource {
+	ts := &appleTokenSource{
+		config:      config,
+		tokenClient: &http.Client{Timeout: 30 * time.Second},
+	}
+	_ = ts.loadCachedAssertion()
+	return ts
+}
+
+// loadCachedOAuthToken loads a cached token from disk and returns it as an oauth2.Token.
+// Returns nil if no valid cached token exists.
+func (s *appleTokenSource) loadCachedOAuthToken() *oauth2.Token {
+	cacheFile, err := s.getTokenCacheFilePath()
 	if err != nil {
-		return fmt.Errorf("failed to get valid token: %w", err)
+		return nil
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
-	return nil
+	data, err := os.ReadFile(cacheFile)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			if s.logger != nil {
+				s.logger.LogAuth(context.Background(), "No cached token found on disk", map[string]any{
+					"cache_file": cacheFile,
+				})
+			}
+		}
+		return nil
+	}
+
+	var cached CachedToken
+	if err := json.Unmarshal(data, &cached); err != nil {
+		return nil
+	}
+
+	if cached.ClientID != s.config.ClientID ||
+		cached.TeamID != s.config.TeamID ||
+		cached.KeyID != s.config.KeyID {
+		if s.logger != nil {
+			s.logger.LogAuth(context.Background(), "Cached token config mismatch", map[string]any{
+				"cache_file": cacheFile,
+			})
+		}
+		return nil
+	}
+
+	if !time.Now().Before(cached.ExpiresAt.Add(-tokenRefreshBuffer)) {
+		if s.logger != nil {
+			s.logger.LogAuth(context.Background(), "Cached token expired, removing", map[string]any{
+				"cache_file": cacheFile,
+				"expires_at": cached.ExpiresAt,
+			})
+		}
+		_ = os.Remove(cacheFile)
+		return nil
+	}
+
+	if s.logger != nil {
+		s.logger.LogAuth(context.Background(), "Loaded valid cached token from disk", map[string]any{
+			"cache_file": cacheFile,
+			"expires_at": cached.ExpiresAt,
+		})
+	}
+
+	return &oauth2.Token{
+		AccessToken: cached.AccessToken,
+		TokenType:   cached.TokenType,
+		Expiry:      cached.ExpiresAt.Add(-tokenRefreshBuffer),
+	}
 }
 
-// getCacheFilePath returns the path to the assertion cache file
-func (c *AppleOAuthClient) getCacheFilePath() (string, error) {
-	cacheDir := filepath.Join(os.TempDir(), assertionCacheDir)
-	configHash := c.getConfigHash()
-	cacheFile := filepath.Join(cacheDir, fmt.Sprintf("assertion_%s.json", configHash))
-
-	return cacheFile, nil
-}
-
-// getTokenCacheFilePath returns the path to the token cache file
-func (c *AppleOAuthClient) getTokenCacheFilePath() (string, error) {
-	cacheDir := filepath.Join(os.TempDir(), assertionCacheDir)
-	configHash := c.getConfigHash()
-	cacheFile := filepath.Join(cacheDir, fmt.Sprintf("token_%s.json", configHash))
-
-	return cacheFile, nil
-}
-
-// getConfigHash creates a unique hash from the client configuration
-func (c *AppleOAuthClient) getConfigHash() string {
-	data := fmt.Sprintf("%s:%s:%s", c.config.ClientID, c.config.TeamID, c.config.KeyID)
+// getConfigHash creates a unique hash from the client configuration.
+func (s *appleTokenSource) getConfigHash() string {
+	data := fmt.Sprintf("%s:%s:%s", s.config.ClientID, s.config.TeamID, s.config.KeyID)
 	hash := sha256.Sum256([]byte(data))
-	return hex.EncodeToString(hash[:])[:16] // Use first 16 chars
+	return hex.EncodeToString(hash[:])[:16]
 }
 
-// loadCachedAssertion loads a cached assertion from disk if valid
-func (c *AppleOAuthClient) loadCachedAssertion() error {
-	cacheFile, err := c.getCacheFilePath()
+// getCacheFilePath returns the path to the assertion cache file.
+func (s *appleTokenSource) getCacheFilePath() (string, error) {
+	cacheDir := filepath.Join(os.TempDir(), assertionCacheDir)
+	configHash := s.getConfigHash()
+	return filepath.Join(cacheDir, fmt.Sprintf("assertion_%s.json", configHash)), nil
+}
+
+// getTokenCacheFilePath returns the path to the token cache file.
+func (s *appleTokenSource) getTokenCacheFilePath() (string, error) {
+	cacheDir := filepath.Join(os.TempDir(), assertionCacheDir)
+	configHash := s.getConfigHash()
+	return filepath.Join(cacheDir, fmt.Sprintf("token_%s.json", configHash)), nil
+}
+
+// loadCachedAssertion loads a cached assertion from disk if valid.
+func (s *appleTokenSource) loadCachedAssertion() error {
+	cacheFile, err := s.getCacheFilePath()
 	if err != nil {
 		return err
 	}
 
 	data, err := os.ReadFile(cacheFile)
 	if err != nil {
-		if os.IsNotExist(err) {
-			if c.logger != nil {
-				c.logger.LogAuth(context.Background(), "No cached assertion found on disk", map[string]interface{}{
+		if errors.Is(err, fs.ErrNotExist) {
+			if s.logger != nil {
+				s.logger.LogAuth(context.Background(), "No cached assertion found on disk", map[string]any{
 					"cache_file": cacheFile,
 				})
 			}
@@ -376,22 +356,22 @@ func (c *AppleOAuthClient) loadCachedAssertion() error {
 		return fmt.Errorf("failed to unmarshal cache: %w", err)
 	}
 
-	if cached.ClientID != c.config.ClientID ||
-		cached.TeamID != c.config.TeamID ||
-		cached.KeyID != c.config.KeyID {
-		if c.logger != nil {
-			c.logger.LogAuth(context.Background(), "Cached assertion config mismatch", map[string]interface{}{
+	if cached.ClientID != s.config.ClientID ||
+		cached.TeamID != s.config.TeamID ||
+		cached.KeyID != s.config.KeyID {
+		if s.logger != nil {
+			s.logger.LogAuth(context.Background(), "Cached assertion config mismatch", map[string]any{
 				"cache_file": cacheFile,
 			})
 		}
-		return fmt.Errorf("cached assertion config mismatch")
+		return errors.New("cached assertion config mismatch")
 	}
 
-	if time.Now().Before(cached.ExpiresAt.Add(-TokenRefreshBuffer)) {
-		c.assertion = cached.Assertion
-		c.assertionExpiry = cached.ExpiresAt
-		if c.logger != nil {
-			c.logger.LogAuth(context.Background(), "Loaded valid cached assertion from disk", map[string]interface{}{
+	if time.Now().Before(cached.ExpiresAt.Add(-tokenRefreshBuffer)) {
+		s.assertion = cached.Assertion
+		s.assertionExpiry = cached.ExpiresAt
+		if s.logger != nil {
+			s.logger.LogAuth(context.Background(), "Loaded valid cached assertion from disk", map[string]any{
 				"cache_file": cacheFile,
 				"expires_at": cached.ExpiresAt,
 			})
@@ -399,8 +379,8 @@ func (c *AppleOAuthClient) loadCachedAssertion() error {
 		return nil
 	}
 
-	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Cached assertion expired, removing", map[string]interface{}{
+	if s.logger != nil {
+		s.logger.LogAuth(context.Background(), "Cached assertion expired, removing", map[string]any{
 			"cache_file": cacheFile,
 			"expires_at": cached.ExpiresAt,
 		})
@@ -409,13 +389,13 @@ func (c *AppleOAuthClient) loadCachedAssertion() error {
 	return nil
 }
 
-// saveCachedAssertion saves the current assertion to disk
-func (c *AppleOAuthClient) saveCachedAssertion() error {
-	if c.assertion == "" {
+// saveCachedAssertion saves the current assertion to disk.
+func (s *appleTokenSource) saveCachedAssertion() error {
+	if s.assertion == "" {
 		return nil
 	}
 
-	cacheFile, err := c.getCacheFilePath()
+	cacheFile, err := s.getCacheFilePath()
 	if err != nil {
 		return err
 	}
@@ -426,11 +406,11 @@ func (c *AppleOAuthClient) saveCachedAssertion() error {
 	}
 
 	cached := CachedAssertion{
-		Assertion: c.assertion,
-		ExpiresAt: c.assertionExpiry,
-		ClientID:  c.config.ClientID,
-		TeamID:    c.config.TeamID,
-		KeyID:     c.config.KeyID,
+		Assertion: s.assertion,
+		ExpiresAt: s.assertionExpiry,
+		ClientID:  s.config.ClientID,
+		TeamID:    s.config.TeamID,
+		KeyID:     s.config.KeyID,
 	}
 
 	data, err := json.MarshalIndent(cached, "", "  ")
@@ -442,85 +422,19 @@ func (c *AppleOAuthClient) saveCachedAssertion() error {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
 
-	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Saved assertion to disk cache", map[string]interface{}{
+	if s.logger != nil {
+		s.logger.LogAuth(context.Background(), "Saved assertion to disk cache", map[string]any{
 			"cache_file": cacheFile,
-			"expires_at": c.assertionExpiry,
+			"expires_at": s.assertionExpiry,
 		})
 	}
 
 	return nil
 }
 
-// loadCachedToken loads a cached token from disk if valid
-func (c *AppleOAuthClient) loadCachedToken() error {
-	cacheFile, err := c.getTokenCacheFilePath()
-	if err != nil {
-		return err
-	}
-
-	data, err := os.ReadFile(cacheFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if c.logger != nil {
-				c.logger.LogAuth(context.Background(), "No cached token found on disk", map[string]interface{}{
-					"cache_file": cacheFile,
-				})
-			}
-			return nil
-		}
-		return fmt.Errorf("failed to read token cache file: %w", err)
-	}
-
-	var cached CachedToken
-	if err := json.Unmarshal(data, &cached); err != nil {
-		return fmt.Errorf("failed to unmarshal token cache: %w", err)
-	}
-
-	if cached.ClientID != c.config.ClientID ||
-		cached.TeamID != c.config.TeamID ||
-		cached.KeyID != c.config.KeyID {
-		if c.logger != nil {
-			c.logger.LogAuth(context.Background(), "Cached token config mismatch", map[string]interface{}{
-				"cache_file": cacheFile,
-			})
-		}
-		return fmt.Errorf("cached token config mismatch")
-	}
-
-	if time.Now().Before(cached.ExpiresAt.Add(-TokenRefreshBuffer)) {
-		c.token = &TokenInfo{
-			AccessToken: cached.AccessToken,
-			TokenType:   cached.TokenType,
-			Scope:       cached.Scope,
-			ExpiresAt:   cached.ExpiresAt,
-		}
-		if c.logger != nil {
-			c.logger.LogAuth(context.Background(), "Loaded valid cached token from disk", map[string]interface{}{
-				"cache_file": cacheFile,
-				"expires_at": cached.ExpiresAt,
-			})
-		}
-		return nil
-	}
-
-	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Cached token expired, removing", map[string]interface{}{
-			"cache_file": cacheFile,
-			"expires_at": cached.ExpiresAt,
-		})
-	}
-	_ = os.Remove(cacheFile)
-	return nil
-}
-
-// saveCachedToken saves the current token to disk
-func (c *AppleOAuthClient) saveCachedToken() error {
-	if c.token == nil {
-		return nil
-	}
-
-	cacheFile, err := c.getTokenCacheFilePath()
+// saveCachedToken saves a token to disk.
+func (s *appleTokenSource) saveCachedToken(token *oauth2.Token) error {
+	cacheFile, err := s.getTokenCacheFilePath()
 	if err != nil {
 		return err
 	}
@@ -531,13 +445,13 @@ func (c *AppleOAuthClient) saveCachedToken() error {
 	}
 
 	cached := CachedToken{
-		AccessToken: c.token.AccessToken,
-		TokenType:   c.token.TokenType,
-		ExpiresAt:   c.token.ExpiresAt,
-		Scope:       c.token.Scope,
-		ClientID:    c.config.ClientID,
-		TeamID:      c.config.TeamID,
-		KeyID:       c.config.KeyID,
+		AccessToken: token.AccessToken,
+		TokenType:   token.TokenType,
+		ExpiresAt:   token.Expiry.Add(tokenRefreshBuffer),
+		Scope:       s.config.Scope,
+		ClientID:    s.config.ClientID,
+		TeamID:      s.config.TeamID,
+		KeyID:       s.config.KeyID,
 	}
 
 	data, err := json.MarshalIndent(cached, "", "  ")
@@ -549,10 +463,10 @@ func (c *AppleOAuthClient) saveCachedToken() error {
 		return fmt.Errorf("failed to write token cache file: %w", err)
 	}
 
-	if c.logger != nil {
-		c.logger.LogAuth(context.Background(), "Saved token to disk cache", map[string]interface{}{
+	if s.logger != nil {
+		s.logger.LogAuth(context.Background(), "Saved token to disk cache", map[string]any{
 			"cache_file": cacheFile,
-			"expires_at": c.token.ExpiresAt,
+			"expires_at": cached.ExpiresAt,
 		})
 	}
 
