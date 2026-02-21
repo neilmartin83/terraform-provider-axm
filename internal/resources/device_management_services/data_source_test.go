@@ -4,14 +4,18 @@
 package device_management_services_test
 
 import (
+	"context"
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/provider"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_services"
 )
 
 func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
@@ -26,6 +30,60 @@ func testAccPreCheck(t *testing.T) {
 		if os.Getenv(envVar) == "" {
 			t.Fatalf("%s must be set for acceptance tests", envVar)
 		}
+	}
+}
+
+func TestDeviceManagementServicesDataSourceMetadata(t *testing.T) {
+	ds := device_management_services.NewDeviceManagementServicesDataSource()
+	resp := datasource.MetadataResponse{}
+	ds.Metadata(context.Background(), datasource.MetadataRequest{ProviderTypeName: "axm"}, &resp)
+
+	if resp.TypeName != "axm_device_management_services" {
+		t.Errorf("expected TypeName %q, got %q", "axm_device_management_services", resp.TypeName)
+	}
+}
+
+func TestDeviceManagementServicesDataSourceSchema(t *testing.T) {
+	ds := device_management_services.NewDeviceManagementServicesDataSource()
+	resp := datasource.SchemaResponse{}
+	ds.Schema(context.Background(), datasource.SchemaRequest{}, &resp)
+
+	if resp.Schema.Description == "" {
+		t.Error("expected non-empty schema Description")
+	}
+
+	idAttr, ok := resp.Schema.Attributes["id"]
+	if !ok {
+		t.Fatal("attribute 'id' not found")
+	}
+	if !idAttr.IsComputed() {
+		t.Error("expected 'id' to be Computed")
+	}
+
+	serversAttr, ok := resp.Schema.Attributes["servers"]
+	if !ok {
+		t.Fatal("attribute 'servers' not found")
+	}
+	listNested, ok := serversAttr.(dsschema.ListNestedAttribute)
+	if !ok {
+		t.Fatal("expected 'servers' to be a ListNestedAttribute")
+	}
+
+	expectedNested := []string{"id", "type", "server_name", "server_type", "created_date_time", "updated_date_time"}
+	nestedAttrs := listNested.NestedObject.Attributes
+	for _, name := range expectedNested {
+		attr, ok := nestedAttrs[name]
+		if !ok {
+			t.Errorf("nested attribute %q not found in servers", name)
+			continue
+		}
+		if !attr.IsComputed() {
+			t.Errorf("expected nested attribute %q to be Computed", name)
+		}
+	}
+
+	if len(nestedAttrs) != len(expectedNested) {
+		t.Errorf("expected %d nested attributes in servers, got %d", len(expectedNested), len(nestedAttrs))
 	}
 }
 

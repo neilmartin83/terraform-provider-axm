@@ -11,11 +11,16 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	tfresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
+	resourceschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 	"github.com/neilmartin83/terraform-provider-axm/internal/provider"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_service"
 )
 
 func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
@@ -107,6 +112,90 @@ func deviceIDsHCL(existing []string, testSerials ...string) string {
 		quoted[i] = fmt.Sprintf("%q", s)
 	}
 	return "[" + strings.Join(quoted, ", ") + "]"
+}
+
+func TestResourceMetadata(t *testing.T) {
+	r := device_management_service.NewDeviceManagementServiceResource()
+	resp := tfresource.MetadataResponse{}
+	r.Metadata(context.Background(), tfresource.MetadataRequest{ProviderTypeName: "axm"}, &resp)
+
+	if resp.TypeName != "axm_device_management_service" {
+		t.Errorf("expected TypeName %q, got %q", "axm_device_management_service", resp.TypeName)
+	}
+}
+
+func TestResourceSchema(t *testing.T) {
+	r := device_management_service.NewDeviceManagementServiceResource()
+	resp := tfresource.SchemaResponse{}
+	r.Schema(context.Background(), tfresource.SchemaRequest{}, &resp)
+
+	if resp.Schema.Description == "" {
+		t.Error("expected non-empty schema Description")
+	}
+
+	tests := []struct {
+		name     string
+		required bool
+		optional bool
+		computed bool
+	}{
+		{"id", false, true, true},
+		{"name", false, false, true},
+		{"type", false, false, true},
+		{"device_ids", true, false, false},
+		{"timeouts", false, true, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attr, ok := resp.Schema.Attributes[tt.name]
+			if !ok {
+				t.Fatalf("attribute %q not found in schema", tt.name)
+			}
+			if attr.IsRequired() != tt.required {
+				t.Errorf("expected Required=%v, got %v", tt.required, attr.IsRequired())
+			}
+			if attr.IsOptional() != tt.optional {
+				t.Errorf("expected Optional=%v, got %v", tt.optional, attr.IsOptional())
+			}
+			if attr.IsComputed() != tt.computed {
+				t.Errorf("expected Computed=%v, got %v", tt.computed, attr.IsComputed())
+			}
+		})
+	}
+
+	deviceIDsAttr, ok := resp.Schema.Attributes["device_ids"].(resourceschema.SetAttribute)
+	if !ok {
+		t.Fatal("device_ids is not a SetAttribute")
+	}
+	if deviceIDsAttr.ElementType != types.StringType {
+		t.Errorf("expected device_ids ElementType to be StringType, got %T", deviceIDsAttr.ElementType)
+	}
+}
+
+func TestResourceIdentitySchema(t *testing.T) {
+	r := device_management_service.NewDeviceManagementServiceResource()
+
+	ri, ok := r.(tfresource.ResourceWithIdentity)
+	if !ok {
+		t.Fatal("resource does not implement ResourceWithIdentity")
+	}
+
+	resp := tfresource.IdentitySchemaResponse{}
+	ri.IdentitySchema(context.Background(), tfresource.IdentitySchemaRequest{}, &resp)
+
+	idAttr, ok := resp.IdentitySchema.Attributes["id"]
+	if !ok {
+		t.Fatal("identity schema missing 'id' attribute")
+	}
+
+	idIdentityAttr, ok := idAttr.(identityschema.StringAttribute)
+	if !ok {
+		t.Fatal("identity 'id' attribute is not a StringAttribute")
+	}
+	if !idIdentityAttr.RequiredForImport {
+		t.Error("expected identity 'id' to have RequiredForImport=true")
+	}
 }
 
 func TestAccDeviceManagementServiceResource_basic(t *testing.T) {
