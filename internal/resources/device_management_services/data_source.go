@@ -1,3 +1,6 @@
+// Copyright Neil Martin 2026
+// SPDX-License-Identifier: MPL-2.0
+
 package device_management_services
 
 import (

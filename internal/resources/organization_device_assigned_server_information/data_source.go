@@ -1,3 +1,6 @@
+// Copyright Neil Martin 2026
+// SPDX-License-Identifier: MPL-2.0
+
 package organization_device_assigned_server_information
 
 import (
