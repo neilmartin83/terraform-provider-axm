@@ -141,7 +141,7 @@ func downloadAndParseActivityLog(ctx context.Context, downloadURL string) (strin
 
 			fmt.Fprintf(&summary, "  • Serial: %s - Status: %s", serial, status)
 			if subStatus != "" {
-				summary.WriteString(fmt.Sprintf(" (%s)", subStatus))
+				fmt.Fprintf(&summary, " (%s)", subStatus)
 			}
 			summary.WriteString("\n")
 		}
