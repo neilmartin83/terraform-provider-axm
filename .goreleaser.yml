@@ -1,5 +1,5 @@
 # Copyright Neil Martin 2026
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: MPL-2.0
 
 # Visit https://goreleaser.com for documentation on how to customize this
 # behavior.
@@ -36,7 +36,8 @@ builds:
         goarch: arm
     binary: "{{ .ProjectName }}_v{{ .Version }}"
 archives:
-  - format: zip
+  - formats:
+      - zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 checksum:
   extra_files:
