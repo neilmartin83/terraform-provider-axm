@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.3](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.5.2...v1.5.3) (2026-02-21)
+
+
+### Bug Fixes
+
+* standardize quotes in .goreleaser.yml configuration ([147abb6](https://github.com/neilmartin83/terraform-provider-axm/commit/147abb64ae73dba4ab6901d0680e8ee2bbc1b837))
+
 ## [1.5.2](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.5.1...v1.5.2) (2026-02-21)
 
 
