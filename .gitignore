@@ -74,3 +74,6 @@ terraform.rc
 
 # Ignore terragrunt cache
 .terragrunt-cache
+
+# Terraform provider binaries
+terraform-provider-*
