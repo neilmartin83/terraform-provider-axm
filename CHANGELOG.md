@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.5.0...v1.5.1) (2026-02-21)
+
+
+### Bug Fixes
+
+* change fatal errors to skips for missing environment variables in acceptance tests ([4d76514](https://github.com/neilmartin83/terraform-provider-axm/commit/4d765149254170e9e7065cb87ae91d991705f8a1))
+* correct typographical errors in documentation for organization device data sources ([e5188b4](https://github.com/neilmartin83/terraform-provider-axm/commit/e5188b4b458c82e5b1da85c7a7e80781d03104f3))
+* improve string formatting in downloadAndParseActivityLog function ([5bc74c3](https://github.com/neilmartin83/terraform-provider-axm/commit/5bc74c39fea065408c59780fe1d169b8a201f535))
+* rename build job to Build Tests and add name to generate job ([a78115b](https://github.com/neilmartin83/terraform-provider-axm/commit/a78115bddf42d21d7363b5cc3c7eb71763976156))
+
 ## [1.4.3](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.4.2...v1.4.3) (2025-12-30)
 
 
