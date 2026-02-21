@@ -28,7 +28,7 @@ func testAccPreCheck(t *testing.T) {
 	t.Helper()
 	for _, envVar := range []string{"AXM_CLIENT_ID", "AXM_KEY_ID", "AXM_PRIVATE_KEY", "AXM_SCOPE"} {
 		if os.Getenv(envVar) == "" {
-			t.Fatalf("%s must be set for acceptance tests", envVar)
+			t.Skipf("%s must be set for acceptance tests", envVar)
 		}
 	}
 }
@@ -38,7 +38,7 @@ func testAccResourcePreCheck(t *testing.T) {
 	testAccPreCheck(t)
 	for _, envVar := range []string{"AXM_TEST_SERVER_ID", "AXM_TEST_DEVICE_SERIAL_1", "AXM_TEST_DEVICE_SERIAL_2", "AXM_TEST_DEVICE_SERIAL_3"} {
 		if os.Getenv(envVar) == "" {
-			t.Fatalf("%s must be set for resource acceptance tests", envVar)
+			t.Skipf("%s must be set for resource acceptance tests", envVar)
 		}
 	}
 }
@@ -110,6 +110,7 @@ func deviceIDsHCL(existing []string, testSerials ...string) string {
 }
 
 func TestAccDeviceManagementServiceResource_basic(t *testing.T) {
+	testAccResourcePreCheck(t)
 	serverID := os.Getenv("AXM_TEST_SERVER_ID")
 	serial1 := os.Getenv("AXM_TEST_DEVICE_SERIAL_1")
 	serial2 := os.Getenv("AXM_TEST_DEVICE_SERIAL_2")
@@ -181,6 +182,7 @@ func TestAccDeviceManagementServiceResource_basic(t *testing.T) {
 }
 
 func TestAccDeviceManagementServiceResource_import(t *testing.T) {
+	testAccResourcePreCheck(t)
 	serverID := os.Getenv("AXM_TEST_SERVER_ID")
 	serial1 := os.Getenv("AXM_TEST_DEVICE_SERIAL_1")
 	serial2 := os.Getenv("AXM_TEST_DEVICE_SERIAL_2")
