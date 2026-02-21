@@ -1,14 +1,14 @@
 module github.com/neilmartin83/terraform-provider-axm
 
-go 1.25.6
+go 1.26.0
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
-	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-framework v1.17.0
 	github.com/hashicorp/terraform-plugin-framework-timeouts v0.7.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
 	github.com/hashicorp/terraform-plugin-log v0.10.0
+	golang.org/x/oauth2 v0.35.0
 )
 
 require (

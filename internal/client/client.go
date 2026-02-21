@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -20,14 +23,16 @@ const (
 type Logger interface {
 	LogRequest(ctx context.Context, method, url string, body []byte)
 	LogResponse(ctx context.Context, statusCode int, headers http.Header, body []byte)
-	LogAuth(ctx context.Context, message string, fields map[string]interface{})
+	LogAuth(ctx context.Context, message string, fields map[string]any)
 }
 
 // Client represents the Apple Device Management API client.
 type Client struct {
-	auth    *AppleOAuthClient
-	baseURL string
-	logger  Logger
+	httpClient  *http.Client
+	tokenSource *appleTokenSource
+	oauthTS     oauth2.TokenSource
+	baseURL     string
+	logger      Logger
 }
 
 // ErrorResponse represents the error details that an API returns in the response body whenever the API request isn’t successful.
@@ -44,7 +49,7 @@ type Error struct {
 	Detail string       `json:"detail"`
 	Source *ErrorSource `json:"source,omitempty"`
 	Links  *ErrorLinks  `json:"links,omitempty"`
-	Meta   interface{}  `json:"meta,omitempty"`
+	Meta   any          `json:"meta,omitempty"`
 }
 
 // ErrorSource represents one of two possible types of values — source.Parameter when a query parameter produces the error, or source.JsonPointer when a problem with the entity produces the error.
@@ -62,7 +67,7 @@ type ErrorLinks struct {
 // ErrorLinksAssociated provides additional information about associated errors.
 type ErrorLinksAssociated struct {
 	Href string                 `json:"href"`
-	Meta map[string]interface{} `json:"meta,omitempty"`
+	Meta map[string]any `json:"meta,omitempty"`
 }
 
 // PagedDocumentLinks represents links related to the response document, including paging links.
@@ -117,23 +122,42 @@ func NewClient(baseURL, teamID, clientID, keyID, scope, p8Key string) (*Client, 
 		PrivateKey: []byte(p8Key),
 	}
 
-	auth, err := NewAppleOAuthClient(config)
-	if err != nil {
-		return nil, err
+	if err := validateConfig(config); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
+	ts := newTokenSource(config)
+	initialToken := ts.loadCachedOAuthToken()
+	reusableTS := oauth2.ReuseTokenSource(initialToken, ts)
+
 	return &Client{
-		auth:    auth,
-		baseURL: baseURL,
+		httpClient:  oauth2.NewClient(context.Background(), reusableTS),
+		tokenSource: ts,
+		oauthTS:     reusableTS,
+		baseURL:     baseURL,
 	}, nil
 }
 
-// SetLogger sets the logger for the client
+// SetLogger sets the logger for the client.
 func (c *Client) SetLogger(logger Logger) {
 	c.logger = logger
-	if c.auth != nil {
-		c.auth.logger = logger
+	if c.tokenSource != nil {
+		c.tokenSource.logger = logger
 	}
+}
+
+// TestAuth forces authentication and returns the JWT client assertion, its expiry, and the OAuth token.
+func (c *Client) TestAuth() (assertion string, assertionExpiry time.Time, token *oauth2.Token, err error) {
+	assertion, err = c.tokenSource.createOrGetAssertion()
+	if err != nil {
+		return "", time.Time{}, nil, fmt.Errorf("assertion failed: %w", err)
+	}
+	assertionExpiry = c.tokenSource.assertionExpiry
+	token, err = c.oauthTS.Token()
+	if err != nil {
+		return assertion, assertionExpiry, nil, fmt.Errorf("token failed: %w", err)
+	}
+	return assertion, assertionExpiry, token, nil
 }
 
 // handleErrorResponse processes error responses from the API.
@@ -161,11 +185,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 		if err != nil {
 			return nil, fmt.Errorf("failed to read request body: %w", err)
 		}
-		if err := req.Body.Close(); err != nil && c.logger != nil {
-			c.logger.LogAuth(ctx, "Failed to close request body", map[string]interface{}{
-				"error": err.Error(),
-			})
-		}
+		_ = req.Body.Close()
 		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 	}
 
@@ -185,10 +205,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 			c.logger.LogRequest(ctx, req.Method, req.URL.String(), requestBody)
 		}
 
-		if err := c.auth.Authenticate(ctx, req); err != nil {
-			return nil, fmt.Errorf("authentication failed: %w", err)
-		}
-		resp, err := c.auth.GetHTTPClient().Do(req)
+		resp, err := c.httpClient.Do(req)
 		if err != nil {
 			return nil, err
 		}
@@ -199,31 +216,21 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 				if err != nil {
 					return nil, fmt.Errorf("failed to read response body: %w", err)
 				}
-				if err := resp.Body.Close(); err != nil {
-					c.logger.LogAuth(ctx, "Failed to close response body", map[string]interface{}{
-						"error": err.Error(),
-					})
-				}
+				_ = resp.Body.Close()
 				c.logger.LogResponse(ctx, resp.StatusCode, resp.Header, responseBody)
 				resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
 			}
 			return resp, nil
 		}
 
-		var responseBody []byte
 		if resp.Body != nil {
 			if c.logger != nil {
-				responseBody, _ = io.ReadAll(resp.Body)
+				responseBody, _ := io.ReadAll(resp.Body)
 				c.logger.LogResponse(ctx, resp.StatusCode, resp.Header, responseBody)
 			} else {
 				_, _ = io.Copy(io.Discard, resp.Body)
 			}
-		}
-
-		if err := resp.Body.Close(); err != nil && c.logger != nil {
-			c.logger.LogAuth(ctx, "Failed to close response body", map[string]interface{}{
-				"error": err.Error(),
-			})
+			_ = resp.Body.Close()
 		}
 
 		retryAfterDuration, err := parseRetryAfter(resp.Header.Get("Retry-After"))
@@ -241,13 +248,11 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 		}
 
 		if c.logger != nil {
-			c.logger.LogAuth(ctx, "Rate limited, waiting before retry", map[string]interface{}{
+			c.logger.LogAuth(ctx, "Rate limited, waiting before retry", map[string]any{
 				"retry_after_seconds": retryAfterDuration.Seconds(),
 				"attempt":             attempts,
 			})
 		}
-
-		fmt.Printf("Received 429. Retrying after %s...\n", retryAfterDuration)
 		if err := waitWithContext(ctx, retryAfterDuration); err != nil {
 			return nil, err
 		}
@@ -256,7 +261,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 
 func parseRetryAfter(header string) (time.Duration, error) {
 	if header == "" {
-		return 0, fmt.Errorf("missing Retry-After header")
+		return 0, errors.New("missing Retry-After header")
 	}
 
 	if seconds, err := strconv.Atoi(header); err == nil {
@@ -266,7 +271,7 @@ func parseRetryAfter(header string) (time.Duration, error) {
 	if retryTime, err := http.ParseTime(header); err == nil {
 		delay := time.Until(retryTime)
 		if delay <= 0 {
-			return 0, fmt.Errorf("Retry-After time already elapsed")
+			return 0, errors.New("Retry-After time already elapsed")
 		}
 		return delay, nil
 	}

@@ -106,8 +106,8 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 		return nil, fmt.Errorf("failed to marshal request payload: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST",
-		fmt.Sprintf("%s/v1/orgDeviceActivities", c.baseURL), bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		fmt.Sprintf("%s/v1/orgDeviceActivities", c.baseURL), bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, err
 	}
@@ -119,11 +119,7 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("warning: failed to close response body: %v\n", err)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, c.handleErrorResponse(resp)
@@ -137,14 +133,14 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 	return &response.Data, nil
 }
 
-// GetOrgDeviceActivity retrieves information about a specific organization device activity
+// GetOrgDeviceActivity retrieves information about a specific organization device activity.
 func (c *Client) GetOrgDeviceActivity(ctx context.Context, activityID string, queryParams url.Values) (*OrgDeviceActivity, error) {
 	baseURL := fmt.Sprintf("%s/v1/orgDeviceActivities/%s", c.baseURL, activityID)
 	if len(queryParams) > 0 {
 		baseURL += "?" + queryParams.Encode()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -155,11 +151,7 @@ func (c *Client) GetOrgDeviceActivity(ctx context.Context, activityID string, qu
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("warning: failed to close response body: %v\n", err)
-		}
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.handleErrorResponse(resp)

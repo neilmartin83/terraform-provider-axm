@@ -4,35 +4,30 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
 
 func main() {
-	teamID := "BUSINESSAPI.123e4567-e89b-12d3-a456-426614174000"
-	clientID := "BUSINESSAPI.123e4567-e89b-12d3-a456-426614174000"
-	keyID := "123e4567-e89b-12d3-a456-426614174000"
-	privateKey := `-----BEGIN EC PRIVATE KEY-----
-FAKEAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wTESTBAQQgZxY8ytVhyXPLdHlj
-TESTx9TSUTcFK29+lHvA1DybmFAKEyhRANCAAQXv+VXUiVv511AIa4nEXBrTESTD+
-FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
------END EC PRIVATE KEY-----`
-	baseURL := "https://api-business.apple.com"
-	scope := "business.api"
-
-	// Example activity ID - replace with an actual activity ID
-	activityID := "123e4567-e89b-12d3-a456-426614174000"
-
-	if teamID == "" || clientID == "" || keyID == "" || privateKey == "" || baseURL == "" {
-		log.Fatal("Missing required environment variables: AXM_TEAM_ID, AXM_CLIENT_ID, AXM_KEY_ID, AXM_PRIVATE_KEY, AXM_BASE_URL")
-	}
-
-	client, err := client.NewClient(baseURL, teamID, clientID, keyID, scope, privateKey)
+	c, err := client.NewClient(
+		envOrDefault("AXM_BASE_URL", "https://api-business.apple.com"),
+		requireEnv("AXM_TEAM_ID"),
+		requireEnv("AXM_CLIENT_ID"),
+		requireEnv("AXM_KEY_ID"),
+		envOrDefault("AXM_SCOPE", "business.api"),
+		requireEnv("AXM_PRIVATE_KEY"),
+	)
 	if err != nil {
 		log.Fatalf("Failed to initialize client: %v", err)
 	}
 
-	activity, err := client.GetOrgDeviceActivity(context.Background(), activityID, nil)
+	if len(os.Args) < 2 {
+		log.Fatal("Usage: GetOrgDeviceActivity <activity-id>")
+	}
+	activityID := os.Args[1]
+
+	activity, err := c.GetOrgDeviceActivity(context.Background(), activityID, nil)
 	if err != nil {
 		log.Fatalf("Error getting activity status: %v", err)
 	}
@@ -46,7 +41,6 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 		activity.Attributes.Status,
 	)
 
-	// Print additional details based on status
 	switch activity.Attributes.Status {
 	case "COMPLETED":
 		fmt.Printf("Completed At: %s\n", activity.Attributes.CompletedDateTime)
@@ -59,7 +53,6 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 		fmt.Printf("Started At: %s\n", activity.Attributes.CreatedDateTime)
 	}
 
-	// Print all available timestamps
 	fmt.Printf("\nTimeline:\n"+
 		"Created: %s\n",
 		activity.Attributes.CreatedDateTime)
@@ -68,14 +61,12 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 		fmt.Printf("Completed: %s\n", activity.Attributes.CompletedDateTime)
 	}
 
-	// Print any additional metadata
 	if activity.Attributes.SubStatus != "" {
 		fmt.Printf("\nAdditional Information:\n"+
 			"Sub-Status: %s\n",
 			activity.Attributes.SubStatus)
 	}
 
-	// Status-specific messages
 	fmt.Printf("\nStatus Summary: ")
 	switch activity.Attributes.Status {
 	case "COMPLETED":
@@ -89,4 +80,19 @@ FAKEFigCMU45fN5v94OvEUUV2eUR3t4UZpZ4tHbCNdzEyXNIbFAKEY2xAc
 	default:
 		fmt.Printf("The activity is in an unknown state: %s\n", activity.Attributes.Status)
 	}
+}
+
+func requireEnv(key string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		log.Fatalf("Required environment variable %s is not set", key)
+	}
+	return v
+}
+
+func envOrDefault(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultValue
 }

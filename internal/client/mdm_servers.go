@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // MdmServerResponse represents a response that contains a single device management service resource.
@@ -70,13 +71,13 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context, queryParams ur
 			baseURL += "?" + queryParams.Encode()
 		}
 
-		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
 		if err != nil {
 			return nil, err
 		}
 
 		q := req.URL.Query()
-		q.Add("limit", fmt.Sprintf("%d", limit))
+		q.Add("limit", strconv.Itoa(limit))
 		if nextCursor != "" {
 			q.Add("cursor", nextCursor)
 		}
@@ -90,11 +91,7 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context, queryParams ur
 		}
 
 		if err := func() error {
-			defer func() {
-				if err := resp.Body.Close(); err != nil {
-					fmt.Printf("warning: failed to close response body: %v\n", err)
-				}
-			}()
+			defer func() { _ = resp.Body.Close() }()
 
 			if resp.StatusCode != http.StatusOK {
 				return c.handleErrorResponse(resp)
@@ -127,14 +124,14 @@ func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, se
 	limit := 100
 
 	for {
-		req, err := http.NewRequestWithContext(ctx, "GET",
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/mdmServers/%s/relationships/devices", c.baseURL, serverID), nil)
 		if err != nil {
 			return nil, err
 		}
 
 		q := req.URL.Query()
-		q.Add("limit", fmt.Sprintf("%d", limit))
+		q.Add("limit", strconv.Itoa(limit))
 		if nextCursor != "" {
 			q.Add("cursor", nextCursor)
 		}
@@ -148,11 +145,7 @@ func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, se
 		}
 
 		if err := func() error {
-			defer func() {
-				if err := resp.Body.Close(); err != nil {
-					fmt.Printf("warning: failed to close response body: %v\n", err)
-				}
-			}()
+			defer func() { _ = resp.Body.Close() }()
 
 			if resp.StatusCode != http.StatusOK {
 				return c.handleErrorResponse(resp)
