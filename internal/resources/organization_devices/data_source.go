@@ -2,7 +2,6 @@ package organization_devices
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
@@ -12,11 +11,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
+	"github.com/neilmartin83/terraform-provider-axm/internal/common"
 )
 
 var _ datasource.DataSource = &OrganizationDevicesDataSource{}
-
-const defaultReadTimeout = 90 * time.Second
 
 func NewOrganizationDevicesDataSource() datasource.DataSource {
 	return &OrganizationDevicesDataSource{}
@@ -97,7 +95,7 @@ func (d *OrganizationDevicesDataSource) Schema(ctx context.Context, req datasour
 						},
 						"released_from_org_date_time": schema.StringAttribute{
 							Computed:    true,
-							Description: "The date and time the device was released from an organization. This will be null if the device hasn't been released. Currently only querying by a single device is supported. Batch device queries aren’t currently supported for this property.",
+							Description: "The date and time the device was released from an organization. This will be null if the device hasn't been released. Currently only querying by a single device is supported. Batch device queries aren't currently supported for this property.",
 						},
 						"updated_date_time": schema.StringAttribute{
 							Computed:    true,
@@ -182,21 +180,12 @@ func (d *OrganizationDevicesDataSource) Schema(ctx context.Context, req datasour
 }
 
 func (d *OrganizationDevicesDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	c, diags := common.ConfigureClient(req.ProviderData, "Data Source")
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	client, ok := req.ProviderData.(*client.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-		return
-	}
-
-	d.client = client
+	d.client = c
 }
 
 func (d *OrganizationDevicesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -208,17 +197,11 @@ func (d *OrganizationDevicesDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	readTimeout := defaultReadTimeout
-	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
-		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
-		resp.Diagnostics.Append(timeoutDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		readTimeout = configuredTimeout
+	readCtx, cancel, timeoutDiags := common.ResolveReadTimeout(ctx, data.Timeouts, common.DefaultReadTimeout)
+	resp.Diagnostics.Append(timeoutDiags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-
-	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
 	devices, err := d.client.GetOrgDevices(readCtx, nil)
@@ -253,21 +236,9 @@ func (d *OrganizationDevicesDataSource) Read(ctx context.Context, req datasource
 			PurchaseSourceType:  types.StringValue(device.Attributes.PurchaseSourceType),
 			WifiMacAddress:      types.StringValue(device.Attributes.WifiMacAddress),
 			BluetoothMacAddress: types.StringValue(device.Attributes.BluetoothMacAddress),
-		}
-
-		deviceModel.EthernetMacAddress = make([]types.String, len(device.Attributes.EthernetMacAddress))
-		for i, ethernetMacAddress := range device.Attributes.EthernetMacAddress {
-			deviceModel.EthernetMacAddress[i] = types.StringValue(ethernetMacAddress)
-		}
-
-		deviceModel.IMEI = make([]types.String, len(device.Attributes.IMEI))
-		for i, imei := range device.Attributes.IMEI {
-			deviceModel.IMEI[i] = types.StringValue(imei)
-		}
-
-		deviceModel.MEID = make([]types.String, len(device.Attributes.MEID))
-		for i, meid := range device.Attributes.MEID {
-			deviceModel.MEID[i] = types.StringValue(meid)
+			EthernetMacAddress:  common.StringsToTypesStrings(device.Attributes.EthernetMacAddress),
+			IMEI:                common.StringsToTypesStrings(device.Attributes.IMEI),
+			MEID:                common.StringsToTypesStrings(device.Attributes.MEID),
 		}
 
 		data.Devices = append(data.Devices, deviceModel)

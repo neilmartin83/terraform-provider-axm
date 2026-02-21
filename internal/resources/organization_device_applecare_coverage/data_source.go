@@ -2,8 +2,6 @@ package organization_device_applecare_coverage
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -12,11 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
+	"github.com/neilmartin83/terraform-provider-axm/internal/common"
 )
 
 var _ datasource.DataSource = &OrganizationDeviceAppleCareCoverageDataSource{}
-
-const defaultReadTimeout = 90 * time.Second
 
 func NewOrganizationDeviceAppleCareCoverageDataSource() datasource.DataSource {
 	return &OrganizationDeviceAppleCareCoverageDataSource{}
@@ -34,6 +31,7 @@ type OrganizationDeviceAppleCareCoverageDataSourceModel struct {
 	AppleCareCoverageResources []OrganizationDeviceAppleCareCoverageModel `tfsdk:"applecare_coverage_resources"`
 }
 
+// OrganizationDeviceAppleCareCoverageModel describes an AppleCare coverage resource.
 type OrganizationDeviceAppleCareCoverageModel struct {
 	ID                     types.String `tfsdk:"id"`
 	AgreementNumber        types.String `tfsdk:"agreement_number"`
@@ -113,21 +111,12 @@ func (d *OrganizationDeviceAppleCareCoverageDataSource) Schema(ctx context.Conte
 }
 
 func (d *OrganizationDeviceAppleCareCoverageDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	c, diags := common.ConfigureClient(req.ProviderData, "Data Source")
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	client, ok := req.ProviderData.(*client.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-		return
-	}
-
-	d.client = client
+	d.client = c
 }
 
 func (d *OrganizationDeviceAppleCareCoverageDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -139,17 +128,11 @@ func (d *OrganizationDeviceAppleCareCoverageDataSource) Read(ctx context.Context
 		return
 	}
 
-	readTimeout := defaultReadTimeout
-	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
-		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
-		resp.Diagnostics.Append(timeoutDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		readTimeout = configuredTimeout
+	readCtx, cancel, timeoutDiags := common.ResolveReadTimeout(ctx, data.Timeouts, common.DefaultReadTimeout)
+	resp.Diagnostics.Append(timeoutDiags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-
-	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
 	applecarecoverage, err := d.client.GetOrgDeviceAppleCareCoverage(readCtx, data.ID.ValueString(), nil)

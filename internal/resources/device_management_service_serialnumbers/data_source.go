@@ -2,8 +2,6 @@ package device_management_service_serialnumbers
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -12,11 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
+	"github.com/neilmartin83/terraform-provider-axm/internal/common"
 )
 
 var _ datasource.DataSource = &DeviceManagementServiceSerialNumbersDataSource{}
-
-const defaultReadTimeout = 90 * time.Second
 
 func NewDeviceManagementServiceSerialNumbersDataSource() datasource.DataSource {
 	return &DeviceManagementServiceSerialNumbersDataSource{}
@@ -62,21 +59,12 @@ func (d *DeviceManagementServiceSerialNumbersDataSource) Schema(ctx context.Cont
 }
 
 func (d *DeviceManagementServiceSerialNumbersDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	c, diags := common.ConfigureClient(req.ProviderData, "Data Source")
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	client, ok := req.ProviderData.(*client.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-		return
-	}
-
-	d.client = client
+	d.client = c
 }
 
 func (d *DeviceManagementServiceSerialNumbersDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -88,17 +76,11 @@ func (d *DeviceManagementServiceSerialNumbersDataSource) Read(ctx context.Contex
 		return
 	}
 
-	readTimeout := defaultReadTimeout
-	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
-		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
-		resp.Diagnostics.Append(timeoutDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		readTimeout = configuredTimeout
+	readCtx, cancel, timeoutDiags := common.ResolveReadTimeout(ctx, data.Timeouts, common.DefaultReadTimeout)
+	resp.Diagnostics.Append(timeoutDiags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-
-	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
 	serialNumbers, err := d.client.GetDeviceManagementServiceSerialNumbers(readCtx, data.ServerID.ValueString())
@@ -111,12 +93,7 @@ func (d *DeviceManagementServiceSerialNumbersDataSource) Read(ctx context.Contex
 		return
 	}
 
-	data.SerialNumbers = make([]types.String, len(serialNumbers))
-
-	for i, sn := range serialNumbers {
-		data.SerialNumbers[i] = types.StringValue(sn)
-	}
-
+	data.SerialNumbers = common.StringsToTypesStrings(serialNumbers)
 	data.ID = data.ServerID
 
 	tflog.Debug(ctx, "Read device management service serial numbers", map[string]any{

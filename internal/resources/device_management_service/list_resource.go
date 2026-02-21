@@ -2,7 +2,6 @@ package device_management_service
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
+	"github.com/neilmartin83/terraform-provider-axm/internal/common"
 )
 
 var _ list.ListResource = &DeviceManagementServiceListResource{}
@@ -32,32 +32,17 @@ type DeviceManagementServiceListResource struct {
 	client *client.Client
 }
 
-// DeviceManagementServiceListResourceModel captures filters supported by the list query.
-type DeviceManagementServiceListResourceModel struct {
-	Name         types.String `tfsdk:"name"`
-	NameContains types.String `tfsdk:"name_contains"`
-	ServerType   types.String `tfsdk:"server_type"`
-}
-
 func (r *DeviceManagementServiceListResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_device_management_service"
 }
 
 func (r *DeviceManagementServiceListResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	c, diags := common.ConfigureClient(req.ProviderData, "List")
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	client, ok := req.ProviderData.(*client.Client)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected List Configure Type",
-			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-		return
-	}
-
-	r.client = client
+	r.client = c
 }
 
 func (r *DeviceManagementServiceListResource) ListResourceConfigSchema(ctx context.Context, req list.ListResourceSchemaRequest, resp *list.ListResourceSchemaResponse) {

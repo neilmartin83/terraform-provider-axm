@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+
+	"github.com/neilmartin83/terraform-provider-axm/internal/common"
 )
 
 // Create handles the creation of device assignments. Currently only supports
@@ -120,17 +121,11 @@ func (r *DeviceManagementServiceResource) Read(ctx context.Context, req resource
 		}
 	}
 
-	readTimeout := defaultReadTimeout
-	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
-		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
-		resp.Diagnostics.Append(timeoutDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		readTimeout = configuredTimeout
+	readCtx, cancel, timeoutDiags := common.ResolveReadTimeout(ctx, data.Timeouts, common.DefaultReadTimeout)
+	resp.Diagnostics.Append(timeoutDiags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-
-	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
 	deviceIDs, err := r.client.GetDeviceManagementServiceSerialNumbers(readCtx, data.ID.ValueString())
@@ -146,11 +141,7 @@ func (r *DeviceManagementServiceResource) Read(ctx context.Context, req resource
 		return
 	}
 
-	elements := make([]attr.Value, len(deviceIDs))
-	for i, id := range deviceIDs {
-		elements[i] = types.StringValue(id)
-	}
-	deviceSet, diags := types.SetValue(types.StringType, elements)
+	deviceSet, diags := stringsToSet(deviceIDs)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -218,11 +209,7 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 		return
 	}
 
-	currentElements := make([]attr.Value, len(currentDeviceIDs))
-	for i, id := range currentDeviceIDs {
-		currentElements[i] = types.StringValue(id)
-	}
-	currentSet, diags := types.SetValue(types.StringType, currentElements)
+	currentSet, diags := stringsToSet(currentDeviceIDs)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

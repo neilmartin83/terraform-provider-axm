@@ -20,3 +20,10 @@ type MdmDeviceAssignmentModel struct {
 	Timeouts  timeouts.Value `tfsdk:"timeouts"`
 	DeviceIDs types.Set      `tfsdk:"device_ids"`
 }
+
+// DeviceManagementServiceListResourceModel captures filters supported by the list query.
+type DeviceManagementServiceListResourceModel struct {
+	Name         types.String `tfsdk:"name"`
+	NameContains types.String `tfsdk:"name_contains"`
+	ServerType   types.String `tfsdk:"server_type"`
+}

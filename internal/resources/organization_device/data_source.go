@@ -2,8 +2,6 @@ package organization_device
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -12,11 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
+	"github.com/neilmartin83/terraform-provider-axm/internal/common"
 )
 
 var _ datasource.DataSource = &OrganizationDeviceDataSource{}
-
-const defaultReadTimeout = 90 * time.Second
 
 func NewOrganizationDeviceDataSource() datasource.DataSource {
 	return &OrganizationDeviceDataSource{}
@@ -82,7 +79,7 @@ func (d *OrganizationDeviceDataSource) Schema(ctx context.Context, req datasourc
 			},
 			"released_from_org_date_time": schema.StringAttribute{
 				Computed:    true,
-				Description: "The date and time the device was released from an organization. This will be null if the device hasn't been released. Currently only querying by a single device is supported. Batch device queries aren’t currently supported for this property.",
+				Description: "The date and time the device was released from an organization. This will be null if the device hasn't been released. Currently only querying by a single device is supported. Batch device queries aren't currently supported for this property.",
 			},
 			"updated_date_time": schema.StringAttribute{
 				Computed:    true,
@@ -164,21 +161,12 @@ func (d *OrganizationDeviceDataSource) Schema(ctx context.Context, req datasourc
 }
 
 func (d *OrganizationDeviceDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	c, diags := common.ConfigureClient(req.ProviderData, "Data Source")
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	client, ok := req.ProviderData.(*client.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-		return
-	}
-
-	d.client = client
+	d.client = c
 }
 
 func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -190,17 +178,11 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 		return
 	}
 
-	readTimeout := defaultReadTimeout
-	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
-		configuredTimeout, timeoutDiags := data.Timeouts.Read(ctx, defaultReadTimeout)
-		resp.Diagnostics.Append(timeoutDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		readTimeout = configuredTimeout
+	readCtx, cancel, timeoutDiags := common.ResolveReadTimeout(ctx, data.Timeouts, common.DefaultReadTimeout)
+	resp.Diagnostics.Append(timeoutDiags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-
-	readCtx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
 	device, err := d.client.GetOrgDevice(readCtx, data.ID.ValueString(), nil)
@@ -217,7 +199,7 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 	data.Type = types.StringValue(device.Type)
 	data.SerialNumber = types.StringValue(device.Attributes.SerialNumber)
 	data.AddedToOrgDateTime = types.StringValue(device.Attributes.AddedToOrgDateTime)
-	data.ReleasedFromOrgDateTime = types.StringPointerValue(stringPointerOrNil(device.Attributes.ReleasedFromOrgDateTime))
+	data.ReleasedFromOrgDateTime = types.StringPointerValue(common.StringPointerOrNil(device.Attributes.ReleasedFromOrgDateTime))
 	data.UpdatedDateTime = types.StringValue(device.Attributes.UpdatedDateTime)
 	data.DeviceModel = types.StringValue(device.Attributes.DeviceModel)
 	data.ProductFamily = types.StringValue(device.Attributes.ProductFamily)
@@ -234,20 +216,9 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 	data.WifiMacAddress = types.StringValue(device.Attributes.WifiMacAddress)
 	data.BluetoothMacAddress = types.StringValue(device.Attributes.BluetoothMacAddress)
 
-	data.EthernetMacAddress = make([]types.String, len(device.Attributes.EthernetMacAddress))
-	for i, ethernetMacAddress := range device.Attributes.EthernetMacAddress {
-		data.EthernetMacAddress[i] = types.StringValue(ethernetMacAddress)
-	}
-
-	data.IMEI = make([]types.String, len(device.Attributes.IMEI))
-	for i, imei := range device.Attributes.IMEI {
-		data.IMEI[i] = types.StringValue(imei)
-	}
-
-	data.MEID = make([]types.String, len(device.Attributes.MEID))
-	for i, meid := range device.Attributes.MEID {
-		data.MEID[i] = types.StringValue(meid)
-	}
+	data.EthernetMacAddress = common.StringsToTypesStrings(device.Attributes.EthernetMacAddress)
+	data.IMEI = common.StringsToTypesStrings(device.Attributes.IMEI)
+	data.MEID = common.StringsToTypesStrings(device.Attributes.MEID)
 
 	tflog.Debug(ctx, "Read organization device", map[string]any{
 		"device_id":     data.ID.ValueString(),
@@ -255,12 +226,4 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 	})
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-// stringPointerOrNil returns a pointer to the string if it's not empty, otherwise returns nil
-func stringPointerOrNil(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
 }

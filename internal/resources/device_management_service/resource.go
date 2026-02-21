@@ -2,7 +2,6 @@ package device_management_service
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -11,7 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
+	"github.com/neilmartin83/terraform-provider-axm/internal/common"
 )
 
 var _ resource.Resource = &DeviceManagementServiceResource{}
@@ -20,7 +21,6 @@ var _ resource.ResourceWithImportState = &DeviceManagementServiceResource{}
 
 const (
 	defaultCreateTimeout = 90 * time.Second
-	defaultReadTimeout   = 90 * time.Second
 	defaultUpdateTimeout = 90 * time.Second
 )
 
@@ -80,22 +80,12 @@ func (r *DeviceManagementServiceResource) IdentitySchema(ctx context.Context, re
 }
 
 func (r *DeviceManagementServiceResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	c, diags := common.ConfigureClient(req.ProviderData, "Resource")
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	client, ok := req.ProviderData.(*client.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
+	r.client = c
 }
 
 func (r *DeviceManagementServiceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
