@@ -1,0 +1,103 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: "go.mod"
+          cache: true
+      - run: go mod download
+      - run: go build -v .
+      - name: Run linters
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: latest
+
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: "go.mod"
+          cache: true
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_wrapper: false
+      - run: make generate
+      - name: git diff
+        run: |
+          git diff --compact-summary --exit-code || \
+            (echo; echo "Unexpected difference in directories after code generation. Run 'make generate' command and commit."; exit 1)
+
+  unit:
+    name: Unit Tests
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: "go.mod"
+          cache: true
+      - run: go mod download
+      - run: go test -v -cover -count=1 ./...
+
+  acceptance:
+    name: Acceptance Tests (Terraform ${{ matrix.terraform }})
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        terraform:
+          - "1.13.*"
+          - "1.14.*"
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: "go.mod"
+          cache: true
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ${{ matrix.terraform }}
+          terraform_wrapper: false
+      - run: go mod download
+      - run: go test -v -cover -count=1 -p=1 ./...
+        timeout-minutes: 10
+        env:
+          TF_ACC: "1"
+          AXM_CLIENT_ID: ${{ secrets.AXM_CLIENT_ID }}
+          AXM_KEY_ID: ${{ secrets.AXM_KEY_ID }}
+          AXM_PRIVATE_KEY: ${{ secrets.AXM_PRIVATE_KEY }}
+          AXM_SCOPE: ${{ secrets.AXM_SCOPE }}
+          AXM_TEST_SERVER_ID: ${{ secrets.AXM_TEST_SERVER_ID }}
+          AXM_TEST_DEVICE_SERIAL_1: ${{ secrets.AXM_TEST_DEVICE_SERIAL_1 }}
+          AXM_TEST_DEVICE_SERIAL_2: ${{ secrets.AXM_TEST_DEVICE_SERIAL_2 }}
+          AXM_TEST_DEVICE_SERIAL_3: ${{ secrets.AXM_TEST_DEVICE_SERIAL_3 }}
+          AXM_TEST_DEVICE_ID: ${{ secrets.AXM_TEST_DEVICE_ID }}
+          AXM_TEST_ASSIGNED_DEVICE_ID: ${{ secrets.AXM_TEST_ASSIGNED_DEVICE_ID }}
+          AXM_TEST_DEVICE_WITH_COVERAGE_ID: ${{ secrets.AXM_TEST_DEVICE_WITH_COVERAGE_ID }}
