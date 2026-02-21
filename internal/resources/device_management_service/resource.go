@@ -24,10 +24,12 @@ const (
 	defaultUpdateTimeout = 90 * time.Second
 )
 
+// NewDeviceManagementServiceResource returns a new resource for managing MDM server device assignments.
 func NewDeviceManagementServiceResource() resource.Resource {
 	return &DeviceManagementServiceResource{}
 }
 
+// DeviceManagementServiceResource implements the Terraform resource for MDM server device assignments.
 type DeviceManagementServiceResource struct {
 	client *client.Client
 }

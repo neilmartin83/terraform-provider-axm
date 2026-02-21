@@ -15,6 +15,7 @@ import (
 
 var _ datasource.DataSource = &OrganizationDeviceAssignedServerInformationDataSource{}
 
+// NewOrganizationDeviceAssignedServerInformationDataSource returns a new data source for a device's assigned MDM server.
 func NewOrganizationDeviceAssignedServerInformationDataSource() datasource.DataSource {
 	return &OrganizationDeviceAssignedServerInformationDataSource{}
 }

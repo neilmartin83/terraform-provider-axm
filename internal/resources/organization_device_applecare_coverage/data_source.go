@@ -15,6 +15,7 @@ import (
 
 var _ datasource.DataSource = &OrganizationDeviceAppleCareCoverageDataSource{}
 
+// NewOrganizationDeviceAppleCareCoverageDataSource returns a new data source for device AppleCare coverage.
 func NewOrganizationDeviceAppleCareCoverageDataSource() datasource.DataSource {
 	return &OrganizationDeviceAppleCareCoverageDataSource{}
 }

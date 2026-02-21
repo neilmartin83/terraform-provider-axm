@@ -15,6 +15,7 @@ import (
 
 var _ datasource.DataSource = &DeviceManagementServiceSerialNumbersDataSource{}
 
+// NewDeviceManagementServiceSerialNumbersDataSource returns a new data source for MDM server serial numbers.
 func NewDeviceManagementServiceSerialNumbersDataSource() datasource.DataSource {
 	return &DeviceManagementServiceSerialNumbersDataSource{}
 }

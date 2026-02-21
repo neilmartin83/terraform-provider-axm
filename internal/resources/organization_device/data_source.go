@@ -15,6 +15,7 @@ import (
 
 var _ datasource.DataSource = &OrganizationDeviceDataSource{}
 
+// NewOrganizationDeviceDataSource returns a new data source for a single organization device.
 func NewOrganizationDeviceDataSource() datasource.DataSource {
 	return &OrganizationDeviceDataSource{}
 }

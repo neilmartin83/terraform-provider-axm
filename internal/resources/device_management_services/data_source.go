@@ -15,6 +15,7 @@ import (
 
 var _ datasource.DataSource = &DeviceManagementServicesDataSource{}
 
+// NewDeviceManagementServicesDataSource returns a new data source for all device management services.
 func NewDeviceManagementServicesDataSource() datasource.DataSource {
 	return &DeviceManagementServicesDataSource{}
 }
