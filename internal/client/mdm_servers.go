@@ -52,7 +52,7 @@ type MdmServerRelationships struct {
 type MdmServerRelationshipsDevices struct {
 	Data  []Data            `json:"data,omitempty"`
 	Links RelationshipLinks `json:"links"`
-	Meta  Meta              `json:"meta,omitempty"`
+	Meta  Meta              `json:"meta"`
 }
 
 // MdmServerDevicesLinkagesResponse represents the data and links that describe the relationship between the resources

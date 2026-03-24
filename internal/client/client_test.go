@@ -73,10 +73,10 @@ func TestValidateConfig(t *testing.T) {
 
 func TestParseRetryAfter(t *testing.T) {
 	tests := []struct {
-		name     string
-		header   string
-		wantDur  time.Duration
-		wantErr  string
+		name      string
+		header    string
+		wantDur   time.Duration
+		wantErr   string
 		tolerance time.Duration
 	}{
 		{

@@ -241,7 +241,7 @@ func TestNewUUIDv4(t *testing.T) {
 	uuidPattern := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 
 	seen := make(map[string]bool)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		u := newUUIDv4()
 		if !uuidPattern.MatchString(u) {
 			t.Fatalf("UUID %q does not match v4 pattern", u)
