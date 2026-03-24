@@ -171,7 +171,7 @@ func TestDownloadAndParseActivityLog(t *testing.T) {
 	t.Run("csv_with_many_errors", func(t *testing.T) {
 		var b strings.Builder
 		b.WriteString("serial_number,operation_status,operation_substatus\n")
-		for i := 0; i < 15; i++ {
+		for range 15 {
 			b.WriteString("SN" + strings.Repeat("0", 3) + ",FAILED,ERROR\n")
 		}
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -216,9 +216,9 @@ func TestFilterDeviceManagementServiceList(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		config   DeviceManagementServiceListResourceModel
-		wantIDs  []string
+		name    string
+		config  DeviceManagementServiceListResourceModel
+		wantIDs []string
 	}{
 		{
 			name:    "no_filters",

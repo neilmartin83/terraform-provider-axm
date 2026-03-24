@@ -69,7 +69,7 @@ type ErrorLinks struct {
 
 // ErrorLinksAssociated provides additional information about associated errors.
 type ErrorLinksAssociated struct {
-	Href string                 `json:"href"`
+	Href string         `json:"href"`
 	Meta map[string]any `json:"meta,omitempty"`
 }
 
