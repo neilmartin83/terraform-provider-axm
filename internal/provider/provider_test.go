@@ -114,16 +114,29 @@ func TestProviderResources(t *testing.T) {
 	ctx := context.Background()
 	resources := p.Resources(ctx)
 
-	if len(resources) != 1 {
-		t.Fatalf("expected 1 resource, got %d", len(resources))
+	if len(resources) != 3 {
+		t.Fatalf("expected 3 resources, got %d", len(resources))
 	}
 
-	r := resources[0]()
-	resp := tfresource.MetadataResponse{}
-	r.Metadata(ctx, tfresource.MetadataRequest{ProviderTypeName: "axm"}, &resp)
+	var got []string
+	for _, factory := range resources {
+		r := factory()
+		resp := tfresource.MetadataResponse{}
+		r.Metadata(ctx, tfresource.MetadataRequest{ProviderTypeName: "axm"}, &resp)
+		got = append(got, resp.TypeName)
+	}
 
-	if resp.TypeName != "axm_device_management_service" {
-		t.Errorf("expected TypeName %q, got %q", "axm_device_management_service", resp.TypeName)
+	expected := []string{
+		"axm_blueprint",
+		"axm_configuration",
+		"axm_device_management_service",
+	}
+
+	sort.Strings(got)
+	for i := range expected {
+		if got[i] != expected[i] {
+			t.Errorf("resource[%d]: expected %q, got %q", i, expected[i], got[i])
+		}
 	}
 }
 
@@ -132,17 +145,26 @@ func TestProviderDataSources(t *testing.T) {
 	ctx := context.Background()
 	dataSources := p.DataSources(ctx)
 
-	if len(dataSources) != 6 {
-		t.Fatalf("expected 6 data sources, got %d", len(dataSources))
+	if len(dataSources) != 15 {
+		t.Fatalf("expected 15 data sources, got %d", len(dataSources))
 	}
 
 	expected := []string{
+		"axm_app",
+		"axm_apps",
+		"axm_audit_events",
 		"axm_device_management_service_serial_numbers",
 		"axm_device_management_services",
 		"axm_organization_device",
 		"axm_organization_device_applecare_coverage",
 		"axm_organization_device_assigned_server_information",
 		"axm_organization_devices",
+		"axm_package",
+		"axm_packages",
+		"axm_user",
+		"axm_user_group",
+		"axm_user_groups",
+		"axm_users",
 	}
 
 	var got []string
@@ -174,16 +196,29 @@ func TestProviderListResources(t *testing.T) {
 	}
 
 	listResources := plr.ListResources(ctx)
-	if len(listResources) != 1 {
-		t.Fatalf("expected 1 list resource, got %d", len(listResources))
+	if len(listResources) != 3 {
+		t.Fatalf("expected 3 list resources, got %d", len(listResources))
 	}
 
-	lr := listResources[0]()
-	resp := tfresource.MetadataResponse{}
-	lr.Metadata(ctx, tfresource.MetadataRequest{ProviderTypeName: "axm"}, &resp)
+	var got []string
+	for _, factory := range listResources {
+		lr := factory()
+		resp := tfresource.MetadataResponse{}
+		lr.Metadata(ctx, tfresource.MetadataRequest{ProviderTypeName: "axm"}, &resp)
+		got = append(got, resp.TypeName)
+	}
 
-	if resp.TypeName != "axm_device_management_service" {
-		t.Errorf("expected TypeName %q, got %q", "axm_device_management_service", resp.TypeName)
+	expected := []string{
+		"axm_blueprint",
+		"axm_configuration",
+		"axm_device_management_service",
+	}
+
+	sort.Strings(got)
+	for i := range expected {
+		if got[i] != expected[i] {
+			t.Errorf("list resource[%d]: expected %q, got %q", i, expected[i], got[i])
+		}
 	}
 }
 

@@ -18,8 +18,10 @@ import (
 )
 
 const (
-	maxRateLimitRetries   = 5
+	maxRetries            = 5
 	maxRetryAfterDuration = 60 * time.Second
+	initialBackoff        = 2 * time.Second
+	maxBackoff            = 30 * time.Second
 )
 
 // Logger is an interface for logging HTTP requests, responses, and authentication events
@@ -35,6 +37,7 @@ type Client struct {
 	tokenSource *appleTokenSource
 	oauthTS     oauth2.TokenSource
 	baseURL     string
+	scope       string
 	logger      Logger
 }
 
@@ -138,6 +141,7 @@ func NewClient(baseURL, teamID, clientID, keyID, scope, p8Key string) (*Client, 
 		tokenSource: ts,
 		oauthTS:     reusableTS,
 		baseURL:     baseURL,
+		scope:       scope,
 	}, nil
 }
 
@@ -147,6 +151,16 @@ func (c *Client) SetLogger(logger Logger) {
 	if c.tokenSource != nil {
 		c.tokenSource.logger = logger
 	}
+}
+
+// Scope returns the configured OAuth scope for the client.
+func (c *Client) Scope() string {
+	return c.scope
+}
+
+// IsBusinessScope reports whether the client is configured for the business API scope.
+func (c *Client) IsBusinessScope() bool {
+	return c.scope == "business.api"
 }
 
 // TestAuth forces authentication and returns the JWT client assertion, its expiry, and the OAuth token.
@@ -189,7 +203,16 @@ func (c *Client) handleErrorResponse(resp *http.Response) error {
 	return fmt.Errorf("unknown error occurred with status %d", resp.StatusCode)
 }
 
-// doRequest performs an authenticated HTTP request and handles rate limiting via Retry-After.
+// isRetryableStatus reports whether the HTTP status code is eligible for retry.
+func isRetryableStatus(code int) bool {
+	return code == http.StatusTooManyRequests ||
+		code == http.StatusBadGateway ||
+		code == http.StatusServiceUnavailable ||
+		code == http.StatusGatewayTimeout
+}
+
+// doRequest performs an authenticated HTTP request with automatic retry for
+// rate-limit (429) and server error (502, 503, 504) responses.
 func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
 	var requestBody []byte
 	if req.Body != nil {
@@ -223,7 +246,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 			return nil, err
 		}
 
-		if resp.StatusCode != http.StatusTooManyRequests {
+		if !isRetryableStatus(resp.StatusCode) {
 			if c.logger != nil && resp.Body != nil {
 				responseBody, err := io.ReadAll(resp.Body)
 				if err != nil {
@@ -246,27 +269,36 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 			_ = resp.Body.Close()
 		}
 
-		retryAfterDuration, err := parseRetryAfter(resp.Header.Get("Retry-After"))
-		if err != nil {
-			return nil, fmt.Errorf("received 429 Too Many Requests: %w", err)
-		}
-
-		if retryAfterDuration > maxRetryAfterDuration {
-			return nil, fmt.Errorf("received 429 Too Many Requests with Retry-After of %v)", retryAfterDuration)
-		}
-
 		attempts++
-		if attempts >= maxRateLimitRetries {
-			return nil, fmt.Errorf("received 429 Too Many Requests after %d retries", attempts)
+		if attempts >= maxRetries {
+			return nil, fmt.Errorf("received HTTP %d after %d retries", resp.StatusCode, attempts)
+		}
+
+		var delay time.Duration
+		if resp.StatusCode == http.StatusTooManyRequests {
+			retryAfter, parseErr := parseRetryAfter(resp.Header.Get("Retry-After"))
+			if parseErr != nil {
+				return nil, fmt.Errorf("received 429 Too Many Requests: %w", parseErr)
+			}
+			if retryAfter > maxRetryAfterDuration {
+				return nil, fmt.Errorf("received 429 Too Many Requests with Retry-After of %v", retryAfter)
+			}
+			delay = retryAfter
+		} else {
+			delay = initialBackoff * (1 << (attempts - 1))
+			if delay > maxBackoff {
+				delay = maxBackoff
+			}
 		}
 
 		if c.logger != nil {
-			c.logger.LogAuth(ctx, "Rate limited, waiting before retry", map[string]any{
-				"retry_after_seconds": retryAfterDuration.Seconds(),
-				"attempt":             attempts,
+			c.logger.LogAuth(ctx, "Retrying after transient error", map[string]any{
+				"status_code": resp.StatusCode,
+				"delay_secs":  delay.Seconds(),
+				"attempt":     attempts,
 			})
 		}
-		if err := waitWithContext(ctx, retryAfterDuration); err != nil {
+		if err := waitWithContext(ctx, delay); err != nil {
 			return nil, err
 		}
 	}
