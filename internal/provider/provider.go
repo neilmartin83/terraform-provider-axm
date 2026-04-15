@@ -18,6 +18,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/app"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/apps"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/audit_events"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/blueprint"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/configuration"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_service"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_service_serialnumbers"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_services"
@@ -25,6 +30,12 @@ import (
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device_applecare_coverage"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device_assigned_server_information"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_devices"
+	packageinfo "github.com/neilmartin83/terraform-provider-axm/internal/resources/package"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/packages"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/user"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/user_group"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/user_groups"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/users"
 )
 
 // Constants for environment variable names.
@@ -190,23 +201,36 @@ func (p *AxmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 
 func (p *AxmProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		blueprint.NewBlueprintResource,
+		configuration.NewConfigurationResource,
 		device_management_service.NewDeviceManagementServiceResource,
 	}
 }
 
 func (p *AxmProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		app.NewAppDataSource,
+		apps.NewAppsDataSource,
+		audit_events.NewAuditEventsDataSource,
 		organization_device.NewOrganizationDeviceDataSource,
 		organization_devices.NewOrganizationDevicesDataSource,
 		device_management_services.NewDeviceManagementServicesDataSource,
 		device_management_service_serialnumbers.NewDeviceManagementServiceSerialNumbersDataSource,
 		organization_device_assigned_server_information.NewOrganizationDeviceAssignedServerInformationDataSource,
 		organization_device_applecare_coverage.NewOrganizationDeviceAppleCareCoverageDataSource,
+		packageinfo.NewPackageDataSource,
+		packages.NewPackagesDataSource,
+		user.NewUserDataSource,
+		user_group.NewUserGroupDataSource,
+		user_groups.NewUserGroupsDataSource,
+		users.NewUsersDataSource,
 	}
 }
 
 func (p *AxmProvider) ListResources(ctx context.Context) []func() list.ListResource {
 	return []func() list.ListResource{
+		blueprint.NewBlueprintListResource,
+		configuration.NewConfigurationListResource,
 		device_management_service.NewDeviceManagementServiceListResource,
 	}
 }
