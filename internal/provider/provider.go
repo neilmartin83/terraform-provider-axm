@@ -22,7 +22,9 @@ import (
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/apps"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/audit_events"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/blueprint"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/blueprints"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/configuration"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/configurations"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_service"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_service_serialnumbers"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_services"
@@ -212,6 +214,10 @@ func (p *AxmProvider) DataSources(ctx context.Context) []func() datasource.DataS
 		app.NewAppDataSource,
 		apps.NewAppsDataSource,
 		audit_events.NewAuditEventsDataSource,
+		blueprint.NewBlueprintDataSource,
+		blueprints.NewBlueprintsDataSource,
+		configuration.NewConfigurationDataSource,
+		configurations.NewConfigurationsDataSource,
 		organization_device.NewOrganizationDeviceDataSource,
 		organization_devices.NewOrganizationDevicesDataSource,
 		device_management_services.NewDeviceManagementServicesDataSource,
