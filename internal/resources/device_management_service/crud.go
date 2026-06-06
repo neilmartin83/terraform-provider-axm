@@ -5,7 +5,6 @@ package device_management_service
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -342,7 +341,15 @@ func (r *DeviceManagementServiceResource) Delete(ctx context.Context, req resour
 	deleteCtx, cancel := context.WithTimeout(ctx, defaultUpdateTimeout)
 	defer cancel()
 
-	// Unassign all devices before deletion
+	// Clear default product family assignments before deletion.
+	if _, err := r.client.ClearDeviceManagementServiceDefaultFamilies(deleteCtx, data.ID.ValueString()); err != nil {
+		if !strings.Contains(err.Error(), "NOT_FOUND") {
+			resp.Diagnostics.AddError("Failed to clear default product families before deletion", err.Error())
+			return
+		}
+	}
+
+	// Unassign all devices before deletion.
 	currentDeviceIDs, err := r.client.GetDeviceManagementServiceSerialNumbers(deleteCtx, data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get device assignments before deletion", err.Error())
@@ -365,9 +372,6 @@ func (r *DeviceManagementServiceResource) Delete(ctx context.Context, req resour
 		if strings.Contains(err.Error(), "NOT_FOUND") {
 			return
 		}
-		resp.Diagnostics.AddError(
-			"Failed to delete MDM server",
-			fmt.Sprintf("%s\n\nIf this server has default device family assignments, remove them first using axm_default_device_assignment.", err.Error()),
-		)
+		resp.Diagnostics.AddError("Failed to delete MDM server", err.Error())
 	}
 }
