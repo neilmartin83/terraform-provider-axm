@@ -2,8 +2,8 @@ resource "axm_device_management_service" "example" {
   name = "Jamf Pro - Production"
 
   server_certificate = {
-    name = "JamfPro.cer"
-    data = filebase64("JamfPro.cer")
+    name = "PublicKey.pem"
+    data = filebase64("${path.module}/PublicKey.pem")
   }
 
   enable_mdm_disown = false
