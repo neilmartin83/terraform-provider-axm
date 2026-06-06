@@ -23,6 +23,14 @@ func (r *DefaultDeviceAssignmentResource) Create(ctx context.Context, req resour
 		return
 	}
 
+	if !r.client.IsBusinessScope() {
+		resp.Diagnostics.AddError(
+			"Business scope required",
+			"axm_default_device_assignment requires business API scope.",
+		)
+		return
+	}
+
 	data.ID = types.StringValue("default")
 
 	if err := r.applyAssignments(ctx, DefaultDeviceAssignmentModel{}, data); err != nil {
@@ -82,6 +90,14 @@ func (r *DefaultDeviceAssignmentResource) Update(ctx context.Context, req resour
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !r.client.IsBusinessScope() {
+		resp.Diagnostics.AddError(
+			"Business scope required",
+			"axm_default_device_assignment requires business API scope.",
+		)
 		return
 	}
 
