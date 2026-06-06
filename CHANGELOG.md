@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.7.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.6.0...v1.7.0) (2026-06-06)
+
+
+### Features
+
+* add DMS server lifecycle and default_device_assignment singleton resource ([74b3d5d](https://github.com/neilmartin83/terraform-provider-axm/commit/74b3d5d2c35f698ffe51395dac788d13729af32d))
+* **client:** expand MDM server client for API v2.1 ([267d029](https://github.com/neilmartin83/terraform-provider-axm/commit/267d029ad4ce053dc72067b1bb594462ead4153b))
+
+
+### Bug Fixes
+
+* **default_device_assignment:** add business scope guard and accurate schema descriptions ([469bb0a](https://github.com/neilmartin83/terraform-provider-axm/commit/469bb0a060a22508eabfa0fc5eaa2834e386b630))
+* **default_device_assignment:** correct Apple Vision Pro API constant and add Watch family ([3201655](https://github.com/neilmartin83/terraform-provider-axm/commit/320165540502970229a2d3442fe169bdb6785ff6))
+* **device_management_service:** clear default product families before deletion ([f52fef6](https://github.com/neilmartin83/terraform-provider-axm/commit/f52fef69985f0dad53758bb84e0da014d2adbaba))
+* **device_management_service:** make device_ids Optional+Computed to prevent perpetual diff ([55c216b](https://github.com/neilmartin83/terraform-provider-axm/commit/55c216b8eaa9a398c5733613b7a666a11ae1461a))
+* **device_management_service:** resolve device_ids to known value after create ([65eaf92](https://github.com/neilmartin83/terraform-provider-axm/commit/65eaf92d4412ef72d11208aa3906ad32b9544262))
+* **device_management_service:** skip family clear when server has none assigned ([0a310b4](https://github.com/neilmartin83/terraform-provider-axm/commit/0a310b47065870779e7be4e4f98859aaed1a1d39))
+
 ## [1.5.3](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.5.2...v1.5.3) (2026-02-21)
 
 
