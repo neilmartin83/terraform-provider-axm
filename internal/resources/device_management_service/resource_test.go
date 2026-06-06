@@ -139,10 +139,11 @@ func TestResourceSchema(t *testing.T) {
 		optional bool
 		computed bool
 	}{
-		{"id", false, true, true},
-		{"name", false, false, true},
+		{"id", false, false, true},
+		{"name", true, false, false},
 		{"type", false, false, true},
-		{"device_ids", true, false, false},
+		{"enable_mdm_disown", false, true, true},
+		{"device_ids", false, true, false},
 		{"timeouts", false, true, false},
 	}
 

@@ -12,6 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
@@ -27,12 +30,12 @@ const (
 	defaultUpdateTimeout = 90 * time.Second
 )
 
-// NewDeviceManagementServiceResource returns a new resource for managing MDM server device assignments.
+// NewDeviceManagementServiceResource returns a new resource for managing MDM servers.
 func NewDeviceManagementServiceResource() resource.Resource {
 	return &DeviceManagementServiceResource{}
 }
 
-// DeviceManagementServiceResource implements the Terraform resource for MDM server device assignments.
+// DeviceManagementServiceResource implements the Terraform resource for MDM servers.
 type DeviceManagementServiceResource struct {
 	client *client.Client
 }
@@ -44,20 +47,48 @@ func (r *DeviceManagementServiceResource) Metadata(ctx context.Context, req reso
 // Schema defines the schema for the resource.
 func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages device assignments to a specific Apple Business Manager MDM server.",
+		Description: "Manages an Apple Business Manager MDM server and its device assignments. Server creation, update, and deletion require business scope.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Optional:    true,
-				Description: "Device management service ID. This is a unique ID for the service and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.",
+				Description: "Device management service ID.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
-				Computed:    true,
-				Description: "Device management service name as reported by Apple Business Manager.",
+				Required:    true,
+				Description: "MDM server name.",
 			},
 			"type": schema.StringAttribute{
 				Computed:    true,
-				Description: "Device management service type (for example MDM, APPLE_CONFIGURATOR).",
+				Description: "MDM server type (MDM, APPLE_CONFIGURATOR, etc.).",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"enable_mdm_disown": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "When true, devices can be released from MDM without being removed from Apple Business Manager.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"server_certificate": schema.SingleNestedAttribute{
+				Optional:    true,
+				Description: "X.509 MDM certificate. Required when creating a new server. Not returned by the API; stored in state as provided.",
+				Attributes: map[string]schema.Attribute{
+					"name": schema.StringAttribute{
+						Required:    true,
+						Description: "Certificate filename.",
+					},
+					"data": schema.StringAttribute{
+						Required:    true,
+						Sensitive:   true,
+						Description: "Base64-encoded DER certificate data.",
+					},
+				},
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
@@ -66,8 +97,8 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 			}),
 			"device_ids": schema.SetAttribute{
 				ElementType: types.StringType,
-				Required:    true,
-				Description: "A set of device IDs to assign to the device management service. These are device serial numbers.",
+				Optional:    true,
+				Description: "Set of device serial numbers to assign to this MDM server.",
 			},
 		},
 	}

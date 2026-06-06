@@ -25,6 +25,7 @@ import (
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/blueprints"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/configuration"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/configurations"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/default_device_assignment"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_service"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_service_serialnumbers"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/device_management_services"
@@ -205,6 +206,7 @@ func (p *AxmProvider) Resources(ctx context.Context) []func() resource.Resource 
 	return []func() resource.Resource{
 		blueprint.NewBlueprintResource,
 		configuration.NewConfigurationResource,
+		default_device_assignment.NewDefaultDeviceAssignmentResource,
 		device_management_service.NewDeviceManagementServiceResource,
 	}
 }
