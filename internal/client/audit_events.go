@@ -116,24 +116,20 @@ func (c *Client) GetAuditEvents(ctx context.Context, queryParams url.Values) ([]
 	}
 
 	for {
-		baseURL := fmt.Sprintf("%s/v1/auditEvents", c.baseURL)
-		if len(queryParams) > 0 {
-			baseURL += "?" + queryParams.Encode()
-		}
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+			fmt.Sprintf("%s/v1/auditEvents", c.baseURL), nil)
 		if err != nil {
 			return nil, err
 		}
-
-		q := req.URL.Query()
-		if !q.Has("limit") {
-			q.Add("limit", strconv.Itoa(limit))
+		params := make(url.Values)
+		for k, vs := range queryParams {
+			params[k] = vs
 		}
+		params.Set("limit", strconv.Itoa(limit))
 		if nextCursor != "" {
-			q.Set("cursor", nextCursor)
+			params.Set("cursor", nextCursor)
 		}
-		req.URL.RawQuery = q.Encode()
+		req.URL.RawQuery = params.Encode()
 		req.Header.Set("Accept", "application/json")
 
 		resp, err := c.doRequest(ctx, req)

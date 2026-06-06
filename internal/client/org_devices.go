@@ -109,22 +109,20 @@ func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]O
 	limit := 1000
 
 	for {
-		baseURL := fmt.Sprintf("%s/v1/orgDevices", c.baseURL)
-		if len(queryParams) > 0 {
-			baseURL += "?" + queryParams.Encode()
-		}
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+			fmt.Sprintf("%s/v1/orgDevices", c.baseURL), nil)
 		if err != nil {
 			return nil, err
 		}
-
-		q := req.URL.Query()
-		q.Add("limit", strconv.Itoa(limit))
-		if nextCursor != "" {
-			q.Add("cursor", nextCursor)
+		params := make(url.Values)
+		for k, vs := range queryParams {
+			params[k] = vs
 		}
-		req.URL.RawQuery = q.Encode()
+		params.Set("limit", strconv.Itoa(limit))
+		if nextCursor != "" {
+			params.Set("cursor", nextCursor)
+		}
+		req.URL.RawQuery = params.Encode()
 
 		req.Header.Set("Accept", "application/json")
 
@@ -259,22 +257,20 @@ func (c *Client) GetOrgDeviceAppleCareCoverage(ctx context.Context, deviceID str
 	limit := 1000
 
 	for {
-		baseURL := fmt.Sprintf("%s/v1/orgDevices/%s/appleCareCoverage", c.baseURL, deviceID)
-		if len(queryParams) > 0 {
-			baseURL += "?" + queryParams.Encode()
-		}
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+			fmt.Sprintf("%s/v1/orgDevices/%s/appleCareCoverage", c.baseURL, deviceID), nil)
 		if err != nil {
 			return nil, err
 		}
-
-		q := req.URL.Query()
-		q.Add("limit", strconv.Itoa(limit))
-		if nextCursor != "" {
-			q.Add("cursor", nextCursor)
+		params := make(url.Values)
+		for k, vs := range queryParams {
+			params[k] = vs
 		}
-		req.URL.RawQuery = q.Encode()
+		params.Set("limit", strconv.Itoa(limit))
+		if nextCursor != "" {
+			params.Set("cursor", nextCursor)
+		}
+		req.URL.RawQuery = params.Encode()
 
 		req.Header.Set("Accept", "application/json")
 
