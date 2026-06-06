@@ -341,9 +341,20 @@ func (r *DeviceManagementServiceResource) Delete(ctx context.Context, req resour
 	deleteCtx, cancel := context.WithTimeout(ctx, defaultUpdateTimeout)
 	defer cancel()
 
-	// Clear default product family assignments before deletion.
-	if _, err := r.client.ClearDeviceManagementServiceDefaultFamilies(deleteCtx, data.ID.ValueString()); err != nil {
-		if !strings.Contains(err.Error(), "NOT_FOUND") {
+	// GET the server first — confirms it exists and reveals current family assignments.
+	srv, err := r.client.GetDeviceManagementService(deleteCtx, data.ID.ValueString(), nil)
+	if err != nil {
+		if strings.Contains(err.Error(), "NOT_FOUND") {
+			return
+		}
+		resp.Diagnostics.AddError("Failed to read MDM server before deletion", err.Error())
+		return
+	}
+
+	// Clear default product family assignments only if any are set.
+	// Apple returns 400 when PATCHing defaultProductFamilies: [] on a server that has none.
+	if len(srv.Attributes.DefaultProductFamilies) > 0 {
+		if _, err := r.client.ClearDeviceManagementServiceDefaultFamilies(deleteCtx, data.ID.ValueString()); err != nil {
 			resp.Diagnostics.AddError("Failed to clear default product families before deletion", err.Error())
 			return
 		}
