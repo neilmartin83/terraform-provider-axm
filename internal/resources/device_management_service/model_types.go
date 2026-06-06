@@ -15,13 +15,21 @@ type deviceManagementServiceIdentityModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-// MdmDeviceAssignmentModel describes the Terraform state for device assignments.
+// MdmServerCertificateModel holds the certificate name and base64-encoded data.
+type MdmServerCertificateModel struct {
+	Name types.String `tfsdk:"name"`
+	Data types.String `tfsdk:"data"`
+}
+
+// MdmDeviceAssignmentModel describes the Terraform state for an MDM server and its device assignments.
 type MdmDeviceAssignmentModel struct {
-	ID        types.String   `tfsdk:"id"`
-	Name      types.String   `tfsdk:"name"`
-	Type      types.String   `tfsdk:"type"`
-	Timeouts  timeouts.Value `tfsdk:"timeouts"`
-	DeviceIDs types.Set      `tfsdk:"device_ids"`
+	ID                types.String               `tfsdk:"id"`
+	Name              types.String               `tfsdk:"name"`
+	Type              types.String               `tfsdk:"type"`
+	EnableMdmDisown   types.Bool                 `tfsdk:"enable_mdm_disown"`
+	ServerCertificate *MdmServerCertificateModel `tfsdk:"server_certificate"`
+	Timeouts          timeouts.Value             `tfsdk:"timeouts"`
+	DeviceIDs         types.Set                  `tfsdk:"device_ids"`
 }
 
 // DeviceManagementServiceListResourceModel captures filters supported by the list query.
