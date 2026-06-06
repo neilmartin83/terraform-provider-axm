@@ -68,10 +68,10 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"enable_mdm_disown": schema.BoolAttribute{
+			"allow_release": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "When true, devices can be released from MDM without being removed from Apple Business Manager.",
+				Description: "Allow this service to release devices.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},

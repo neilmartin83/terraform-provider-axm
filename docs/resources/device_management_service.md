@@ -21,7 +21,7 @@ resource "axm_device_management_service" "example" {
     data = filebase64("${path.module}/PublicKey.pem")
   }
 
-  enable_mdm_disown = false
+  allow_release = false
 
   device_ids = [
     "FAKE000ABC123",
@@ -40,8 +40,8 @@ resource "axm_device_management_service" "example" {
 
 ### Optional
 
+- `allow_release` (Boolean) Allow this service to release devices.
 - `device_ids` (Set of String) Set of device serial numbers to assign to this MDM server.
-- `enable_mdm_disown` (Boolean) When true, devices can be released from MDM without being removed from Apple Business Manager.
 - `server_certificate` (Attributes) X.509 MDM certificate. Required when creating a new server. Not returned by the API; stored in state as provided. (see [below for nested schema](#nestedatt--server_certificate))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 

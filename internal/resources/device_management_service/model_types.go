@@ -26,7 +26,7 @@ type MdmDeviceAssignmentModel struct {
 	ID                types.String               `tfsdk:"id"`
 	Name              types.String               `tfsdk:"name"`
 	Type              types.String               `tfsdk:"type"`
-	EnableMdmDisown   types.Bool                 `tfsdk:"enable_mdm_disown"`
+	AllowRelease      types.Bool                 `tfsdk:"allow_release"`
 	ServerCertificate *MdmServerCertificateModel `tfsdk:"server_certificate"`
 	Timeouts          timeouts.Value             `tfsdk:"timeouts"`
 	DeviceIDs         types.Set                  `tfsdk:"device_ids"`

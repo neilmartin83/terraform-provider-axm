@@ -142,7 +142,7 @@ func TestResourceSchema(t *testing.T) {
 		{"id", false, false, true},
 		{"name", true, false, false},
 		{"type", false, false, true},
-		{"enable_mdm_disown", false, true, true},
+		{"allow_release", false, true, true},
 		{"device_ids", false, true, true},
 		{"timeouts", false, true, false},
 	}
