@@ -3,12 +3,12 @@
 page_title: "axm_default_device_assignment Resource - terraform-provider-axm"
 subcategory: ""
 description: |-
-  Manages the organisation-wide default MDM server assignment for each Apple device family. This is a singleton resource representing the default device assignment settings in Apple Business Manager.
+  Manages the organisation-wide default MDM server assignment for each Apple device family in Apple Business Manager. Requires business API scope. This is a singleton resource; only one instance should exist per provider configuration. On first apply, set each attribute to match the current ABM assignment so Terraform can track the state before making changes. Moving a family between servers (e.g. ipad from server A to server B) requires that the prior assignment be tracked in state; if a family is assigned to an untracked server, Apple will return a 409 conflict when the provider tries to claim it.
 ---
 
 # axm_default_device_assignment (Resource)
 
-Manages the organisation-wide default MDM server assignment for each Apple device family. This is a singleton resource representing the default device assignment settings in Apple Business Manager.
+Manages the organisation-wide default MDM server assignment for each Apple device family in Apple Business Manager. Requires business API scope. This is a singleton resource; only one instance should exist per provider configuration. On first apply, set each attribute to match the current ABM assignment so Terraform can track the state before making changes. Moving a family between servers (e.g. ipad from server A to server B) requires that the prior assignment be tracked in state; if a family is assigned to an untracked server, Apple will return a 409 conflict when the provider tries to claim it.
 
 ## Example Usage
 
@@ -36,12 +36,12 @@ resource "axm_default_device_assignment" "org" {
 
 ### Optional
 
-- `apple_tv` (String) MDM server ID to set as the default for Apple TV devices. Set to "" to explicitly unassign. Omit to leave unmanaged.
-- `apple_vision_pro` (String) MDM server ID to set as the default for Apple Vision Pro devices. Set to "" to explicitly unassign. Omit to leave unmanaged.
-- `ipad` (String) MDM server ID to set as the default for iPad devices. Set to "" to explicitly unassign. Omit to leave unmanaged.
-- `iphone` (String) MDM server ID to set as the default for iPhone devices. Set to "" to explicitly unassign. Omit to leave unmanaged.
-- `ipod` (String) MDM server ID to set as the default for iPod devices. Set to "" to explicitly unassign. Omit to leave unmanaged.
-- `mac` (String) MDM server ID to set as the default for Mac devices. Set to "" to explicitly unassign. Omit to leave unmanaged.
+- `apple_tv` (String) MDM server ID to assign as the default for Apple TV devices. Set to "" to unassign from the server currently tracked in Terraform state. Omit (null) to leave this family unmanaged. Note: if a family was assigned to a server outside Terraform and is not in state, setting "" will not clear it — adopt the existing assignment first by setting this attribute to the current server ID, then change it as needed.
+- `apple_vision_pro` (String) MDM server ID to assign as the default for Apple Vision Pro devices. Set to "" to unassign from the server currently tracked in Terraform state. Omit (null) to leave this family unmanaged. Note: if a family was assigned to a server outside Terraform and is not in state, setting "" will not clear it — adopt the existing assignment first by setting this attribute to the current server ID, then change it as needed.
+- `ipad` (String) MDM server ID to assign as the default for iPad devices. Set to "" to unassign from the server currently tracked in Terraform state. Omit (null) to leave this family unmanaged. Note: if a family was assigned to a server outside Terraform and is not in state, setting "" will not clear it — adopt the existing assignment first by setting this attribute to the current server ID, then change it as needed.
+- `iphone` (String) MDM server ID to assign as the default for iPhone devices. Set to "" to unassign from the server currently tracked in Terraform state. Omit (null) to leave this family unmanaged. Note: if a family was assigned to a server outside Terraform and is not in state, setting "" will not clear it — adopt the existing assignment first by setting this attribute to the current server ID, then change it as needed.
+- `ipod` (String) MDM server ID to assign as the default for iPod devices. Set to "" to unassign from the server currently tracked in Terraform state. Omit (null) to leave this family unmanaged. Note: if a family was assigned to a server outside Terraform and is not in state, setting "" will not clear it — adopt the existing assignment first by setting this attribute to the current server ID, then change it as needed.
+- `mac` (String) MDM server ID to assign as the default for Mac devices. Set to "" to unassign from the server currently tracked in Terraform state. Omit (null) to leave this family unmanaged. Note: if a family was assigned to a server outside Terraform and is not in state, setting "" will not clear it — adopt the existing assignment first by setting this attribute to the current server ID, then change it as needed.
 
 ### Read-Only
 
