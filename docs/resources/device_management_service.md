@@ -3,22 +3,30 @@
 page_title: "axm_device_management_service Resource - terraform-provider-axm"
 subcategory: ""
 description: |-
-  Manages device assignments to a specific Apple Business Manager MDM server.
+  Manages an Apple Business Manager MDM server and its device assignments. Server creation, update, and deletion require business scope.
 ---
 
 # axm_device_management_service (Resource)
 
-Manages device assignments to a specific Apple Business Manager MDM server.
+Manages an Apple Business Manager MDM server and its device assignments. Server creation, update, and deletion require business scope.
 
 ## Example Usage
 
 ```terraform
 resource "axm_device_management_service" "example" {
-  id = "FAKE0000111122223333444444444444"
+  name = "Jamf Pro - Production"
+
+  server_certificate = {
+    name = "JamfPro.cer"
+    data = filebase64("JamfPro.cer")
+  }
+
+  enable_mdm_disown = false
+
   device_ids = [
     "FAKE000ABC123",
     "FAKE111DEF456",
-    "FAKE222GHI789"
+    "FAKE222GHI789",
   ]
 }
 ```
@@ -28,17 +36,28 @@ resource "axm_device_management_service" "example" {
 
 ### Required
 
-- `device_ids` (Set of String) A set of device IDs to assign to the device management service. These are device serial numbers.
+- `name` (String) MDM server name.
 
 ### Optional
 
-- `id` (String) Device management service ID. This is a unique ID for the service and is visible in the browser address bar when navigating to Preferences and selecting the desired 'Device Management Service'. Required until creation is supported.
+- `device_ids` (Set of String) Set of device serial numbers to assign to this MDM server.
+- `enable_mdm_disown` (Boolean) When true, devices can be released from MDM without being removed from Apple Business Manager.
+- `server_certificate` (Attributes) X.509 MDM certificate. Required when creating a new server. Not returned by the API; stored in state as provided. (see [below for nested schema](#nestedatt--server_certificate))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
-- `name` (String) Device management service name as reported by Apple Business Manager.
-- `type` (String) Device management service type (for example MDM, APPLE_CONFIGURATOR).
+- `id` (String) Device management service ID.
+- `type` (String) MDM server type (MDM, APPLE_CONFIGURATOR, etc.).
+
+<a id="nestedatt--server_certificate"></a>
+### Nested Schema for `server_certificate`
+
+Required:
+
+- `data` (String, Sensitive) Base64-encoded DER certificate data.
+- `name` (String) Certificate filename.
+
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`

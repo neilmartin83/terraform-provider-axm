@@ -2,8 +2,8 @@
 data "axm_device_management_services" "all" {}
 
 locals {
-  jamf_pro_id  = one([for s in data.axm_device_management_services.all.device_management_services : s.id if s.name == "Jamf Pro - Production"])
-  jamf_edu_id  = one([for s in data.axm_device_management_services.all.device_management_services : s.id if s.name == "Jamf School"])
+  jamf_pro_id = one([for s in data.axm_device_management_services.all.device_management_services : s.id if s.name == "Jamf Pro - Production"])
+  jamf_edu_id = one([for s in data.axm_device_management_services.all.device_management_services : s.id if s.name == "Jamf School"])
 }
 
 resource "axm_default_device_assignment" "org" {

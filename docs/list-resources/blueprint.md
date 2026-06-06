@@ -14,12 +14,12 @@ Searches for Apple Business Manager Blueprints.
 
 ```terraform
 list "axm_blueprint" "engineering_blueprints" {
-    provider = axm
+  provider = axm
 
-    config {
-        # Match Blueprints that contain "Engineering" in the name
-        name_contains = "Engineering"
-    }
+  config {
+    # Match Blueprints that contain "Engineering" in the name
+    name_contains = "Engineering"
+  }
 }
 ```
 
