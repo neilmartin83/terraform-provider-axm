@@ -55,8 +55,8 @@ func TestGetDeviceManagementServices_MultiPage(t *testing.T) {
 		count := requestCount.Add(1)
 		q := r.URL.Query()
 
-		if q.Get("limit") != "100" {
-			t.Errorf("expected limit=100, got %s", q.Get("limit"))
+		if q.Get("limit") != "1000" {
+			t.Errorf("expected limit=1000, got %s", q.Get("limit"))
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -255,5 +255,275 @@ func TestGetDeviceManagementServiceSerialNumbers_Empty(t *testing.T) {
 	}
 	if len(serials) != 0 {
 		t.Fatalf("expected 0 serials, got %d", len(serials))
+	}
+}
+
+func TestGetDeviceManagementService_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("expected GET, got %s", r.Method)
+		}
+		if r.URL.Path != "/v1/mdmServers/srv-1" {
+			t.Errorf("expected path /v1/mdmServers/srv-1, got %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		resp := MdmServerResponse{
+			Data: MdmServer{
+				Type: "mdmServers",
+				ID:   "srv-1",
+				Attributes: MdmServerAttribute{
+					ServerName:          "Jamf Pro",
+					ServerType:          "MDM",
+					Status:              "ACTIVE",
+					DeviceCount:         42,
+					EnableMdmDisownFlag: true,
+					DefaultProductFamilies: []string{"IPHONE", "IPAD", "MAC"},
+					LastConnectedDateTime:  "2026-06-01T10:00:00Z",
+					LastConnectedIp:        "203.0.113.1",
+					CreatedDateTime:        "2025-01-01T00:00:00Z",
+					UpdatedDateTime:        "2026-05-01T00:00:00Z",
+				},
+			},
+		}
+		_, _ = w.Write(mustMarshalJSON(t, resp))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	srv, err := c.GetDeviceManagementService(context.Background(), "srv-1", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if srv.ID != "srv-1" {
+		t.Errorf("expected ID srv-1, got %s", srv.ID)
+	}
+	if srv.Attributes.Status != "ACTIVE" {
+		t.Errorf("expected status ACTIVE, got %s", srv.Attributes.Status)
+	}
+	if srv.Attributes.DeviceCount != 42 {
+		t.Errorf("expected deviceCount 42, got %d", srv.Attributes.DeviceCount)
+	}
+	if !srv.Attributes.EnableMdmDisownFlag {
+		t.Error("expected enableMdmDisownFlag true")
+	}
+	if len(srv.Attributes.DefaultProductFamilies) != 3 {
+		t.Errorf("expected 3 product families, got %d", len(srv.Attributes.DefaultProductFamilies))
+	}
+	if srv.Attributes.LastConnectedIp != "203.0.113.1" {
+		t.Errorf("expected lastConnectedIp 203.0.113.1, got %s", srv.Attributes.LastConnectedIp)
+	}
+}
+
+func TestGetDeviceManagementService_NotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"errors":[{"id":"e1","status":"404","code":"NOT_FOUND","title":"Not Found","detail":"Resource not found"}]}`))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	_, err := c.GetDeviceManagementService(context.Background(), "missing", nil)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "Not Found") {
+		t.Errorf("expected 'Not Found' in error, got %q", err.Error())
+	}
+}
+
+func TestCreateDeviceManagementService_Success(t *testing.T) {
+	disown := true
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/v1/mdmServers" {
+			t.Errorf("expected path /v1/mdmServers, got %s", r.URL.Path)
+		}
+		if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+			t.Errorf("expected Content-Type application/json, got %s", ct)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		resp := MdmServerResponse{
+			Data: MdmServer{
+				Type: "mdmServers",
+				ID:   "srv-new",
+				Attributes: MdmServerAttribute{
+					ServerName:          "New MDM",
+					ServerType:          "MDM",
+					Status:              "ACTIVE",
+					EnableMdmDisownFlag: true,
+					CreatedDateTime:     "2026-06-06T00:00:00Z",
+					UpdatedDateTime:     "2026-06-06T00:00:00Z",
+				},
+			},
+		}
+		_, _ = w.Write(mustMarshalJSON(t, resp))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	srv, err := c.CreateDeviceManagementService(context.Background(), MdmServerCreateRequest{
+		Data: MdmServerCreateRequestData{
+			Type: "mdmServers",
+			Attributes: MdmServerCreateAttributes{
+				ServerName: "New MDM",
+				ServerCertificate: MdmServerCertificate{
+					Name: "cert.cer",
+					Data: "base64encodedcertdata",
+				},
+				EnableMdmDisownFlag: &disown,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if srv.ID != "srv-new" {
+		t.Errorf("expected ID srv-new, got %s", srv.ID)
+	}
+	if srv.Attributes.ServerName != "New MDM" {
+		t.Errorf("expected serverName 'New MDM', got %s", srv.Attributes.ServerName)
+	}
+	if !srv.Attributes.EnableMdmDisownFlag {
+		t.Error("expected enableMdmDisownFlag true")
+	}
+}
+
+func TestCreateDeviceManagementService_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"errors":[{"id":"e1","status":"409","code":"CONFLICT","title":"Conflict","detail":"Server name already exists"}]}`))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	_, err := c.CreateDeviceManagementService(context.Background(), MdmServerCreateRequest{
+		Data: MdmServerCreateRequestData{
+			Type: "mdmServers",
+			Attributes: MdmServerCreateAttributes{
+				ServerName:        "Duplicate",
+				ServerCertificate: MdmServerCertificate{Name: "cert.cer", Data: "data"},
+			},
+		},
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "Conflict") {
+		t.Errorf("expected 'Conflict' in error, got %q", err.Error())
+	}
+}
+
+func TestUpdateDeviceManagementService_Success(t *testing.T) {
+	newName := "Renamed MDM"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			t.Errorf("expected PATCH, got %s", r.Method)
+		}
+		if r.URL.Path != "/v1/mdmServers/srv-1" {
+			t.Errorf("expected path /v1/mdmServers/srv-1, got %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		resp := MdmServerResponse{
+			Data: MdmServer{
+				Type: "mdmServers",
+				ID:   "srv-1",
+				Attributes: MdmServerAttribute{
+					ServerName:             "Renamed MDM",
+					ServerType:             "MDM",
+					Status:                 "ACTIVE",
+					DefaultProductFamilies: []string{"IPHONE", "MAC"},
+					UpdatedDateTime:        "2026-06-06T12:00:00Z",
+				},
+			},
+		}
+		_, _ = w.Write(mustMarshalJSON(t, resp))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	srv, err := c.UpdateDeviceManagementService(context.Background(), MdmServerUpdateRequest{
+		Data: MdmServerUpdateRequestData{
+			Type: "mdmServers",
+			ID:   "srv-1",
+			Attributes: MdmServerUpdateAttributes{
+				ServerName:             &newName,
+				DefaultProductFamilies: []string{"IPHONE", "MAC"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if srv.Attributes.ServerName != "Renamed MDM" {
+		t.Errorf("expected serverName 'Renamed MDM', got %s", srv.Attributes.ServerName)
+	}
+	if len(srv.Attributes.DefaultProductFamilies) != 2 {
+		t.Errorf("expected 2 product families, got %d", len(srv.Attributes.DefaultProductFamilies))
+	}
+}
+
+func TestUpdateDeviceManagementService_NotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"errors":[{"id":"e1","status":"404","code":"NOT_FOUND","title":"Not Found","detail":"Resource not found"}]}`))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	name := "whatever"
+	_, err := c.UpdateDeviceManagementService(context.Background(), MdmServerUpdateRequest{
+		Data: MdmServerUpdateRequestData{
+			Type:       "mdmServers",
+			ID:         "missing",
+			Attributes: MdmServerUpdateAttributes{ServerName: &name},
+		},
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "Not Found") {
+		t.Errorf("expected 'Not Found' in error, got %q", err.Error())
+	}
+}
+
+func TestDeleteDeviceManagementService_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("expected DELETE, got %s", r.Method)
+		}
+		if r.URL.Path != "/v1/mdmServers/srv-1" {
+			t.Errorf("expected path /v1/mdmServers/srv-1, got %s", r.URL.Path)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	if err := c.DeleteDeviceManagementService(context.Background(), "srv-1"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestDeleteDeviceManagementService_NotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"errors":[{"id":"e1","status":"404","code":"NOT_FOUND","title":"Not Found","detail":"Resource not found"}]}`))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	err := c.DeleteDeviceManagementService(context.Background(), "missing")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "Not Found") {
+		t.Errorf("expected 'Not Found' in error, got %q", err.Error())
 	}
 }
