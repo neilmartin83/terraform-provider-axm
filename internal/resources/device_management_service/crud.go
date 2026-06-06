@@ -88,6 +88,15 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 		}
 	}
 
+	// Resolve device_ids to a known value — required because it is Optional+Computed and
+	// the plan value is Unknown on first create when the attribute is not in config.
+	deviceSet, diags := stringsToSet(deviceIDs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	data.DeviceIDs = deviceSet
+
 	if resp.Identity != nil {
 		resp.Diagnostics.Append(resp.Identity.Set(ctx, deviceManagementServiceIdentityModel{
 			ID: types.StringValue(srv.ID),
