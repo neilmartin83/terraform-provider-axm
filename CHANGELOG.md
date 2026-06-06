@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.7.0...v1.7.1) (2026-06-06)
+
+
+### Bug Fixes
+
+* **device_management_service:** rename enable_mdm_disown to allow_release and fix post-create inconsistency ([3634d34](https://github.com/neilmartin83/terraform-provider-axm/commit/3634d348ac1c5157509c6769ccb78a897299132e))
+
 ## [1.7.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.6.0...v1.7.0) (2026-06-06)
 
 
