@@ -7,11 +7,12 @@ import "github.com/hashicorp/terraform-plugin-framework/types"
 
 // DefaultDeviceAssignmentModel describes the Terraform state for the org-wide default device assignment.
 type DefaultDeviceAssignmentModel struct {
-	ID             types.String `tfsdk:"id"`
-	AppleTV        types.String `tfsdk:"apple_tv"`
-	AppleVisionPro types.String `tfsdk:"apple_vision_pro"`
-	IPad           types.String `tfsdk:"ipad"`
-	IPhone         types.String `tfsdk:"iphone"`
-	IPod           types.String `tfsdk:"ipod"`
-	Mac            types.String `tfsdk:"mac"`
+	ID      types.String `tfsdk:"id"`
+	AppleTV types.String `tfsdk:"apple_tv"`
+	Vision  types.String `tfsdk:"apple_vision_pro"`
+	IPad    types.String `tfsdk:"ipad"`
+	IPhone  types.String `tfsdk:"iphone"`
+	IPod    types.String `tfsdk:"ipod"`
+	Mac     types.String `tfsdk:"mac"`
+	Watch   types.String `tfsdk:"watch"`
 }

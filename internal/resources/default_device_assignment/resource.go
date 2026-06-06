@@ -69,6 +69,7 @@ func (r *DefaultDeviceAssignmentResource) Schema(ctx context.Context, req resour
 			"iphone":           familyAttr("iPhone"),
 			"ipod":             familyAttr("iPod"),
 			"mac":              familyAttr("Mac"),
+			"watch":            familyAttr("Apple Watch"),
 		},
 	}
 }

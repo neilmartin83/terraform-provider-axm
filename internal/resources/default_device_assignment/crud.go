@@ -73,11 +73,12 @@ func (r *DefaultDeviceAssignmentResource) Read(ctx context.Context, req resource
 	// Reconcile state: if a family field has a server ID but that server no longer holds
 	// that family, clear the field.
 	data.AppleTV = reconcileFamily(data.AppleTV, "APPLE_TV", current)
-	data.AppleVisionPro = reconcileFamily(data.AppleVisionPro, "APPLE_VISION_PRO", current)
+	data.Vision = reconcileFamily(data.Vision, "VISION", current)
 	data.IPad = reconcileFamily(data.IPad, "IPAD", current)
 	data.IPhone = reconcileFamily(data.IPhone, "IPHONE", current)
 	data.IPod = reconcileFamily(data.IPod, "IPOD", current)
 	data.Mac = reconcileFamily(data.Mac, "MAC", current)
+	data.Watch = reconcileFamily(data.Watch, "WATCH", current)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -127,7 +128,7 @@ func (r *DefaultDeviceAssignmentResource) applyAssignments(ctx context.Context, 
 	phaseA := make(map[string][]string) // serverID → new desired families (after removals)
 	phaseB := make(map[string][]string) // serverID → new desired families (gains)
 
-	allFamilies := []string{"APPLE_TV", "APPLE_VISION_PRO", "IPAD", "IPHONE", "IPOD", "MAC"}
+	allFamilies := []string{"APPLE_TV", "VISION", "IPAD", "IPHONE", "IPOD", "MAC", "WATCH"}
 
 	// For each server currently holding families, compute what it should hold after the plan.
 	serversLosingFamilies := make(map[string]bool)
@@ -214,18 +215,19 @@ func familyServerMap(data DefaultDeviceAssignmentModel) map[string]string {
 		}
 	}
 	set("APPLE_TV", data.AppleTV)
-	set("APPLE_VISION_PRO", data.AppleVisionPro)
+	set("VISION", data.Vision)
 	set("IPAD", data.IPad)
 	set("IPHONE", data.IPhone)
 	set("IPOD", data.IPod)
 	set("MAC", data.Mac)
+	set("WATCH", data.Watch)
 	return m
 }
 
 // uniqueServerIDs collects unique non-empty server IDs from the 6 family fields.
 func uniqueServerIDs(data DefaultDeviceAssignmentModel) map[string]struct{} {
 	ids := make(map[string]struct{})
-	for _, v := range []types.String{data.AppleTV, data.AppleVisionPro, data.IPad, data.IPhone, data.IPod, data.Mac} {
+	for _, v := range []types.String{data.AppleTV, data.Vision, data.IPad, data.IPhone, data.IPod, data.Mac, data.Watch} {
 		if !v.IsNull() && !v.IsUnknown() && v.ValueString() != "" {
 			ids[v.ValueString()] = struct{}{}
 		}
