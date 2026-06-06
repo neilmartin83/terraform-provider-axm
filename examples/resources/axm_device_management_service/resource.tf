@@ -6,7 +6,7 @@ resource "axm_device_management_service" "example" {
     data = filebase64("${path.module}/PublicKey.pem")
   }
 
-  enable_mdm_disown = false
+  allow_release = false
 
   device_ids = [
     "FAKE000ABC123",

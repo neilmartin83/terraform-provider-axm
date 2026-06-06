@@ -53,7 +53,7 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 		return
 	}
 
-	enableDisown := data.EnableMdmDisown.ValueBoolPointer()
+	enableDisown := data.AllowRelease.ValueBoolPointer()
 	attrs := client.MdmServerCreateAttributes{
 		ServerName: data.Name.ValueString(),
 		ServerCertificate: client.MdmServerCertificate{
@@ -73,7 +73,8 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 
 	data.ID = types.StringValue(srv.ID)
 	data.Type = types.StringValue(srv.Attributes.ServerType)
-	data.EnableMdmDisown = types.BoolValue(srv.Attributes.EnableMdmDisownFlag)
+	// AllowRelease is not reliably echoed by the create response; keep the plan value.
+	// Read will reconcile on the next refresh if Apple silently ignored it.
 
 	deviceIDs := extractStrings(data.DeviceIDs)
 	if len(deviceIDs) > 0 {
@@ -170,7 +171,7 @@ func (r *DeviceManagementServiceResource) Read(ctx context.Context, req resource
 
 	data.Name = types.StringValue(srv.Attributes.ServerName)
 	data.Type = types.StringValue(srv.Attributes.ServerType)
-	data.EnableMdmDisown = types.BoolValue(srv.Attributes.EnableMdmDisownFlag)
+	data.AllowRelease = types.BoolValue(srv.Attributes.EnableMdmDisownFlag)
 
 	deviceIDs, err := r.client.GetDeviceManagementServiceSerialNumbers(readCtx, data.ID.ValueString())
 	if err != nil {
@@ -230,8 +231,8 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 			serverAttrs.ServerName = &v
 			changed = true
 		}
-		if !plan.EnableMdmDisown.Equal(state.EnableMdmDisown) {
-			v := plan.EnableMdmDisown.ValueBool()
+		if !plan.AllowRelease.Equal(state.AllowRelease) {
+			v := plan.AllowRelease.ValueBool()
 			serverAttrs.EnableMdmDisownFlag = &v
 			changed = true
 		}
@@ -258,7 +259,7 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 				return
 			}
 			plan.Type = types.StringValue(srv.Attributes.ServerType)
-			plan.EnableMdmDisown = types.BoolValue(srv.Attributes.EnableMdmDisownFlag)
+			plan.AllowRelease = types.BoolValue(srv.Attributes.EnableMdmDisownFlag)
 		}
 	}
 
