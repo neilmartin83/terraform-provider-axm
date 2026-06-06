@@ -35,8 +35,13 @@ func (r *DefaultDeviceAssignmentResource) Metadata(ctx context.Context, req reso
 func (r *DefaultDeviceAssignmentResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	familyAttr := func(family string) schema.StringAttribute {
 		return schema.StringAttribute{
-			Optional:    true,
-			Description: "MDM server ID to set as the default for " + family + ` devices. Set to "" to explicitly unassign. Omit to leave unmanaged.`,
+			Optional: true,
+			Description: "MDM server ID to assign as the default for " + family + ` devices. ` +
+				`Set to "" to unassign from the server currently tracked in Terraform state. ` +
+				`Omit (null) to leave this family unmanaged. ` +
+				`Note: if a family was assigned to a server outside Terraform and is not in state, ` +
+				`setting "" will not clear it — adopt the existing assignment first by setting this ` +
+				`attribute to the current server ID, then change it as needed.`,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
 			},
@@ -44,7 +49,12 @@ func (r *DefaultDeviceAssignmentResource) Schema(ctx context.Context, req resour
 	}
 
 	resp.Schema = schema.Schema{
-		Description: "Manages the organisation-wide default MDM server assignment for each Apple device family. This is a singleton resource representing the default device assignment settings in Apple Business Manager.",
+		Description: "Manages the organisation-wide default MDM server assignment for each Apple device family in Apple Business Manager. " +
+			"Requires business API scope. " +
+			"This is a singleton resource; only one instance should exist per provider configuration. " +
+			"On first apply, set each attribute to match the current ABM assignment so Terraform can track the state before making changes. " +
+			"Moving a family between servers (e.g. ipad from server A to server B) requires that the prior assignment be tracked in state; " +
+			"if a family is assigned to an untracked server, Apple will return a 409 conflict when the provider tries to claim it.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
