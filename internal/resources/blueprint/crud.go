@@ -59,7 +59,11 @@ func (r *BlueprintResource) Create(ctx context.Context, req resource.CreateReque
 	state.ID = types.StringValue(blueprint.ID)
 
 	r.refreshBlueprintAttributesFromResponse(blueprint, &state)
-	r.populateRelationshipState(blueprint.Relationships, &state)
+	// Use plan relationship data for state — the API returns success (201)
+	// after creating the blueprint with its relationships, so what we sent
+	// is what exists. The GET relationship endpoints are unreliable
+	// immediately after creation.
+	r.populateRelationshipStateFromPlan(plan, &state)
 
 	if resp.Identity != nil {
 		identity := blueprintIdentityModel{
@@ -247,35 +251,16 @@ func (r *BlueprintResource) refreshBlueprintAttributesFromResponse(blueprint *cl
 	state.UpdatedDateTime = types.StringValue(blueprint.Attributes.UpdatedDateTime)
 }
 
-// populateRelationshipState sets relationship ID sets on state from a
-// BlueprintRelationships struct returned by the API response.
-func (r *BlueprintResource) populateRelationshipState(rels client.BlueprintRelationships, state *BlueprintModel) {
-	type relSource struct {
-		source client.BlueprintRelationshipLinks
-		dest   *types.Set
-	}
-
-	targets := []relSource{
-		{rels.Apps, &state.AppIDs},
-		{rels.Configurations, &state.ConfigurationIDs},
-		{rels.Packages, &state.PackageIDs},
-		{rels.OrgDevices, &state.DeviceIDs},
-		{rels.Users, &state.UserIDs},
-		{rels.UserGroups, &state.UserGroupIDs},
-	}
-
-	for _, t := range targets {
-		ids := make([]string, len(t.source.Data))
-		for i, d := range t.source.Data {
-			ids[i] = d.ID
-		}
-		set, diags := common.StringsToSet(ids)
-		if diags.HasError() {
-			*t.dest = types.SetNull(types.StringType)
-			continue
-		}
-		*t.dest = set
-	}
+// populateRelationshipStateFromPlan copies relationship ID sets from the plan
+// into state. Used during Create, since the API create response does not include
+// relationship data and the GET relationship endpoints may be unreliable.
+func (r *BlueprintResource) populateRelationshipStateFromPlan(plan BlueprintModel, state *BlueprintModel) {
+	state.AppIDs = plan.AppIDs
+	state.ConfigurationIDs = plan.ConfigurationIDs
+	state.PackageIDs = plan.PackageIDs
+	state.DeviceIDs = plan.DeviceIDs
+	state.UserIDs = plan.UserIDs
+	state.UserGroupIDs = plan.UserGroupIDs
 }
 
 // populateRelationshipSets reads every Blueprint relationship from the API and
