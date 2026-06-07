@@ -58,6 +58,8 @@ type DeviceAttribute struct {
 	WifiMacAddress          string   `json:"wifiMacAddress,omitempty"`
 	BluetoothMacAddress     string   `json:"bluetoothMacAddress,omitempty"`
 	EthernetMacAddress      []string `json:"ethernetMacAddress,omitempty"`
+	ReleaserEntityType      string   `json:"releaserEntityType,omitempty"`
+	ReleaserID              string   `json:"releaserId,omitempty"`
 }
 
 // AppleCareCoverageResponse represents a response that contains AppleCare Coverage for an organization device.

@@ -13,6 +13,27 @@ import (
 	"strconv"
 )
 
+// UserStatus represents the status of a user.
+type UserStatus string
+
+const (
+	UserStatusActive              UserStatus = "ACTIVE"
+	UserStatusNew                 UserStatus = "NEW"
+	UserStatusReleased            UserStatus = "RELEASED"
+	UserStatusDeactivated         UserStatus = "DEACTIVATED"
+	UserStatusLocked              UserStatus = "LOCKED"
+	UserStatusLockedForSharedIPad UserStatus = "LOCKED_FOR_SHARED_IPAD"
+)
+
+// UserPhoneNumberType represents the type of a phone number.
+type UserPhoneNumberType string
+
+const (
+	UserPhoneNumberTypeWork   UserPhoneNumberType = "WORK"
+	UserPhoneNumberTypeHome   UserPhoneNumberType = "HOME"
+	UserPhoneNumberTypeMobile UserPhoneNumberType = "MOBILE"
+)
+
 // UserResponse represents a response that contains a single user resource.
 type UserResponse struct {
 	Data  User          `json:"data"`
@@ -39,7 +60,7 @@ type UserAttributes struct {
 	FirstName           string              `json:"firstName,omitempty"`
 	LastName            string              `json:"lastName,omitempty"`
 	MiddleName          string              `json:"middleName,omitempty"`
-	Status              string              `json:"status,omitempty"`
+	Status              UserStatus          `json:"status,omitempty"`
 	ManagedAppleAccount string              `json:"managedAppleAccount,omitempty"`
 	IsExternalUser      bool                `json:"isExternalUser,omitempty"`
 	RoleOuList          []UserRoleOuMapping `json:"roleOuList,omitempty"`
@@ -63,8 +84,8 @@ type UserRoleOuMapping struct {
 
 // UserPhoneNumber represents a user's phone number.
 type UserPhoneNumber struct {
-	PhoneNumber string `json:"phoneNumber,omitempty"`
-	Type        string `json:"type,omitempty"`
+	PhoneNumber string              `json:"phoneNumber,omitempty"`
+	Type        UserPhoneNumberType `json:"type,omitempty"`
 }
 
 // GetUsers retrieves the list of users in the organization.

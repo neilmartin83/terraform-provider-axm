@@ -36,14 +36,22 @@ type Blueprint struct {
 	Links         ResourceLinks          `json:"links"`
 }
 
+// BlueprintStatus represents the status of a Blueprint.
+type BlueprintStatus string
+
+const (
+	BlueprintStatusActive      BlueprintStatus = "ACTIVE"
+	BlueprintStatusToBeDeleted BlueprintStatus = "TO_BE_DELETED"
+)
+
 // BlueprintAttributes represents attributes that describe a Blueprint resource.
 type BlueprintAttributes struct {
-	Name                string `json:"name,omitempty"`
-	Description         string `json:"description,omitempty"`
-	Status              string `json:"status,omitempty"`
-	AppLicenseDeficient bool   `json:"appLicenseDeficient,omitempty"`
-	CreatedDateTime     string `json:"createdDateTime,omitempty"`
-	UpdatedDateTime     string `json:"updatedDateTime,omitempty"`
+	Name                string          `json:"name,omitempty"`
+	Description         string          `json:"description,omitempty"`
+	Status              BlueprintStatus `json:"status,omitempty"`
+	AppLicenseDeficient *bool           `json:"appLicenseDeficient,omitempty"`
+	CreatedDateTime     string          `json:"createdDateTime,omitempty"`
+	UpdatedDateTime     string          `json:"updatedDateTime,omitempty"`
 }
 
 // BlueprintRelationships represents link relationships for a Blueprint.
@@ -58,6 +66,7 @@ type BlueprintRelationships struct {
 
 // BlueprintRelationshipLinks represents relationship links for a Blueprint.
 type BlueprintRelationshipLinks struct {
+	Data  []Data            `json:"data,omitempty"`
 	Links RelationshipLinks `json:"links"`
 }
 

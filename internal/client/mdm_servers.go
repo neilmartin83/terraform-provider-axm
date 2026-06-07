@@ -14,6 +14,28 @@ import (
 	"strconv"
 )
 
+// MdmServerStatus represents the status of an MDM server.
+type MdmServerStatus string
+
+const (
+	MdmServerStatusActive   MdmServerStatus = "ACTIVE"
+	MdmServerStatusDeleted  MdmServerStatus = "DELETED"
+	MdmServerStatusInactive MdmServerStatus = "INACTIVE"
+)
+
+// MdmServerProductFamily represents a product family for an MDM server.
+type MdmServerProductFamily string
+
+const (
+	MdmServerProductFamilyAppleTV MdmServerProductFamily = "APPLE_TV"
+	MdmServerProductFamilyIPad    MdmServerProductFamily = "IPAD"
+	MdmServerProductFamilyIPhone  MdmServerProductFamily = "IPHONE"
+	MdmServerProductFamilyIPod    MdmServerProductFamily = "IPOD"
+	MdmServerProductFamilyMac     MdmServerProductFamily = "MAC"
+	MdmServerProductFamilyVision  MdmServerProductFamily = "VISION"
+	MdmServerProductFamilyWatch   MdmServerProductFamily = "WATCH"
+)
+
 // mdmServersFields is the complete list of server attributes the provider needs.
 // Apple's API uses JSON:API sparse fieldsets — omitting this param causes it to
 // return a default subset that may exclude lastConnectedDateTime and lastConnectedIp.
@@ -44,16 +66,16 @@ type MdmServer struct {
 
 // MdmServerAttribute represents attributes that describe a device management service resource
 type MdmServerAttribute struct {
-	ServerName             string   `json:"serverName"`
-	ServerType             string   `json:"serverType"`
-	Status                 *string  `json:"status"`
-	DeviceCount            *int64   `json:"deviceCount"`
-	EnableMdmDisownFlag    *bool    `json:"enableMdmDisownFlag"`
-	DefaultProductFamilies []string `json:"defaultProductFamilies"`
-	LastConnectedDateTime  *string  `json:"lastConnectedDateTime"`
-	LastConnectedIp        *string  `json:"lastConnectedIp"`
-	CreatedDateTime        string   `json:"createdDateTime"`
-	UpdatedDateTime        string   `json:"updatedDateTime"`
+	ServerName             string                   `json:"serverName"`
+	ServerType             string                   `json:"serverType"`
+	Status                 *MdmServerStatus         `json:"status"`
+	DeviceCount            *int64                   `json:"deviceCount"`
+	EnableMdmDisownFlag    *bool                    `json:"enableMdmDisownFlag"`
+	DefaultProductFamilies []MdmServerProductFamily `json:"defaultProductFamilies"`
+	LastConnectedDateTime  *string                  `json:"lastConnectedDateTime"`
+	LastConnectedIp        *string                  `json:"lastConnectedIp"`
+	CreatedDateTime        string                   `json:"createdDateTime"`
+	UpdatedDateTime        string                   `json:"updatedDateTime"`
 }
 
 // MdmServerRelationships represents the relationships you include in the request, and those that you can operate on.
@@ -113,10 +135,10 @@ type MdmServerUpdateRequestData struct {
 
 // MdmServerUpdateAttributes represents attributes for updating a device management service.
 type MdmServerUpdateAttributes struct {
-	ServerName             *string               `json:"serverName,omitempty"`
-	ServerCertificate      *MdmServerCertificate `json:"serverCertificate,omitempty"`
-	DefaultProductFamilies []string              `json:"defaultProductFamilies,omitempty"`
-	EnableMdmDisownFlag    *bool                 `json:"enableMdmDisownFlag,omitempty"`
+	ServerName             *string                  `json:"serverName,omitempty"`
+	ServerCertificate      *MdmServerCertificate    `json:"serverCertificate,omitempty"`
+	DefaultProductFamilies []MdmServerProductFamily `json:"defaultProductFamilies,omitempty"`
+	EnableMdmDisownFlag    *bool                    `json:"enableMdmDisownFlag,omitempty"`
 }
 
 // GetDeviceManagementServices retrieves all MDM servers configured in the organization.
@@ -338,17 +360,17 @@ func (c *Client) UpdateDeviceManagementService(ctx context.Context, request MdmS
 // ClearDeviceManagementServiceDefaultFamilies removes all default product family assignments
 // from an MDM server by sending defaultProductFamilies: null explicitly.
 func (c *Client) ClearDeviceManagementServiceDefaultFamilies(ctx context.Context, id string) (*MdmServer, error) {
-	payload := map[string]any{
-		"data": map[string]any{
-			"type": "mdmServers",
-			"id":   id,
-			"attributes": map[string]any{
-				"defaultProductFamilies": []any{}, // explicit empty array, not null
+	request := MdmServerUpdateRequest{
+		Data: MdmServerUpdateRequestData{
+			Type: "mdmServers",
+			ID:   id,
+			Attributes: MdmServerUpdateAttributes{
+				DefaultProductFamilies: []MdmServerProductFamily{},
 			},
 		},
 	}
 
-	jsonData, err := json.Marshal(payload)
+	jsonData, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request payload: %w", err)
 	}
