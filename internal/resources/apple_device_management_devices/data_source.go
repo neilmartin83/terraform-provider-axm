@@ -32,9 +32,9 @@ type AppleDeviceManagementDevicesDataSource struct {
 
 // AppleDeviceManagementDevicesDataSourceModel describes the data source data model.
 type AppleDeviceManagementDevicesDataSourceModel struct {
-	ID      types.String                   `tfsdk:"id"`
-	Timeouts timeouts.Value                `tfsdk:"timeouts"`
-	Devices []AppleDeviceManagementDeviceModel `tfsdk:"devices"`
+	ID       types.String                       `tfsdk:"id"`
+	Timeouts timeouts.Value                     `tfsdk:"timeouts"`
+	Devices  []AppleDeviceManagementDeviceModel `tfsdk:"devices"`
 }
 
 // AppleDeviceManagementDeviceModel describes an MDM-enrolled device.
