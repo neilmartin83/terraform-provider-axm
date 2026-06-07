@@ -160,8 +160,8 @@ func (d *BlueprintDataSource) Read(ctx context.Context, req datasource.ReadReque
 
 	data.Name = types.StringValue(bp.Attributes.Name)
 	data.Description = types.StringPointerValue(common.StringPointerOrNil(bp.Attributes.Description))
-	data.Status = types.StringValue(bp.Attributes.Status)
-	data.AppLicenseDeficient = types.BoolValue(bp.Attributes.AppLicenseDeficient)
+	data.Status = types.StringValue(string(bp.Attributes.Status))
+	data.AppLicenseDeficient = common.BoolPointerToBoolValue(bp.Attributes.AppLicenseDeficient)
 	data.CreatedDateTime = types.StringValue(bp.Attributes.CreatedDateTime)
 	data.UpdatedDateTime = types.StringValue(bp.Attributes.UpdatedDateTime)
 

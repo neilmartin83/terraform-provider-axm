@@ -256,7 +256,7 @@ func flattenUser(user client.User) UserModel {
 	for _, phone := range user.Attributes.PhoneNumbers {
 		phoneNumbers = append(phoneNumbers, UserPhoneNumberModel{
 			PhoneNumber: types.StringValue(phone.PhoneNumber),
-			Type:        types.StringValue(phone.Type),
+			Type:        types.StringValue(string(phone.Type)),
 		})
 	}
 
@@ -266,7 +266,7 @@ func flattenUser(user client.User) UserModel {
 		FirstName:           types.StringValue(user.Attributes.FirstName),
 		LastName:            types.StringValue(user.Attributes.LastName),
 		MiddleName:          types.StringPointerValue(common.StringPointerOrNil(user.Attributes.MiddleName)),
-		Status:              types.StringValue(user.Attributes.Status),
+		Status:              types.StringValue(string(user.Attributes.Status)),
 		ManagedAppleAccount: types.StringValue(user.Attributes.ManagedAppleAccount),
 		IsExternalUser:      types.BoolValue(user.Attributes.IsExternalUser),
 		RoleOuList:          roleMappings,

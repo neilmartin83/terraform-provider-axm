@@ -73,7 +73,7 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 
 	data.ID = types.StringValue(srv.ID)
 	data.Type = types.StringValue(srv.Attributes.ServerType)
-	data.Status = types.StringPointerValue(srv.Attributes.Status)
+	data.Status = common.StringPointerToTypesString(srv.Attributes.Status)
 	data.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
 	data.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
 	data.LastConnectedIp = types.StringPointerValue(srv.Attributes.LastConnectedIp)
@@ -178,7 +178,7 @@ func (r *DeviceManagementServiceResource) Read(ctx context.Context, req resource
 
 	data.Name = types.StringValue(srv.Attributes.ServerName)
 	data.Type = types.StringValue(srv.Attributes.ServerType)
-	data.Status = types.StringPointerValue(srv.Attributes.Status)
+	data.Status = common.StringPointerToTypesString(srv.Attributes.Status)
 	data.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
 	data.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
 	data.LastConnectedIp = types.StringPointerValue(srv.Attributes.LastConnectedIp)
@@ -273,7 +273,7 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 				return
 			}
 			plan.Type = types.StringValue(srv.Attributes.ServerType)
-			plan.Status = types.StringPointerValue(srv.Attributes.Status)
+			plan.Status = common.StringPointerToTypesString(srv.Attributes.Status)
 			plan.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
 			plan.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
 			plan.LastConnectedIp = types.StringPointerValue(srv.Attributes.LastConnectedIp)

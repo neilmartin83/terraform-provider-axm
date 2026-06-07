@@ -66,7 +66,7 @@ func (r *DefaultDeviceAssignmentResource) Read(ctx context.Context, req resource
 			return
 		}
 		for _, family := range srv.Attributes.DefaultProductFamilies {
-			current[family] = id
+			current[string(family)] = id
 		}
 	}
 
@@ -125,25 +125,25 @@ func (r *DefaultDeviceAssignmentResource) applyAssignments(ctx context.Context, 
 	// Per-server family sets for phase A (servers that need to be reduced/cleared).
 	// A server enters phase A when it loses at least one family.
 	// We compute its full desired set (which may be empty or smaller) and send one PATCH.
-	phaseA := make(map[string][]string) // serverID → new desired families (after removals)
-	phaseB := make(map[string][]string) // serverID → new desired families (gains)
+	phaseA := make(map[string][]client.MdmServerProductFamily) // serverID → new desired families (after removals)
+	phaseB := make(map[string][]client.MdmServerProductFamily) // serverID → new desired families (gains)
 
-	allFamilies := []string{"APPLE_TV", "VISION", "IPAD", "IPHONE", "IPOD", "MAC", "WATCH"}
+	allFamilies := []client.MdmServerProductFamily{"APPLE_TV", "VISION", "IPAD", "IPHONE", "IPOD", "MAC", "WATCH"}
 
 	// For each server currently holding families, compute what it should hold after the plan.
 	serversLosingFamilies := make(map[string]bool)
 	for _, family := range allFamilies {
-		oldServer := stateMap[family]
-		newServer := planMap[family]
+		oldServer := stateMap[string(family)]
+		newServer := planMap[string(family)]
 		if oldServer != "" && oldServer != newServer {
 			serversLosingFamilies[oldServer] = true
 		}
 	}
 
 	for server := range serversLosingFamilies {
-		var keep []string
+		var keep []client.MdmServerProductFamily
 		for _, family := range allFamilies {
-			if planMap[family] == server {
+			if planMap[string(family)] == server {
 				keep = append(keep, family)
 			}
 		}
@@ -153,17 +153,17 @@ func (r *DefaultDeviceAssignmentResource) applyAssignments(ctx context.Context, 
 	// For each server gaining families, collect its full desired set.
 	serversGainingFamilies := make(map[string]bool)
 	for _, family := range allFamilies {
-		oldServer := stateMap[family]
-		newServer := planMap[family]
+		oldServer := stateMap[string(family)]
+		newServer := planMap[string(family)]
 		if newServer != "" && newServer != oldServer {
 			serversGainingFamilies[newServer] = true
 		}
 	}
 
 	for server := range serversGainingFamilies {
-		var gain []string
+		var gain []client.MdmServerProductFamily
 		for _, family := range allFamilies {
-			if planMap[family] == server {
+			if planMap[string(family)] == server {
 				gain = append(gain, family)
 			}
 		}
@@ -188,7 +188,7 @@ func (r *DefaultDeviceAssignmentResource) applyAssignments(ctx context.Context, 
 }
 
 // setFamilies sends a single PATCH for a server. Empty slice clears all families.
-func (r *DefaultDeviceAssignmentResource) setFamilies(ctx context.Context, serverID string, families []string) error {
+func (r *DefaultDeviceAssignmentResource) setFamilies(ctx context.Context, serverID string, families []client.MdmServerProductFamily) error {
 	if len(families) == 0 {
 		_, err := r.client.ClearDeviceManagementServiceDefaultFamilies(ctx, serverID)
 		return err

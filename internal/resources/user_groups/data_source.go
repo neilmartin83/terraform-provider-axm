@@ -150,9 +150,9 @@ func (d *UserGroupsDataSource) Read(ctx context.Context, req datasource.ReadRequ
 			Type:             types.StringValue(group.Type),
 			OuID:             types.StringPointerValue(common.StringPointerOrNil(group.Attributes.OuID)),
 			Name:             types.StringValue(group.Attributes.Name),
-			GroupType:        types.StringValue(group.Attributes.Type),
+			GroupType:        types.StringValue(string(group.Attributes.Type)),
 			TotalMemberCount: types.Int64Value(int64(group.Attributes.TotalMemberCount)),
-			Status:           types.StringValue(group.Attributes.Status),
+			Status:           types.StringValue(string(group.Attributes.Status)),
 			CreatedDateTime:  types.StringPointerValue(common.StringPointerOrNil(group.Attributes.CreatedDateTime)),
 			UpdatedDateTime:  types.StringPointerValue(common.StringPointerOrNil(group.Attributes.UpdatedDateTime)),
 		})

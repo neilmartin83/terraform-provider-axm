@@ -222,7 +222,7 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	for _, phone := range user.Attributes.PhoneNumbers {
 		phoneNumbers = append(phoneNumbers, UserPhoneNumberModel{
 			PhoneNumber: types.StringValue(phone.PhoneNumber),
-			Type:        types.StringValue(phone.Type),
+			Type:        types.StringValue(string(phone.Type)),
 		})
 	}
 
@@ -230,7 +230,7 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	data.FirstName = types.StringValue(user.Attributes.FirstName)
 	data.LastName = types.StringValue(user.Attributes.LastName)
 	data.MiddleName = types.StringPointerValue(common.StringPointerOrNil(user.Attributes.MiddleName))
-	data.Status = types.StringValue(user.Attributes.Status)
+	data.Status = types.StringValue(string(user.Attributes.Status))
 	data.ManagedAppleAccount = types.StringValue(user.Attributes.ManagedAppleAccount)
 	data.IsExternalUser = types.BoolValue(user.Attributes.IsExternalUser)
 	data.RoleOuList = roleMappings

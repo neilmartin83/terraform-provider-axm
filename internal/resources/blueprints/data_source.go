@@ -139,8 +139,8 @@ func (d *BlueprintsDataSource) Read(ctx context.Context, req datasource.ReadRequ
 			ID:                  types.StringValue(bp.ID),
 			Name:                types.StringValue(bp.Attributes.Name),
 			Description:         types.StringPointerValue(common.StringPointerOrNil(bp.Attributes.Description)),
-			Status:              types.StringValue(bp.Attributes.Status),
-			AppLicenseDeficient: types.BoolValue(bp.Attributes.AppLicenseDeficient),
+			Status:              types.StringValue(string(bp.Attributes.Status)),
+			AppLicenseDeficient: common.BoolPointerToBoolValue(bp.Attributes.AppLicenseDeficient),
 			CreatedDateTime:     types.StringValue(bp.Attributes.CreatedDateTime),
 			UpdatedDateTime:     types.StringValue(bp.Attributes.UpdatedDateTime),
 		})

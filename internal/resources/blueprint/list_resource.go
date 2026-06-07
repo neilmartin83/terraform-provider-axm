@@ -169,7 +169,7 @@ func filterBlueprintList(blueprints []client.Blueprint, cfg BlueprintListResourc
 
 	for _, blueprint := range blueprints {
 		currentName := strings.ToLower(strings.TrimSpace(blueprint.Attributes.Name))
-		currentStatus := strings.ToLower(strings.TrimSpace(blueprint.Attributes.Status))
+		currentStatus := strings.ToLower(strings.TrimSpace(string(blueprint.Attributes.Status)))
 
 		if hasExact && currentName != exactName {
 			continue

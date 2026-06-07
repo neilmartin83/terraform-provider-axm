@@ -140,7 +140,7 @@ func (d *ConfigurationsDataSource) Read(ctx context.Context, req datasource.Read
 			ID:                     types.StringValue(cfg.ID),
 			Type:                   types.StringValue(cfg.Type),
 			Name:                   types.StringValue(cfg.Attributes.Name),
-			ConfigurationType:      types.StringValue(cfg.Attributes.Type),
+			ConfigurationType:      types.StringValue(string(cfg.Attributes.Type)),
 			ConfiguredForPlatforms: common.StringsToTypesStrings(cfg.Attributes.ConfiguredForPlatforms),
 			CreatedDateTime:        types.StringValue(cfg.Attributes.CreatedDateTime),
 			UpdatedDateTime:        types.StringValue(cfg.Attributes.UpdatedDateTime),
