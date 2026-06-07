@@ -45,9 +45,15 @@ Optional:
 
 Read-Only:
 
+- `allow_release` (Boolean) Allow this service to release devices.
 - `created_date_time` (String) The date and time of the creation of the resource.
+- `default_product_families` (List of String) Default product families assigned to this MDM server.
+- `device_count` (Number) Number of devices assigned to this MDM server.
 - `id` (String) The opaque resource ID that uniquely identifies the resource.
+- `last_connected_date_time` (String) Date and time the MDM server last connected to Apple Business Manager.
+- `last_connected_ip` (String) IP address of the last connection from the MDM server.
 - `server_name` (String) The device management service's name.
 - `server_type` (String) The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM.
+- `status` (String) MDM server status.
 - `type` (String) The type of the resource (mdmServers).
 - `updated_date_time` (String) The date and time of the most-recent update for the resource.

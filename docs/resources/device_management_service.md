@@ -47,8 +47,15 @@ resource "axm_device_management_service" "example" {
 
 ### Read-Only
 
+- `created_date_time` (String) Date and time the MDM server was created.
+- `default_product_families` (List of String) Default product families assigned to this MDM server.
+- `device_count` (Number) Number of devices assigned to this MDM server.
 - `id` (String) Device management service ID.
+- `last_connected_date_time` (String) Date and time the MDM server last connected to Apple Business Manager.
+- `last_connected_ip` (String) IP address of the last connection from the MDM server.
+- `status` (String) MDM server status.
 - `type` (String) MDM server type (MDM, APPLE_CONFIGURATOR, etc.).
+- `updated_date_time` (String) Date and time the MDM server was last updated.
 
 <a id="nestedatt--server_certificate"></a>
 ### Nested Schema for `server_certificate`
