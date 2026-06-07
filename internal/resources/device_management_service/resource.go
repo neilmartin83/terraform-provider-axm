@@ -54,32 +54,32 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Device management service ID.",
+				Description: "The opaque resource ID that uniquely identifies the resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
-				Description: "MDM server name.",
+				Description: "The device management service's name.",
 			},
 			"type": schema.StringAttribute{
 				Computed:    true,
-				Description: "MDM server type (MDM, APPLE_CONFIGURATOR, etc.).",
+				Description: "The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM. Read only.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"status": schema.StringAttribute{
 				Computed:    true,
-				Description: "MDM server status.",
+				Description: "The operational status of the device management service. Read only.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"device_count": schema.Int64Attribute{
 				Computed:    true,
-				Description: "Number of devices assigned to this MDM server.",
+				Description: "The number of devices currently assigned to this device management service. Read only.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
@@ -87,35 +87,35 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 			"default_product_families": schema.ListAttribute{
 				ElementType: types.StringType,
 				Computed:    true,
-				Description: "Default product families assigned to this MDM server.",
+				Description: "The product families that are assigned by default to this device management service. Read/update only.",
 				PlanModifiers: []planmodifier.List{
 					listplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"last_connected_date_time": schema.StringAttribute{
 				Computed:    true,
-				Description: "Date and time the MDM server last connected to Apple Business Manager.",
+				Description: "The date and time the device management service last connected to Apple's servers. Read only.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"last_connected_ip": schema.StringAttribute{
 				Computed:    true,
-				Description: "IP address of the last connection from the MDM server.",
+				Description: "The IP address from which the device management service last connected to Apple's servers. Read only.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"created_date_time": schema.StringAttribute{
 				Computed:    true,
-				Description: "Date and time the MDM server was created.",
+				Description: "The date and time of the creation of the resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"updated_date_time": schema.StringAttribute{
 				Computed:    true,
-				Description: "Date and time the MDM server was last updated.",
+				Description: "The date and time of the most-recent update for the resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -123,7 +123,7 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 			"allow_release": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Allow this service to release devices.",
+				Description: "A Boolean value that indicates whether the device management service is allowed to disown its enrolled devices.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},
