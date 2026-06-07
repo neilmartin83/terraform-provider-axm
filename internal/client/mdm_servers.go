@@ -14,6 +14,11 @@ import (
 	"strconv"
 )
 
+// mdmServersFields is the complete list of server attributes the provider needs.
+// Apple's API uses JSON:API sparse fieldsets — omitting this param causes it to
+// return a default subset that may exclude lastConnectedDateTime and lastConnectedIp.
+const mdmServersFields = "serverName,serverType,status,deviceCount,enableMdmDisownFlag,defaultProductFamilies,lastConnectedDateTime,lastConnectedIp,createdDateTime,updatedDateTime"
+
 // MdmServerResponse represents a response that contains a single device management service resource.
 type MdmServerResponse struct {
 	Data     MdmServer     `json:"data"`
@@ -41,12 +46,12 @@ type MdmServer struct {
 type MdmServerAttribute struct {
 	ServerName             string   `json:"serverName"`
 	ServerType             string   `json:"serverType"`
-	Status                 string   `json:"status"`
-	DeviceCount            int      `json:"deviceCount"`
-	EnableMdmDisownFlag    bool     `json:"enableMdmDisownFlag"`
+	Status                 *string  `json:"status"`
+	DeviceCount            *int64   `json:"deviceCount"`
+	EnableMdmDisownFlag    *bool    `json:"enableMdmDisownFlag"`
 	DefaultProductFamilies []string `json:"defaultProductFamilies"`
-	LastConnectedDateTime  string   `json:"lastConnectedDateTime"`
-	LastConnectedIp        string   `json:"lastConnectedIp"`
+	LastConnectedDateTime  *string  `json:"lastConnectedDateTime"`
+	LastConnectedIp        *string  `json:"lastConnectedIp"`
 	CreatedDateTime        string   `json:"createdDateTime"`
 	UpdatedDateTime        string   `json:"updatedDateTime"`
 }
@@ -123,6 +128,7 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context, queryParams ur
 		params := make(url.Values)
 		maps.Copy(params, queryParams)
 		params.Set("limit", strconv.Itoa(1000))
+		params.Set("fields[mdmServers]", mdmServersFields)
 		if nextCursor != "" {
 			params.Set("cursor", nextCursor)
 		}
@@ -229,6 +235,11 @@ func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, se
 
 // GetDeviceManagementService retrieves a single MDM server by ID.
 func (c *Client) GetDeviceManagementService(ctx context.Context, id string, queryParams url.Values) (*MdmServer, error) {
+	if queryParams == nil {
+		queryParams = url.Values{}
+	}
+	queryParams.Set("fields[mdmServers]", mdmServersFields)
+
 	baseURL := fmt.Sprintf("%s/v1/mdmServers/%s", c.baseURL, id)
 	if len(queryParams) > 0 {
 		baseURL += "?" + queryParams.Encode()
