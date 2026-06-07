@@ -279,10 +279,10 @@ func TestGetDeviceManagementService_Success(t *testing.T) {
 				Attributes: MdmServerAttribute{
 					ServerName:             "Jamf Pro",
 					ServerType:             "MDM",
-					Status:                 new("ACTIVE"),
+					Status:                 new(MdmServerStatus("ACTIVE")),
 					DeviceCount:            func() *int64 { v := int64(42); return &v }(),
 					EnableMdmDisownFlag:    new(true),
-					DefaultProductFamilies: []string{"IPHONE", "IPAD", "MAC"},
+					DefaultProductFamilies: []MdmServerProductFamily{"IPHONE", "IPAD", "MAC"},
 					LastConnectedDateTime:  new("2026-06-01T10:00:00Z"),
 					LastConnectedIp:        new("203.0.113.1"),
 					CreatedDateTime:        "2025-01-01T00:00:00Z",
@@ -358,7 +358,7 @@ func TestCreateDeviceManagementService_Success(t *testing.T) {
 				Attributes: MdmServerAttribute{
 					ServerName:          "New MDM",
 					ServerType:          "MDM",
-					Status:              new("ACTIVE"),
+					Status:              new(MdmServerStatus("ACTIVE")),
 					EnableMdmDisownFlag: new(true),
 					CreatedDateTime:     "2026-06-06T00:00:00Z",
 					UpdatedDateTime:     "2026-06-06T00:00:00Z",
@@ -440,8 +440,8 @@ func TestUpdateDeviceManagementService_Success(t *testing.T) {
 				Attributes: MdmServerAttribute{
 					ServerName:             "Renamed MDM",
 					ServerType:             "MDM",
-					Status:                 new("ACTIVE"),
-					DefaultProductFamilies: []string{"IPHONE", "MAC"},
+					Status:                 new(MdmServerStatus("ACTIVE")),
+					DefaultProductFamilies: []MdmServerProductFamily{"IPHONE", "MAC"},
 					UpdatedDateTime:        "2026-06-06T12:00:00Z",
 				},
 			},
@@ -457,7 +457,7 @@ func TestUpdateDeviceManagementService_Success(t *testing.T) {
 			ID:   "srv-1",
 			Attributes: MdmServerUpdateAttributes{
 				ServerName:             &newName,
-				DefaultProductFamilies: []string{"IPHONE", "MAC"},
+				DefaultProductFamilies: []MdmServerProductFamily{"IPHONE", "MAC"},
 			},
 		},
 	})
