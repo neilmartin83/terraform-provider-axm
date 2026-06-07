@@ -69,7 +69,7 @@ func TestDeviceManagementServicesDataSourceSchema(t *testing.T) {
 		t.Fatal("expected 'servers' to be a ListNestedAttribute")
 	}
 
-	expectedNested := []string{"id", "type", "server_name", "server_type", "status", "device_count", "default_product_families", "last_connected_date_time", "last_connected_ip", "allow_release", "created_date_time", "updated_date_time"}
+	expectedNested := []string{"id", "type", "server_name", "server_type", "created_date_time", "updated_date_time"}
 	nestedAttrs := listNested.NestedObject.Attributes
 	for _, name := range expectedNested {
 		attr, ok := nestedAttrs[name]

@@ -73,11 +73,11 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 
 	data.ID = types.StringValue(srv.ID)
 	data.Type = types.StringValue(srv.Attributes.ServerType)
-	data.Status = types.StringValue(srv.Attributes.Status)
-	data.DeviceCount = types.Int64Value(int64(srv.Attributes.DeviceCount))
+	data.Status = types.StringPointerValue(srv.Attributes.Status)
+	data.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
 	data.DefaultProductFamilies = common.StringsToTypesStrings(srv.Attributes.DefaultProductFamilies)
-	data.LastConnectedDateTime = types.StringValue(srv.Attributes.LastConnectedDateTime)
-	data.LastConnectedIp = types.StringValue(srv.Attributes.LastConnectedIp)
+	data.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
+	data.LastConnectedIp = types.StringPointerValue(srv.Attributes.LastConnectedIp)
 	data.CreatedDateTime = types.StringValue(srv.Attributes.CreatedDateTime)
 	data.UpdatedDateTime = types.StringValue(srv.Attributes.UpdatedDateTime)
 	// AllowRelease is not reliably echoed by the create response; keep the plan value.
@@ -178,14 +178,14 @@ func (r *DeviceManagementServiceResource) Read(ctx context.Context, req resource
 
 	data.Name = types.StringValue(srv.Attributes.ServerName)
 	data.Type = types.StringValue(srv.Attributes.ServerType)
-	data.Status = types.StringValue(srv.Attributes.Status)
-	data.DeviceCount = types.Int64Value(int64(srv.Attributes.DeviceCount))
+	data.Status = types.StringPointerValue(srv.Attributes.Status)
+	data.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
 	data.DefaultProductFamilies = common.StringsToTypesStrings(srv.Attributes.DefaultProductFamilies)
-	data.LastConnectedDateTime = types.StringValue(srv.Attributes.LastConnectedDateTime)
-	data.LastConnectedIp = types.StringValue(srv.Attributes.LastConnectedIp)
+	data.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
+	data.LastConnectedIp = types.StringPointerValue(srv.Attributes.LastConnectedIp)
 	data.CreatedDateTime = types.StringValue(srv.Attributes.CreatedDateTime)
 	data.UpdatedDateTime = types.StringValue(srv.Attributes.UpdatedDateTime)
-	data.AllowRelease = types.BoolValue(srv.Attributes.EnableMdmDisownFlag)
+	data.AllowRelease = types.BoolPointerValue(srv.Attributes.EnableMdmDisownFlag)
 
 	deviceIDs, err := r.client.GetDeviceManagementServiceSerialNumbers(readCtx, data.ID.ValueString())
 	if err != nil {
@@ -273,14 +273,14 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 				return
 			}
 			plan.Type = types.StringValue(srv.Attributes.ServerType)
-			plan.Status = types.StringValue(srv.Attributes.Status)
-			plan.DeviceCount = types.Int64Value(int64(srv.Attributes.DeviceCount))
+			plan.Status = types.StringPointerValue(srv.Attributes.Status)
+			plan.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
 			plan.DefaultProductFamilies = common.StringsToTypesStrings(srv.Attributes.DefaultProductFamilies)
-			plan.LastConnectedDateTime = types.StringValue(srv.Attributes.LastConnectedDateTime)
-			plan.LastConnectedIp = types.StringValue(srv.Attributes.LastConnectedIp)
+			plan.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
+			plan.LastConnectedIp = types.StringPointerValue(srv.Attributes.LastConnectedIp)
 			plan.CreatedDateTime = types.StringValue(srv.Attributes.CreatedDateTime)
 			plan.UpdatedDateTime = types.StringValue(srv.Attributes.UpdatedDateTime)
-			plan.AllowRelease = types.BoolValue(srv.Attributes.EnableMdmDisownFlag)
+			plan.AllowRelease = types.BoolPointerValue(srv.Attributes.EnableMdmDisownFlag)
 		}
 	}
 

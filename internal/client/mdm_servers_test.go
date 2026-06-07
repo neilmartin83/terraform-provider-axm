@@ -12,10 +12,22 @@ import (
 	"testing"
 )
 
+// strPtr is a helper to get a pointer to a string literal.
+func strPtr(s string) *string { return &s }
+
+// boolPtr is a helper to get a pointer to a bool literal.
+func boolPtr(b bool) *bool { return &b }
+
+// int64Ptr is a helper to get a pointer to an int64 literal.
+func int64Ptr(n int64) *int64 { return &n }
+
 func TestGetDeviceManagementServices_SinglePage(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
+		}
+		if r.URL.Query().Get("fields[mdmServers]") == "" {
+			t.Error("expected fields[mdmServers] query parameter to be set")
 		}
 		w.Header().Set("Content-Type", "application/json")
 		resp := MdmServersResponse{
@@ -266,7 +278,9 @@ func TestGetDeviceManagementService_Success(t *testing.T) {
 		if r.URL.Path != "/v1/mdmServers/srv-1" {
 			t.Errorf("expected path /v1/mdmServers/srv-1, got %s", r.URL.Path)
 		}
-		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Query().Get("fields[mdmServers]") == "" {
+			t.Error("expected fields[mdmServers] query parameter to be set")
+		}
 		resp := MdmServerResponse{
 			Data: MdmServer{
 				Type: "mdmServers",
@@ -274,12 +288,12 @@ func TestGetDeviceManagementService_Success(t *testing.T) {
 				Attributes: MdmServerAttribute{
 					ServerName:             "Jamf Pro",
 					ServerType:             "MDM",
-					Status:                 "ACTIVE",
-					DeviceCount:            42,
-					EnableMdmDisownFlag:    true,
+					Status:                 strPtr("ACTIVE"),
+					DeviceCount:            int64Ptr(42),
+					EnableMdmDisownFlag:    boolPtr(true),
 					DefaultProductFamilies: []string{"IPHONE", "IPAD", "MAC"},
-					LastConnectedDateTime:  "2026-06-01T10:00:00Z",
-					LastConnectedIp:        "203.0.113.1",
+					LastConnectedDateTime:  strPtr("2026-06-01T10:00:00Z"),
+					LastConnectedIp:        strPtr("203.0.113.1"),
 					CreatedDateTime:        "2025-01-01T00:00:00Z",
 					UpdatedDateTime:        "2026-05-01T00:00:00Z",
 				},
@@ -297,20 +311,20 @@ func TestGetDeviceManagementService_Success(t *testing.T) {
 	if srv.ID != "srv-1" {
 		t.Errorf("expected ID srv-1, got %s", srv.ID)
 	}
-	if srv.Attributes.Status != "ACTIVE" {
-		t.Errorf("expected status ACTIVE, got %s", srv.Attributes.Status)
+	if srv.Attributes.Status == nil || *srv.Attributes.Status != "ACTIVE" {
+		t.Errorf("expected status ACTIVE, got %v", srv.Attributes.Status)
 	}
-	if srv.Attributes.DeviceCount != 42 {
-		t.Errorf("expected deviceCount 42, got %d", srv.Attributes.DeviceCount)
+	if srv.Attributes.DeviceCount == nil || *srv.Attributes.DeviceCount != 42 {
+		t.Errorf("expected deviceCount 42, got %v", srv.Attributes.DeviceCount)
 	}
-	if !srv.Attributes.EnableMdmDisownFlag {
+	if srv.Attributes.EnableMdmDisownFlag == nil || !*srv.Attributes.EnableMdmDisownFlag {
 		t.Error("expected enableMdmDisownFlag true")
 	}
 	if len(srv.Attributes.DefaultProductFamilies) != 3 {
 		t.Errorf("expected 3 product families, got %d", len(srv.Attributes.DefaultProductFamilies))
 	}
-	if srv.Attributes.LastConnectedIp != "203.0.113.1" {
-		t.Errorf("expected lastConnectedIp 203.0.113.1, got %s", srv.Attributes.LastConnectedIp)
+	if srv.Attributes.LastConnectedIp == nil || *srv.Attributes.LastConnectedIp != "203.0.113.1" {
+		t.Errorf("expected lastConnectedIp 203.0.113.1, got %v", srv.Attributes.LastConnectedIp)
 	}
 }
 
@@ -353,8 +367,8 @@ func TestCreateDeviceManagementService_Success(t *testing.T) {
 				Attributes: MdmServerAttribute{
 					ServerName:          "New MDM",
 					ServerType:          "MDM",
-					Status:              "ACTIVE",
-					EnableMdmDisownFlag: true,
+					Status:              strPtr("ACTIVE"),
+					EnableMdmDisownFlag: boolPtr(true),
 					CreatedDateTime:     "2026-06-06T00:00:00Z",
 					UpdatedDateTime:     "2026-06-06T00:00:00Z",
 				},
@@ -387,7 +401,7 @@ func TestCreateDeviceManagementService_Success(t *testing.T) {
 	if srv.Attributes.ServerName != "New MDM" {
 		t.Errorf("expected serverName 'New MDM', got %s", srv.Attributes.ServerName)
 	}
-	if !srv.Attributes.EnableMdmDisownFlag {
+	if srv.Attributes.EnableMdmDisownFlag == nil || !*srv.Attributes.EnableMdmDisownFlag {
 		t.Error("expected enableMdmDisownFlag true")
 	}
 }
@@ -435,7 +449,7 @@ func TestUpdateDeviceManagementService_Success(t *testing.T) {
 				Attributes: MdmServerAttribute{
 					ServerName:             "Renamed MDM",
 					ServerType:             "MDM",
-					Status:                 "ACTIVE",
+					Status:                 strPtr("ACTIVE"),
 					DefaultProductFamilies: []string{"IPHONE", "MAC"},
 					UpdatedDateTime:        "2026-06-06T12:00:00Z",
 				},
