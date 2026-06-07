@@ -285,10 +285,7 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 			}
 			delay = retryAfter
 		} else {
-			delay = initialBackoff * (1 << (attempts - 1))
-			if delay > maxBackoff {
-				delay = maxBackoff
-			}
+			delay = min(initialBackoff*(1<<(attempts-1)), maxBackoff)
 		}
 
 		if c.logger != nil {

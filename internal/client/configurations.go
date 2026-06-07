@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -101,9 +102,7 @@ func (c *Client) GetConfigurations(ctx context.Context, queryParams url.Values) 
 			return nil, err
 		}
 		params := make(url.Values)
-		for k, vs := range queryParams {
-			params[k] = vs
-		}
+		maps.Copy(params, queryParams)
 		params.Set("limit", strconv.Itoa(limit))
 		if nextCursor != "" {
 			params.Set("cursor", nextCursor)
