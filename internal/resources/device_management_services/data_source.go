@@ -37,12 +37,12 @@ type DeviceManagementServicesDataSourceModel struct {
 
 // DeviceManagementServiceModel describes a device management service.
 type DeviceManagementServiceModel struct {
-	ID              types.String   `tfsdk:"id"`
-	Type            types.String   `tfsdk:"type"`
-	ServerName      types.String   `tfsdk:"server_name"`
-	ServerType      types.String   `tfsdk:"server_type"`
-	CreatedDateTime types.String   `tfsdk:"created_date_time"`
-	UpdatedDateTime types.String   `tfsdk:"updated_date_time"`
+	ID              types.String `tfsdk:"id"`
+	Type            types.String `tfsdk:"type"`
+	ServerName      types.String `tfsdk:"server_name"`
+	ServerType      types.String `tfsdk:"server_type"`
+	CreatedDateTime types.String `tfsdk:"created_date_time"`
+	UpdatedDateTime types.String `tfsdk:"updated_date_time"`
 }
 
 func (d *DeviceManagementServicesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {

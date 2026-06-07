@@ -37,7 +37,7 @@ type DeviceManagementServiceDataSourceModel struct {
 	ServerType             types.String   `tfsdk:"server_type"`
 	Status                 types.String   `tfsdk:"status"`
 	DeviceCount            types.Int64    `tfsdk:"device_count"`
-	DefaultProductFamilies types.List `tfsdk:"default_product_families"`
+	DefaultProductFamilies types.List     `tfsdk:"default_product_families"`
 	LastConnectedDateTime  types.String   `tfsdk:"last_connected_date_time"`
 	LastConnectedIp        types.String   `tfsdk:"last_connected_ip"`
 	AllowRelease           types.Bool     `tfsdk:"allow_release"`

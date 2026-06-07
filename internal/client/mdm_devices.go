@@ -16,17 +16,17 @@ import (
 // MdmDeviceResponse represents a response that contains a list of Apple devices
 // enrolled in a device management service.
 type MdmDeviceResponse struct {
-	Data  []MdmDevice       `json:"data"`
+	Data  []MdmDevice        `json:"data"`
 	Links PagedDocumentLinks `json:"links"`
 	Meta  Meta               `json:"meta"`
 }
 
 // MdmDevice represents a device management service enrolled device resource.
 type MdmDevice struct {
-	Type       string              `json:"type"`
-	ID         string              `json:"id"`
-	Attributes MdmDeviceAttribute  `json:"attributes"`
-	Links      ResourceLinks       `json:"links"`
+	Type       string             `json:"type"`
+	ID         string             `json:"id"`
+	Attributes MdmDeviceAttribute `json:"attributes"`
+	Links      ResourceLinks      `json:"links"`
 }
 
 // MdmDeviceAttribute represents attributes that describe a device management

@@ -12,15 +12,6 @@ import (
 	"testing"
 )
 
-// strPtr is a helper to get a pointer to a string literal.
-func strPtr(s string) *string { return &s }
-
-// boolPtr is a helper to get a pointer to a bool literal.
-func boolPtr(b bool) *bool { return &b }
-
-// int64Ptr is a helper to get a pointer to an int64 literal.
-func int64Ptr(n int64) *int64 { return &n }
-
 func TestGetDeviceManagementServices_SinglePage(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -288,12 +279,12 @@ func TestGetDeviceManagementService_Success(t *testing.T) {
 				Attributes: MdmServerAttribute{
 					ServerName:             "Jamf Pro",
 					ServerType:             "MDM",
-					Status:                 strPtr("ACTIVE"),
-					DeviceCount:            int64Ptr(42),
-					EnableMdmDisownFlag:    boolPtr(true),
+					Status:                 new("ACTIVE"),
+					DeviceCount:            func() *int64 { v := int64(42); return &v }(),
+					EnableMdmDisownFlag:    new(true),
 					DefaultProductFamilies: []string{"IPHONE", "IPAD", "MAC"},
-					LastConnectedDateTime:  strPtr("2026-06-01T10:00:00Z"),
-					LastConnectedIp:        strPtr("203.0.113.1"),
+					LastConnectedDateTime:  new("2026-06-01T10:00:00Z"),
+					LastConnectedIp:        new("203.0.113.1"),
 					CreatedDateTime:        "2025-01-01T00:00:00Z",
 					UpdatedDateTime:        "2026-05-01T00:00:00Z",
 				},
@@ -367,8 +358,8 @@ func TestCreateDeviceManagementService_Success(t *testing.T) {
 				Attributes: MdmServerAttribute{
 					ServerName:          "New MDM",
 					ServerType:          "MDM",
-					Status:              strPtr("ACTIVE"),
-					EnableMdmDisownFlag: boolPtr(true),
+					Status:              new("ACTIVE"),
+					EnableMdmDisownFlag: new(true),
 					CreatedDateTime:     "2026-06-06T00:00:00Z",
 					UpdatedDateTime:     "2026-06-06T00:00:00Z",
 				},
@@ -449,7 +440,7 @@ func TestUpdateDeviceManagementService_Success(t *testing.T) {
 				Attributes: MdmServerAttribute{
 					ServerName:             "Renamed MDM",
 					ServerType:             "MDM",
-					Status:                 strPtr("ACTIVE"),
+					Status:                 new("ACTIVE"),
 					DefaultProductFamilies: []string{"IPHONE", "MAC"},
 					UpdatedDateTime:        "2026-06-06T12:00:00Z",
 				},

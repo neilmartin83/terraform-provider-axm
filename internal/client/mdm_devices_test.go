@@ -156,7 +156,7 @@ func TestGetMdmDeviceDetail_Success(t *testing.T) {
 			Platform:            "mac",
 			WifiMacAddress:      "00:11:22:33:44:55",
 			BluetoothMacAddress: "66:77:88:99:AA:BB",
-			IsFirewallEnabled:   boolPtr(true),
+			IsFirewallEnabled:   new(true),
 		}
 		resp := MdmDeviceDetailResponse{
 			Data: MdmDeviceDetail{
