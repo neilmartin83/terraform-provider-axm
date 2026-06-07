@@ -136,8 +136,10 @@ func NewClient(baseURL, teamID, clientID, keyID, scope, p8Key string) (*Client, 
 	initialToken := ts.loadCachedOAuthToken()
 	reusableTS := oauth2.ReuseTokenSource(initialToken, ts)
 
+	hc := oauth2.NewClient(context.Background(), reusableTS)
+	hc.Timeout = 30 * time.Second
 	return &Client{
-		httpClient:  oauth2.NewClient(context.Background(), reusableTS),
+		httpClient:  hc,
 		tokenSource: ts,
 		oauthTS:     reusableTS,
 		baseURL:     baseURL,
@@ -149,7 +151,7 @@ func NewClient(baseURL, teamID, clientID, keyID, scope, p8Key string) (*Client, 
 func (c *Client) SetLogger(logger Logger) {
 	c.logger = logger
 	if c.tokenSource != nil {
-		c.tokenSource.logger = logger
+		c.tokenSource.setLogger(logger)
 	}
 }
 

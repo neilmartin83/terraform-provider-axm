@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -83,6 +84,13 @@ type appleTokenSource struct {
 	assertion       string
 	assertionExpiry time.Time
 	logger          Logger
+	mu              sync.Mutex
+}
+
+func (s *appleTokenSource) setLogger(logger Logger) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.logger = logger
 }
 
 // Token creates a new access token by generating or reusing a JWT client assertion
@@ -150,14 +158,18 @@ func (s *appleTokenSource) Token() (*oauth2.Token, error) {
 
 // createOrGetAssertion returns a valid JWT assertion, creating a new one if necessary.
 func (s *appleTokenSource) createOrGetAssertion() (string, error) {
+	s.mu.Lock()
 	if s.assertion != "" && time.Now().Before(s.assertionExpiry.Add(-tokenRefreshBuffer)) {
+		assertion := s.assertion
+		s.mu.Unlock()
 		if s.logger != nil {
 			s.logger.LogAuth(context.Background(), "Using cached client assertion", map[string]any{
 				"expires_at": s.assertionExpiry,
 			})
 		}
-		return s.assertion, nil
+		return assertion, nil
 	}
+	s.mu.Unlock()
 
 	if s.logger != nil {
 		s.logger.LogAuth(context.Background(), "Creating new client assertion", map[string]any{
