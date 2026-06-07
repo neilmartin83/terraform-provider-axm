@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -115,9 +116,7 @@ func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]O
 			return nil, err
 		}
 		params := make(url.Values)
-		for k, vs := range queryParams {
-			params[k] = vs
-		}
+		maps.Copy(params, queryParams)
 		params.Set("limit", strconv.Itoa(limit))
 		if nextCursor != "" {
 			params.Set("cursor", nextCursor)
@@ -263,9 +262,7 @@ func (c *Client) GetOrgDeviceAppleCareCoverage(ctx context.Context, deviceID str
 			return nil, err
 		}
 		params := make(url.Values)
-		for k, vs := range queryParams {
-			params[k] = vs
-		}
+		maps.Copy(params, queryParams)
 		params.Set("limit", strconv.Itoa(limit))
 		if nextCursor != "" {
 			params.Set("cursor", nextCursor)

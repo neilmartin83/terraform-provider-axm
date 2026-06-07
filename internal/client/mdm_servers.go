@@ -8,10 +8,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/url"
 	"strconv"
-
 )
 
 // MdmServerResponse represents a response that contains a single device management service resource.
@@ -108,10 +108,10 @@ type MdmServerUpdateRequestData struct {
 
 // MdmServerUpdateAttributes represents attributes for updating a device management service.
 type MdmServerUpdateAttributes struct {
-	ServerName             *string              `json:"serverName,omitempty"`
+	ServerName             *string               `json:"serverName,omitempty"`
 	ServerCertificate      *MdmServerCertificate `json:"serverCertificate,omitempty"`
-	DefaultProductFamilies []string             `json:"defaultProductFamilies,omitempty"`
-	EnableMdmDisownFlag    *bool                `json:"enableMdmDisownFlag,omitempty"`
+	DefaultProductFamilies []string              `json:"defaultProductFamilies,omitempty"`
+	EnableMdmDisownFlag    *bool                 `json:"enableMdmDisownFlag,omitempty"`
 }
 
 // GetDeviceManagementServices retrieves all MDM servers configured in the organization.
@@ -121,9 +121,7 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context, queryParams ur
 
 	for {
 		params := make(url.Values)
-		for k, vs := range queryParams {
-			params[k] = vs
-		}
+		maps.Copy(params, queryParams)
 		params.Set("limit", strconv.Itoa(1000))
 		if nextCursor != "" {
 			params.Set("cursor", nextCursor)

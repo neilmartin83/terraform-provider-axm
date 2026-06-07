@@ -31,8 +31,8 @@ type ConfigurationsDataSource struct {
 
 // ConfigurationsDataSourceModel describes the data source data model.
 type ConfigurationsDataSourceModel struct {
-	ID             types.String       `tfsdk:"id"`
-	Timeouts       timeouts.Value     `tfsdk:"timeouts"`
+	ID             types.String         `tfsdk:"id"`
+	Timeouts       timeouts.Value       `tfsdk:"timeouts"`
 	Configurations []ConfigurationModel `tfsdk:"configurations"`
 }
 

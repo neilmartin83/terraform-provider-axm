@@ -148,7 +148,6 @@ func downloadAndParseActivityLog(ctx context.Context, downloadURL string) (strin
 	return summary.String(), nil
 }
 
-
 // waitForActivityCompletion polls the activity status until it completes, fails, or times out
 func (r *DeviceManagementServiceResource) waitForActivityCompletion(ctx context.Context, activityID string, diags *diag.Diagnostics) error {
 	maxAttempts := 30
