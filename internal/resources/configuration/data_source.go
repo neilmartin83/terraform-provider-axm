@@ -127,7 +127,7 @@ func (d *ConfigurationDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	data.Type = types.StringValue(cfg.Type)
 	data.Name = types.StringValue(cfg.Attributes.Name)
-	data.ConfigurationType = types.StringValue(cfg.Attributes.Type)
+	data.ConfigurationType = types.StringValue(string(cfg.Attributes.Type))
 	data.ConfiguredForPlatforms = common.StringsToTypesStrings(cfg.Attributes.ConfiguredForPlatforms)
 	data.CreatedDateTime = types.StringValue(cfg.Attributes.CreatedDateTime)
 	data.UpdatedDateTime = types.StringValue(cfg.Attributes.UpdatedDateTime)

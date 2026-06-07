@@ -44,7 +44,7 @@ func (r *ConfigurationResource) Create(ctx context.Context, req resource.CreateR
 			Attributes: client.ConfigurationCreateRequestAttributes{
 				Type:                   customSettingType,
 				Name:                   plan.Name.ValueString(),
-				ConfiguredForPlatforms: common.SetToStrings(plan.ConfiguredForPlatforms),
+				ConfiguredForPlatforms: common.StringsFromSet[client.ConfigurationPlatform](plan.ConfiguredForPlatforms),
 				CustomSettingsValues: client.CustomSettingsValues{
 					ConfigurationProfile: plan.ConfigurationProfile.ValueString(),
 					Filename:             plan.Filename.ValueString(),
@@ -160,7 +160,7 @@ func (r *ConfigurationResource) Update(ctx context.Context, req resource.UpdateR
 			ID:   state.ID.ValueString(),
 			Attributes: client.ConfigurationUpdateRequestAttributes{
 				Name:                   &name,
-				ConfiguredForPlatforms: common.SetToStrings(plan.ConfiguredForPlatforms),
+				ConfiguredForPlatforms: common.StringsFromSet[client.ConfigurationPlatform](plan.ConfiguredForPlatforms),
 				CustomSettingsValues:   &customSettings,
 			},
 		},
@@ -216,7 +216,7 @@ func (r *ConfigurationResource) refreshConfigurationState(ctx context.Context, c
 
 	state.ID = types.StringValue(configuration.ID)
 	state.Name = types.StringValue(configuration.Attributes.Name)
-	state.Type = types.StringValue(configuration.Attributes.Type)
+	state.Type = types.StringValue(string(configuration.Attributes.Type))
 	state.CreatedDateTime = types.StringValue(configuration.Attributes.CreatedDateTime)
 	state.UpdatedDateTime = types.StringValue(configuration.Attributes.UpdatedDateTime)
 

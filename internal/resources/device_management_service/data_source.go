@@ -140,7 +140,7 @@ func (d *DeviceManagementServiceDataSource) Read(ctx context.Context, req dataso
 	data.Type = types.StringValue(srv.Type)
 	data.ServerName = types.StringValue(srv.Attributes.ServerName)
 	data.ServerType = types.StringValue(srv.Attributes.ServerType)
-	data.Status = types.StringPointerValue(srv.Attributes.Status)
+	data.Status = common.StringPointerToTypesString(srv.Attributes.Status)
 	data.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
 	data.DefaultProductFamilies = common.StringsToList(ctx, srv.Attributes.DefaultProductFamilies)
 	data.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
