@@ -76,7 +76,7 @@ func (d *DeviceManagementServicesDataSource) Schema(ctx context.Context, req dat
 							Computed:    true,
 						},
 						"server_type": schema.StringAttribute{
-							Description: "The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM.",
+							Description: "The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM. Read only.",
 							Computed:    true,
 						},
 						"created_date_time": schema.StringAttribute{

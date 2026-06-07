@@ -55,12 +55,12 @@ func (d *DeviceManagementServiceDataSource) Schema(ctx context.Context, req data
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Required:    true,
-				Description: "The device management service ID.",
+				Description: "The opaque resource ID that uniquely identifies the resource.",
 			},
 			"timeouts": timeouts.Attributes(ctx),
 			"type": schema.StringAttribute{
 				Computed:    true,
-				Description: "The resource type (mdmServers).",
+				Description: "The type of the resource (mdmServers).",
 			},
 			"server_name": schema.StringAttribute{
 				Computed:    true,
@@ -68,32 +68,32 @@ func (d *DeviceManagementServiceDataSource) Schema(ctx context.Context, req data
 			},
 			"server_type": schema.StringAttribute{
 				Computed:    true,
-				Description: "The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM.",
+				Description: "The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM. Read only.",
 			},
 			"status": schema.StringAttribute{
 				Computed:    true,
-				Description: "MDM server status.",
+				Description: "The operational status of the device management service. Read only.",
 			},
 			"device_count": schema.Int64Attribute{
 				Computed:    true,
-				Description: "Number of devices assigned to this MDM server.",
+				Description: "The number of devices currently assigned to this device management service. Read only.",
 			},
 			"default_product_families": schema.ListAttribute{
 				ElementType: types.StringType,
 				Computed:    true,
-				Description: "Default product families assigned to this MDM server.",
+				Description: "The product families that are assigned by default to this device management service. Read/update only.",
 			},
 			"last_connected_date_time": schema.StringAttribute{
 				Computed:    true,
-				Description: "Date and time the MDM server last connected to Apple Business Manager.",
+				Description: "The date and time the device management service last connected to Apple's servers. Read only.",
 			},
 			"last_connected_ip": schema.StringAttribute{
 				Computed:    true,
-				Description: "IP address of the last connection from the MDM server.",
+				Description: "The IP address from which the device management service last connected to Apple's servers. Read only.",
 			},
 			"allow_release": schema.BoolAttribute{
 				Computed:    true,
-				Description: "Allow this service to release devices.",
+				Description: "A Boolean value that indicates whether the device management service is allowed to disown its enrolled devices.",
 			},
 			"created_date_time": schema.StringAttribute{
 				Computed:    true,
