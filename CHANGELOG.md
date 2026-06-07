@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.8.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.7.1...v1.8.0) (2026-06-07)
+
+
+### Features
+
+* add apple_device_management_device and apple_device_management_devices data sources ([f4c974c](https://github.com/neilmartin83/terraform-provider-axm/commit/f4c974cbfe2ad7b22f746c6ef1cd294e3644d5d0))
+* **device_management_service:** add read-only MdmServer attributes to resource ([c186f68](https://github.com/neilmartin83/terraform-provider-axm/commit/c186f682ad8ac33f42e5b30ae0fee10087b74428))
+* **device_management_services:** add read-only MdmServer attributes to data source ([2044a71](https://github.com/neilmartin83/terraform-provider-axm/commit/2044a713b32dd69b38b2f9ed09d3e7574aac0be9))
+* **mdm_devices:** add MdmDevice list and detail endpoints with correct Apple API models ([c5caede](https://github.com/neilmartin83/terraform-provider-axm/commit/c5caede670525c24fe03414fbf77183495d5b5df))
+
+
+### Bug Fixes
+
+* **mdm_servers:** use pointer types for nullable API fields and add singular data source ([e810cbd](https://github.com/neilmartin83/terraform-provider-axm/commit/e810cbdfa89feaf6d6330b69a6c011605aefa2ca))
+* use types.List for default_product_families to handle unknown plan values ([c73b1f4](https://github.com/neilmartin83/terraform-provider-axm/commit/c73b1f498aac3358748c4efd8829fb8bb1dc35ce))
+
 ## [1.7.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.7.0...v1.7.1) (2026-06-06)
 
 
