@@ -37,12 +37,18 @@ type DeviceManagementServicesDataSourceModel struct {
 
 // DeviceManagementServiceModel describes a device management service.
 type DeviceManagementServiceModel struct {
-	ID              types.String `tfsdk:"id"`
-	Type            types.String `tfsdk:"type"`
-	ServerName      types.String `tfsdk:"server_name"`
-	ServerType      types.String `tfsdk:"server_type"`
-	CreatedDateTime types.String `tfsdk:"created_date_time"`
-	UpdatedDateTime types.String `tfsdk:"updated_date_time"`
+	ID                     types.String   `tfsdk:"id"`
+	Type                   types.String   `tfsdk:"type"`
+	ServerName             types.String   `tfsdk:"server_name"`
+	ServerType             types.String   `tfsdk:"server_type"`
+	Status                 types.String   `tfsdk:"status"`
+	DeviceCount            types.Int64    `tfsdk:"device_count"`
+	DefaultProductFamilies []types.String `tfsdk:"default_product_families"`
+	LastConnectedDateTime  types.String   `tfsdk:"last_connected_date_time"`
+	LastConnectedIp        types.String   `tfsdk:"last_connected_ip"`
+	AllowRelease           types.Bool     `tfsdk:"allow_release"`
+	CreatedDateTime        types.String   `tfsdk:"created_date_time"`
+	UpdatedDateTime        types.String   `tfsdk:"updated_date_time"`
 }
 
 func (d *DeviceManagementServicesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -77,6 +83,31 @@ func (d *DeviceManagementServicesDataSource) Schema(ctx context.Context, req dat
 						},
 						"server_type": schema.StringAttribute{
 							Description: "The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM.",
+							Computed:    true,
+						},
+						"status": schema.StringAttribute{
+							Description: "MDM server status.",
+							Computed:    true,
+						},
+						"device_count": schema.Int64Attribute{
+							Description: "Number of devices assigned to this MDM server.",
+							Computed:    true,
+						},
+						"default_product_families": schema.ListAttribute{
+							ElementType: types.StringType,
+							Description: "Default product families assigned to this MDM server.",
+							Computed:    true,
+						},
+						"last_connected_date_time": schema.StringAttribute{
+							Description: "Date and time the MDM server last connected to Apple Business Manager.",
+							Computed:    true,
+						},
+						"last_connected_ip": schema.StringAttribute{
+							Description: "IP address of the last connection from the MDM server.",
+							Computed:    true,
+						},
+						"allow_release": schema.BoolAttribute{
+							Description: "Allow this service to release devices.",
 							Computed:    true,
 						},
 						"created_date_time": schema.StringAttribute{
@@ -132,12 +163,18 @@ func (d *DeviceManagementServicesDataSource) Read(ctx context.Context, req datas
 	data.Servers = make([]DeviceManagementServiceModel, 0, len(servers))
 	for _, server := range servers {
 		serverModel := DeviceManagementServiceModel{
-			ID:              types.StringValue(server.ID),
-			Type:            types.StringValue(server.Type),
-			ServerName:      types.StringValue(server.Attributes.ServerName),
-			ServerType:      types.StringValue(server.Attributes.ServerType),
-			CreatedDateTime: types.StringValue(server.Attributes.CreatedDateTime),
-			UpdatedDateTime: types.StringValue(server.Attributes.UpdatedDateTime),
+			ID:                     types.StringValue(server.ID),
+			Type:                   types.StringValue(server.Type),
+			ServerName:             types.StringValue(server.Attributes.ServerName),
+			ServerType:             types.StringValue(server.Attributes.ServerType),
+			Status:                 types.StringValue(server.Attributes.Status),
+			DeviceCount:            types.Int64Value(int64(server.Attributes.DeviceCount)),
+			DefaultProductFamilies: common.StringsToTypesStrings(server.Attributes.DefaultProductFamilies),
+			LastConnectedDateTime:  types.StringValue(server.Attributes.LastConnectedDateTime),
+			LastConnectedIp:        types.StringValue(server.Attributes.LastConnectedIp),
+			AllowRelease:           types.BoolValue(server.Attributes.EnableMdmDisownFlag),
+			CreatedDateTime:        types.StringValue(server.Attributes.CreatedDateTime),
+			UpdatedDateTime:        types.StringValue(server.Attributes.UpdatedDateTime),
 		}
 		data.Servers = append(data.Servers, serverModel)
 	}
