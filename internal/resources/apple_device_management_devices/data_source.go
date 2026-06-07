@@ -53,7 +53,7 @@ func (d *AppleDeviceManagementDevicesDataSource) Metadata(ctx context.Context, r
 
 func (d *AppleDeviceManagementDevicesDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Fetches the list of Apple devices enrolled in a device management service.",
+		Description: "Get a list of devices enrolled in Apple Device Management service.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Identifier of the data source.",
