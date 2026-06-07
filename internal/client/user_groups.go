@@ -13,6 +13,21 @@ import (
 	"strconv"
 )
 
+// UserGroupType represents the type of a user group.
+type UserGroupType string
+
+const (
+	UserGroupTypeStandard UserGroupType = "STANDARD"
+	UserGroupTypeSmart    UserGroupType = "SMART"
+)
+
+// UserGroupStatus represents the status of a user group.
+type UserGroupStatus string
+
+const (
+	UserGroupStatusActive UserGroupStatus = "ACTIVE"
+)
+
 // UserGroupResponse represents a response that contains a single user group resource.
 type UserGroupResponse struct {
 	Data  UserGroup     `json:"data"`
@@ -37,13 +52,13 @@ type UserGroup struct {
 
 // UserGroupAttributes represents attributes that describe a user group resource.
 type UserGroupAttributes struct {
-	OuID             string `json:"ouId,omitempty"`
-	Name             string `json:"name,omitempty"`
-	Type             string `json:"type,omitempty"`
-	TotalMemberCount int    `json:"totalMemberCount,omitempty"`
-	Status           string `json:"status,omitempty"`
-	CreatedDateTime  string `json:"createdDateTime,omitempty"`
-	UpdatedDateTime  string `json:"updatedDateTime,omitempty"`
+	OuID             string          `json:"ouId,omitempty"`
+	Name             string          `json:"name,omitempty"`
+	Type             UserGroupType   `json:"type,omitempty"`
+	TotalMemberCount int             `json:"totalMemberCount,omitempty"`
+	Status           UserGroupStatus `json:"status,omitempty"`
+	CreatedDateTime  string          `json:"createdDateTime,omitempty"`
+	UpdatedDateTime  string          `json:"updatedDateTime,omitempty"`
 }
 
 // UserGroupRelationships represents the relationships you include in the request.

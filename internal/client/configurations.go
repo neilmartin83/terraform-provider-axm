@@ -14,6 +14,45 @@ import (
 	"strconv"
 )
 
+// ConfigurationType represents the type of a Configuration.
+type ConfigurationType string
+
+const (
+	ConfigurationTypeCustomSetting            ConfigurationType = "CUSTOM_SETTING"
+	ConfigurationTypeAirDrop                  ConfigurationType = "AIR_DROP"
+	ConfigurationTypeAirPrint                 ConfigurationType = "AIR_PRINT"
+	ConfigurationTypeAppAccess                ConfigurationType = "APP_ACCESS"
+	ConfigurationTypeAppleIntelligenceSiri    ConfigurationType = "APPLE_INTELLIGENCE_SIRI"
+	ConfigurationTypeApplicationLayerFirewall ConfigurationType = "APPLICATION_LAYER_FIREWALL"
+	ConfigurationTypeAuthenticationScreenLock ConfigurationType = "AUTHENTICATION_SCREEN_LOCK"
+	ConfigurationTypeCertificate              ConfigurationType = "CERTIFICATE"
+	ConfigurationTypeConferenceRoomDisplay    ConfigurationType = "CONFERENCE_ROOM_DISPLAY"
+	ConfigurationTypeContentCaching           ConfigurationType = "CONTENT_CACHING"
+	ConfigurationTypeCustomProfile            ConfigurationType = "CUSTOM_PROFILE"
+	ConfigurationTypeDataManagement           ConfigurationType = "DATA_MANAGEMENT"
+	ConfigurationTypeEnergySaver              ConfigurationType = "ENERGY_SAVER"
+	ConfigurationTypeFileVault                ConfigurationType = "FILE_VAULT"
+	ConfigurationTypeGateKeeper               ConfigurationType = "GATE_KEEPER"
+	ConfigurationTypeICloud                   ConfigurationType = "ICLOUD"
+	ConfigurationTypeLoginWindow              ConfigurationType = "LOGIN_WINDOW"
+	ConfigurationTypeMediaManagement          ConfigurationType = "MEDIA_MANAGEMENT"
+	ConfigurationTypeSoftwareUpdate           ConfigurationType = "SOFTWARE_UPDATE"
+	ConfigurationTypeVPN                      ConfigurationType = "VPN"
+	ConfigurationTypeWebClip                  ConfigurationType = "WEB_CLIP"
+	ConfigurationTypeWebFilter                ConfigurationType = "WEB_FILTER"
+	ConfigurationTypeWiFi                     ConfigurationType = "WIFI"
+)
+
+// ConfigurationPlatform represents a platform a Configuration supports.
+type ConfigurationPlatform string
+
+const (
+	ConfigurationPlatformMacOS    ConfigurationPlatform = "PLATFORM_MACOS"
+	ConfigurationPlatformIOS      ConfigurationPlatform = "PLATFORM_IOS"
+	ConfigurationPlatformTvOS     ConfigurationPlatform = "PLATFORM_TVOS"
+	ConfigurationPlatformVisionOS ConfigurationPlatform = "PLATFORM_VISIONOS"
+)
+
 // ConfigurationResponse represents a response that contains a single Configuration resource.
 type ConfigurationResponse struct {
 	Data  Configuration `json:"data"`
@@ -37,12 +76,12 @@ type Configuration struct {
 
 // ConfigurationAttributes represents attributes that describe a Configuration resource.
 type ConfigurationAttributes struct {
-	Type                   string                `json:"type,omitempty"`
-	Name                   string                `json:"name,omitempty"`
-	ConfiguredForPlatforms []string              `json:"configuredForPlatforms,omitempty"`
-	CustomSettingsValues   *CustomSettingsValues `json:"customSettingsValues,omitempty"`
-	CreatedDateTime        string                `json:"createdDateTime,omitempty"`
-	UpdatedDateTime        string                `json:"updatedDateTime,omitempty"`
+	Type                   ConfigurationType       `json:"type,omitempty"`
+	Name                   string                  `json:"name,omitempty"`
+	ConfiguredForPlatforms []ConfigurationPlatform `json:"configuredForPlatforms,omitempty"`
+	CustomSettingsValues   *CustomSettingsValues   `json:"customSettingsValues,omitempty"`
+	CreatedDateTime        string                  `json:"createdDateTime,omitempty"`
+	UpdatedDateTime        string                  `json:"updatedDateTime,omitempty"`
 }
 
 // CustomSettingsValues represents the custom settings payload for a Configuration.
@@ -64,10 +103,10 @@ type ConfigurationCreateRequestData struct {
 
 // ConfigurationCreateRequestAttributes represents attributes for creating a Configuration.
 type ConfigurationCreateRequestAttributes struct {
-	Type                   string               `json:"type"`
-	Name                   string               `json:"name"`
-	ConfiguredForPlatforms []string             `json:"configuredForPlatforms,omitempty"`
-	CustomSettingsValues   CustomSettingsValues `json:"customSettingsValues"`
+	Type                   ConfigurationType       `json:"type"`
+	Name                   string                  `json:"name"`
+	ConfiguredForPlatforms []ConfigurationPlatform `json:"configuredForPlatforms,omitempty"`
+	CustomSettingsValues   CustomSettingsValues    `json:"customSettingsValues"`
 }
 
 // ConfigurationUpdateRequest represents a request to update a Configuration.
@@ -84,9 +123,9 @@ type ConfigurationUpdateRequestData struct {
 
 // ConfigurationUpdateRequestAttributes represents attributes for updating a Configuration.
 type ConfigurationUpdateRequestAttributes struct {
-	Name                   *string               `json:"name,omitempty"`
-	ConfiguredForPlatforms []string              `json:"configuredForPlatforms,omitempty"`
-	CustomSettingsValues   *CustomSettingsValues `json:"customSettingsValues,omitempty"`
+	Name                   *string                 `json:"name,omitempty"`
+	ConfiguredForPlatforms []ConfigurationPlatform `json:"configuredForPlatforms,omitempty"`
+	CustomSettingsValues   *CustomSettingsValues   `json:"customSettingsValues,omitempty"`
 }
 
 // GetConfigurations retrieves all Configurations in the organization.

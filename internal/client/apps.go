@@ -13,6 +13,19 @@ import (
 	"strconv"
 )
 
+// SupportedOS represents an operating system supported by an app.
+type SupportedOS string
+
+const (
+	SupportedOSUnspecified SupportedOS = "SUPPORTED_OS_UNSPECIFIED"
+	SupportedOSIpadOS      SupportedOS = "SUPPORTED_OS_IPADOS"
+	SupportedOSIOS         SupportedOS = "SUPPORTED_OS_IOS"
+	SupportedOSMacOS       SupportedOS = "SUPPORTED_OS_MACOS"
+	SupportedOSTvOS        SupportedOS = "SUPPORTED_OS_TVOS"
+	SupportedOSWatchOS     SupportedOS = "SUPPORTED_OS_WATCHOS"
+	SupportedOSVisionOS    SupportedOS = "SUPPORTED_OS_VISIONOS"
+)
+
 // AppResponse represents a response that contains a single app resource.
 type AppResponse struct {
 	Data  App           `json:"data"`
@@ -36,13 +49,13 @@ type App struct {
 
 // AppAttributes represents attributes that describe an app resource.
 type AppAttributes struct {
-	Name        string   `json:"name,omitempty"`
-	BundleID    string   `json:"bundleId,omitempty"`
-	WebsiteURL  string   `json:"websiteUrl,omitempty"`
-	Version     string   `json:"version,omitempty"`
-	SupportedOS []string `json:"supportedOS,omitempty"`
-	IsCustomApp bool     `json:"isCustomApp,omitempty"`
-	AppStoreURL string   `json:"appStoreUrl,omitempty"`
+	Name        string        `json:"name,omitempty"`
+	BundleID    string        `json:"bundleId,omitempty"`
+	WebsiteURL  string        `json:"websiteUrl,omitempty"`
+	Version     string        `json:"version,omitempty"`
+	SupportedOS []SupportedOS `json:"supportedOS,omitempty"`
+	IsCustomApp bool          `json:"isCustomApp,omitempty"`
+	AppStoreURL string        `json:"appStoreUrl,omitempty"`
 }
 
 // GetApps retrieves all apps in the organization.
