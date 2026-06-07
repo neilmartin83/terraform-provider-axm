@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.9.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.8.0...v1.9.0) (2026-06-07)
+
+
+### Features
+
+* add missing enum constants and correct struct field types ([d3b2a91](https://github.com/neilmartin83/terraform-provider-axm/commit/d3b2a91bc9dcbe556f614bf26a8e51bb6760cdac))
+* make common helpers generic to support named string types ([c927603](https://github.com/neilmartin83/terraform-provider-axm/commit/c927603113d253c7c91d956f40c3c017a968a7ea))
+
+
+### Bug Fixes
+
+* add HTTP client timeout, token source mutex, and test cleanups ([24d657b](https://github.com/neilmartin83/terraform-provider-axm/commit/24d657bbdf631fe3c534693e17e4bb9a502a82a3))
+* add string() casts for typed enum fields in resource layer ([6eb5f40](https://github.com/neilmartin83/terraform-provider-axm/commit/6eb5f40807469110347654c35f762162c8c1374c))
+* convert unknown plan sets to null in blueprint Create state ([1425858](https://github.com/neilmartin83/terraform-provider-axm/commit/14258586d12a46f17322e83bf4512dc44cc6e507))
+* use blueprint create response data instead of separate GET calls ([15fe978](https://github.com/neilmartin83/terraform-provider-axm/commit/15fe97855fda7db3549ac64ff11291d4aa1db24b))
+* use plan relationship data in blueprint Create state ([003afbd](https://github.com/neilmartin83/terraform-provider-axm/commit/003afbd7af70d5c8dea9aa84899219be0a537b90))
+
 ## [1.8.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.7.1...v1.8.0) (2026-06-07)
 
 
