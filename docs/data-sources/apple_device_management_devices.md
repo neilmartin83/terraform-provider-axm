@@ -3,12 +3,12 @@
 page_title: "axm_apple_device_management_devices Data Source - terraform-provider-axm"
 subcategory: ""
 description: |-
-  Fetches the list of Apple devices enrolled in a device management service.
+  Get a list of devices enrolled in Apple Device Management service.
 ---
 
 # axm_apple_device_management_devices (Data Source)
 
-Fetches the list of Apple devices enrolled in a device management service.
+Get a list of devices enrolled in Apple Device Management service.
 
 ## Example Usage
 
