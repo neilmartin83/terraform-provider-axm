@@ -4,6 +4,8 @@
 package common
 
 import (
+	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -15,6 +17,13 @@ func StringsToTypesStrings(values []string) []types.String {
 		result[i] = types.StringValue(v)
 	}
 	return result
+}
+
+// StringsToList converts a []string to a types.List suitable for Terraform list
+// attributes in resource and data source models.
+func StringsToList(ctx context.Context, values []string) types.List {
+	list, _ := types.ListValueFrom(ctx, types.StringType, values)
+	return list
 }
 
 // StringPointerOrNil returns a pointer to the string if it is non-empty,

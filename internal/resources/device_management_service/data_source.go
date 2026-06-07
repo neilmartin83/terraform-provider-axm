@@ -37,7 +37,7 @@ type DeviceManagementServiceDataSourceModel struct {
 	ServerType             types.String   `tfsdk:"server_type"`
 	Status                 types.String   `tfsdk:"status"`
 	DeviceCount            types.Int64    `tfsdk:"device_count"`
-	DefaultProductFamilies []types.String `tfsdk:"default_product_families"`
+	DefaultProductFamilies types.List `tfsdk:"default_product_families"`
 	LastConnectedDateTime  types.String   `tfsdk:"last_connected_date_time"`
 	LastConnectedIp        types.String   `tfsdk:"last_connected_ip"`
 	AllowRelease           types.Bool     `tfsdk:"allow_release"`
@@ -142,7 +142,7 @@ func (d *DeviceManagementServiceDataSource) Read(ctx context.Context, req dataso
 	data.ServerType = types.StringValue(srv.Attributes.ServerType)
 	data.Status = types.StringPointerValue(srv.Attributes.Status)
 	data.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
-	data.DefaultProductFamilies = common.StringsToTypesStrings(srv.Attributes.DefaultProductFamilies)
+	data.DefaultProductFamilies = common.StringsToList(ctx, srv.Attributes.DefaultProductFamilies)
 	data.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
 	data.LastConnectedIp = types.StringPointerValue(srv.Attributes.LastConnectedIp)
 	data.AllowRelease = types.BoolPointerValue(srv.Attributes.EnableMdmDisownFlag)

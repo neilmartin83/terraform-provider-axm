@@ -28,7 +28,7 @@ type MdmDeviceAssignmentModel struct {
 	Type                   types.String               `tfsdk:"type"`
 	Status                 types.String               `tfsdk:"status"`
 	DeviceCount            types.Int64                `tfsdk:"device_count"`
-	DefaultProductFamilies []types.String             `tfsdk:"default_product_families"`
+	DefaultProductFamilies types.List                 `tfsdk:"default_product_families"`
 	LastConnectedDateTime  types.String               `tfsdk:"last_connected_date_time"`
 	LastConnectedIp        types.String               `tfsdk:"last_connected_ip"`
 	CreatedDateTime        types.String               `tfsdk:"created_date_time"`

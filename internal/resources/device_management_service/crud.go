@@ -75,11 +75,11 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 	data.Type = types.StringValue(srv.Attributes.ServerType)
 	data.Status = types.StringPointerValue(srv.Attributes.Status)
 	data.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
-	data.DefaultProductFamilies = common.StringsToTypesStrings(srv.Attributes.DefaultProductFamilies)
 	data.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
 	data.LastConnectedIp = types.StringPointerValue(srv.Attributes.LastConnectedIp)
 	data.CreatedDateTime = types.StringValue(srv.Attributes.CreatedDateTime)
 	data.UpdatedDateTime = types.StringValue(srv.Attributes.UpdatedDateTime)
+	data.DefaultProductFamilies = common.StringsToList(ctx, srv.Attributes.DefaultProductFamilies)
 	// AllowRelease is not reliably echoed by the create response; keep the plan value.
 	// Read will reconcile on the next refresh if Apple silently ignored it.
 
@@ -180,11 +180,11 @@ func (r *DeviceManagementServiceResource) Read(ctx context.Context, req resource
 	data.Type = types.StringValue(srv.Attributes.ServerType)
 	data.Status = types.StringPointerValue(srv.Attributes.Status)
 	data.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
-	data.DefaultProductFamilies = common.StringsToTypesStrings(srv.Attributes.DefaultProductFamilies)
 	data.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
 	data.LastConnectedIp = types.StringPointerValue(srv.Attributes.LastConnectedIp)
 	data.CreatedDateTime = types.StringValue(srv.Attributes.CreatedDateTime)
 	data.UpdatedDateTime = types.StringValue(srv.Attributes.UpdatedDateTime)
+	data.DefaultProductFamilies = common.StringsToList(ctx, srv.Attributes.DefaultProductFamilies)
 	data.AllowRelease = types.BoolPointerValue(srv.Attributes.EnableMdmDisownFlag)
 
 	deviceIDs, err := r.client.GetDeviceManagementServiceSerialNumbers(readCtx, data.ID.ValueString())
@@ -275,11 +275,11 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 			plan.Type = types.StringValue(srv.Attributes.ServerType)
 			plan.Status = types.StringPointerValue(srv.Attributes.Status)
 			plan.DeviceCount = types.Int64PointerValue(srv.Attributes.DeviceCount)
-			plan.DefaultProductFamilies = common.StringsToTypesStrings(srv.Attributes.DefaultProductFamilies)
 			plan.LastConnectedDateTime = types.StringPointerValue(srv.Attributes.LastConnectedDateTime)
 			plan.LastConnectedIp = types.StringPointerValue(srv.Attributes.LastConnectedIp)
 			plan.CreatedDateTime = types.StringValue(srv.Attributes.CreatedDateTime)
 			plan.UpdatedDateTime = types.StringValue(srv.Attributes.UpdatedDateTime)
+			plan.DefaultProductFamilies = common.StringsToList(ctx, srv.Attributes.DefaultProductFamilies)
 			plan.AllowRelease = types.BoolPointerValue(srv.Attributes.EnableMdmDisownFlag)
 		}
 	}
