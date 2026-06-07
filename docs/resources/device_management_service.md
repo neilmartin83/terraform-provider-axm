@@ -36,26 +36,26 @@ resource "axm_device_management_service" "example" {
 
 ### Required
 
-- `name` (String) MDM server name.
+- `name` (String) The device management service's name.
 
 ### Optional
 
-- `allow_release` (Boolean) Allow this service to release devices.
+- `allow_release` (Boolean) A Boolean value that indicates whether the device management service is allowed to disown its enrolled devices.
 - `device_ids` (Set of String) Set of device serial numbers to assign to this MDM server.
 - `server_certificate` (Attributes) X.509 MDM certificate. Required when creating a new server. Not returned by the API; stored in state as provided. (see [below for nested schema](#nestedatt--server_certificate))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
-- `created_date_time` (String) Date and time the MDM server was created.
-- `default_product_families` (List of String) Default product families assigned to this MDM server.
-- `device_count` (Number) Number of devices assigned to this MDM server.
-- `id` (String) Device management service ID.
-- `last_connected_date_time` (String) Date and time the MDM server last connected to Apple Business Manager.
-- `last_connected_ip` (String) IP address of the last connection from the MDM server.
-- `status` (String) MDM server status.
-- `type` (String) MDM server type (MDM, APPLE_CONFIGURATOR, etc.).
-- `updated_date_time` (String) Date and time the MDM server was last updated.
+- `created_date_time` (String) The date and time of the creation of the resource.
+- `default_product_families` (List of String) The product families that are assigned by default to this device management service. Read/update only.
+- `device_count` (Number) The number of devices currently assigned to this device management service. Read only.
+- `id` (String) The opaque resource ID that uniquely identifies the resource.
+- `last_connected_date_time` (String) The date and time the device management service last connected to Apple's servers. Read only.
+- `last_connected_ip` (String) The IP address from which the device management service last connected to Apple's servers. Read only.
+- `status` (String) The operational status of the device management service. Read only.
+- `type` (String) The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM. Read only.
+- `updated_date_time` (String) The date and time of the most-recent update for the resource.
 
 <a id="nestedatt--server_certificate"></a>
 ### Nested Schema for `server_certificate`
