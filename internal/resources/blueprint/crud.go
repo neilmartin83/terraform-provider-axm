@@ -56,15 +56,10 @@ func (r *BlueprintResource) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	state := plan
-	if err := r.refreshBlueprintAttributes(createCtx, blueprint.ID, &state); err != nil {
-		resp.Diagnostics.AddError("Failed to read Blueprint", err.Error())
-		return
-	}
+	state.ID = types.StringValue(blueprint.ID)
 
-	if err := r.populateRelationshipSets(createCtx, blueprint.ID, &state); err != nil {
-		resp.Diagnostics.AddError("Failed to read Blueprint relationships", err.Error())
-		return
-	}
+	r.refreshBlueprintAttributesFromResponse(blueprint, &state)
+	r.populateRelationshipState(blueprint.Relationships, &state)
 
 	if resp.Identity != nil {
 		identity := blueprintIdentityModel{
@@ -229,8 +224,8 @@ func (r *BlueprintResource) refreshBlueprintAttributes(ctx context.Context, blue
 	state.ID = types.StringValue(blueprint.ID)
 	state.Name = types.StringValue(blueprint.Attributes.Name)
 	state.Description = types.StringPointerValue(common.StringPointerOrNil(blueprint.Attributes.Description))
-	state.Status = types.StringValue(blueprint.Attributes.Status)
-	state.AppLicenseDeficient = types.BoolValue(blueprint.Attributes.AppLicenseDeficient)
+	state.Status = types.StringValue(string(blueprint.Attributes.Status))
+	state.AppLicenseDeficient = common.BoolPointerToBoolValue(blueprint.Attributes.AppLicenseDeficient)
 	state.CreatedDateTime = types.StringValue(blueprint.Attributes.CreatedDateTime)
 	state.UpdatedDateTime = types.StringValue(blueprint.Attributes.UpdatedDateTime)
 
@@ -239,6 +234,48 @@ func (r *BlueprintResource) refreshBlueprintAttributes(ctx context.Context, blue
 	})
 
 	return nil
+}
+
+// refreshBlueprintAttributesFromResponse sets computed attribute fields on state
+// from a Blueprint response struct without making an additional API call.
+func (r *BlueprintResource) refreshBlueprintAttributesFromResponse(blueprint *client.Blueprint, state *BlueprintModel) {
+	state.Name = types.StringValue(blueprint.Attributes.Name)
+	state.Description = types.StringPointerValue(common.StringPointerOrNil(blueprint.Attributes.Description))
+	state.Status = types.StringValue(string(blueprint.Attributes.Status))
+	state.AppLicenseDeficient = common.BoolPointerToBoolValue(blueprint.Attributes.AppLicenseDeficient)
+	state.CreatedDateTime = types.StringValue(blueprint.Attributes.CreatedDateTime)
+	state.UpdatedDateTime = types.StringValue(blueprint.Attributes.UpdatedDateTime)
+}
+
+// populateRelationshipState sets relationship ID sets on state from a
+// BlueprintRelationships struct returned by the API response.
+func (r *BlueprintResource) populateRelationshipState(rels client.BlueprintRelationships, state *BlueprintModel) {
+	type relSource struct {
+		source client.BlueprintRelationshipLinks
+		dest   *types.Set
+	}
+
+	targets := []relSource{
+		{rels.Apps, &state.AppIDs},
+		{rels.Configurations, &state.ConfigurationIDs},
+		{rels.Packages, &state.PackageIDs},
+		{rels.OrgDevices, &state.DeviceIDs},
+		{rels.Users, &state.UserIDs},
+		{rels.UserGroups, &state.UserGroupIDs},
+	}
+
+	for _, t := range targets {
+		ids := make([]string, len(t.source.Data))
+		for i, d := range t.source.Data {
+			ids[i] = d.ID
+		}
+		set, diags := common.StringsToSet(ids)
+		if diags.HasError() {
+			*t.dest = types.SetNull(types.StringType)
+			continue
+		}
+		*t.dest = set
+	}
 }
 
 // populateRelationshipSets reads every Blueprint relationship from the API and
