@@ -19,6 +19,8 @@ import (
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/app"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/apple_device_management_device"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/apple_device_management_devices"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/apps"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/audit_events"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/blueprint"
@@ -213,6 +215,8 @@ func (p *AxmProvider) Resources(ctx context.Context) []func() resource.Resource 
 
 func (p *AxmProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		apple_device_management_device.NewAppleDeviceManagementDeviceDataSource,
+		apple_device_management_devices.NewAppleDeviceManagementDevicesDataSource,
 		app.NewAppDataSource,
 		apps.NewAppsDataSource,
 		audit_events.NewAuditEventsDataSource,

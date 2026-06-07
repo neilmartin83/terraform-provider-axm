@@ -146,12 +146,14 @@ func TestProviderDataSources(t *testing.T) {
 	ctx := context.Background()
 	dataSources := p.DataSources(ctx)
 
-	if len(dataSources) != 20 {
-		t.Fatalf("expected 20 data sources, got %d", len(dataSources))
+	if len(dataSources) != 22 {
+		t.Fatalf("expected 22 data sources, got %d", len(dataSources))
 	}
 
 	expected := []string{
 		"axm_app",
+		"axm_apple_device_management_device",
+		"axm_apple_device_management_devices",
 		"axm_apps",
 		"axm_audit_events",
 		"axm_blueprint",
