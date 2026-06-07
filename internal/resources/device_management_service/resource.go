@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -64,6 +66,56 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 			"type": schema.StringAttribute{
 				Computed:    true,
 				Description: "MDM server type (MDM, APPLE_CONFIGURATOR, etc.).",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"status": schema.StringAttribute{
+				Computed:    true,
+				Description: "MDM server status.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"device_count": schema.Int64Attribute{
+				Computed:    true,
+				Description: "Number of devices assigned to this MDM server.",
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
+			},
+			"default_product_families": schema.ListAttribute{
+				ElementType: types.StringType,
+				Computed:    true,
+				Description: "Default product families assigned to this MDM server.",
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"last_connected_date_time": schema.StringAttribute{
+				Computed:    true,
+				Description: "Date and time the MDM server last connected to Apple Business Manager.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"last_connected_ip": schema.StringAttribute{
+				Computed:    true,
+				Description: "IP address of the last connection from the MDM server.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"created_date_time": schema.StringAttribute{
+				Computed:    true,
+				Description: "Date and time the MDM server was created.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"updated_date_time": schema.StringAttribute{
+				Computed:    true,
+				Description: "Date and time the MDM server was last updated.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

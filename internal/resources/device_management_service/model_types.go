@@ -23,13 +23,20 @@ type MdmServerCertificateModel struct {
 
 // MdmDeviceAssignmentModel describes the Terraform state for an MDM server and its device assignments.
 type MdmDeviceAssignmentModel struct {
-	ID                types.String               `tfsdk:"id"`
-	Name              types.String               `tfsdk:"name"`
-	Type              types.String               `tfsdk:"type"`
-	AllowRelease      types.Bool                 `tfsdk:"allow_release"`
-	ServerCertificate *MdmServerCertificateModel `tfsdk:"server_certificate"`
-	Timeouts          timeouts.Value             `tfsdk:"timeouts"`
-	DeviceIDs         types.Set                  `tfsdk:"device_ids"`
+	ID                     types.String               `tfsdk:"id"`
+	Name                   types.String               `tfsdk:"name"`
+	Type                   types.String               `tfsdk:"type"`
+	Status                 types.String               `tfsdk:"status"`
+	DeviceCount            types.Int64                `tfsdk:"device_count"`
+	DefaultProductFamilies []types.String             `tfsdk:"default_product_families"`
+	LastConnectedDateTime  types.String               `tfsdk:"last_connected_date_time"`
+	LastConnectedIp        types.String               `tfsdk:"last_connected_ip"`
+	CreatedDateTime        types.String               `tfsdk:"created_date_time"`
+	UpdatedDateTime        types.String               `tfsdk:"updated_date_time"`
+	AllowRelease           types.Bool                 `tfsdk:"allow_release"`
+	ServerCertificate      *MdmServerCertificateModel `tfsdk:"server_certificate"`
+	Timeouts               timeouts.Value             `tfsdk:"timeouts"`
+	DeviceIDs              types.Set                  `tfsdk:"device_ids"`
 }
 
 // DeviceManagementServiceListResourceModel captures filters supported by the list query.
