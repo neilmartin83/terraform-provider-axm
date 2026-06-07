@@ -254,13 +254,21 @@ func (r *BlueprintResource) refreshBlueprintAttributesFromResponse(blueprint *cl
 // populateRelationshipStateFromPlan copies relationship ID sets from the plan
 // into state. Used during Create, since the API create response does not include
 // relationship data and the GET relationship endpoints may be unreliable.
+// Unknown plan values are converted to null (known after apply).
 func (r *BlueprintResource) populateRelationshipStateFromPlan(plan BlueprintModel, state *BlueprintModel) {
-	state.AppIDs = plan.AppIDs
-	state.ConfigurationIDs = plan.ConfigurationIDs
-	state.PackageIDs = plan.PackageIDs
-	state.DeviceIDs = plan.DeviceIDs
-	state.UserIDs = plan.UserIDs
-	state.UserGroupIDs = plan.UserGroupIDs
+	state.AppIDs = knownOrNullSet(plan.AppIDs)
+	state.ConfigurationIDs = knownOrNullSet(plan.ConfigurationIDs)
+	state.PackageIDs = knownOrNullSet(plan.PackageIDs)
+	state.DeviceIDs = knownOrNullSet(plan.DeviceIDs)
+	state.UserIDs = knownOrNullSet(plan.UserIDs)
+	state.UserGroupIDs = knownOrNullSet(plan.UserGroupIDs)
+}
+
+func knownOrNullSet(s types.Set) types.Set {
+	if s.IsUnknown() {
+		return types.SetNull(types.StringType)
+	}
+	return s
 }
 
 // populateRelationshipSets reads every Blueprint relationship from the API and
