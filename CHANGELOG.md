@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.9.0...v1.10.0) (2026-06-08)
+
+
+### Features
+
+* add releaser_entity_type and releaser_id to device data sources ([1b3f42b](https://github.com/neilmartin83/terraform-provider-axm/commit/1b3f42ba2fd159dce6b65508f84197e984336b95))
+
 ## [1.9.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.8.0...v1.9.0) (2026-06-07)
 
 
