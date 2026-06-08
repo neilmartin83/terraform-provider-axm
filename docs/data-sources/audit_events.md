@@ -28,17 +28,17 @@ output "example_audit_events" {
 
 ### Required
 
-- `end_timestamp` (String) ISO8601 end timestamp for the query range.
-- `start_timestamp` (String) ISO8601 start timestamp for the query range.
+- `end_timestamp` (String) ISO8601 end timestamp for the query range (UTC).
+- `start_timestamp` (String) ISO8601 start timestamp for the query range (UTC).
 
 ### Optional
 
-- `actor_id` (String) Actor ID to filter by.
+- `actor_id` (String) Unique identifier of the actor to filter by.
 - `cursor` (String) Pagination cursor for the first page.
-- `event_type` (String) Event type to filter by.
+- `event_type` (String) The type of event to filter by.
 - `fields` (List of String) Fields to include in the response.
 - `limit` (Number) Maximum number of events to request per page.
-- `subject_id` (String) Subject ID to filter by.
+- `subject_id` (String) Unique identifier of the subject to filter by.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
@@ -59,18 +59,18 @@ Optional:
 
 Read-Only:
 
-- `actor_id` (String) The actor ID.
-- `actor_name` (String) The actor name.
-- `actor_type` (String) The actor type.
-- `category` (String) The event category.
+- `actor_id` (String) Unique identifier of the actor.
+- `actor_name` (String) Display name of the actor.
+- `actor_type` (String) The type of entity that performed the action.
+- `category` (String) The category of the event.
 - `event_data_json` (String) JSON payload for event-specific data.
-- `event_data_property_key` (String) The event data property key.
-- `event_date_time` (String) Timestamp when the event occurred.
-- `event_type` (String) The event type.
-- `group_id` (String) The event group ID.
-- `id` (String) The audit event ID.
-- `outcome` (String) The outcome of the event.
-- `subject_id` (String) The subject ID.
-- `subject_name` (String) The subject name.
-- `subject_type` (String) The subject type.
+- `event_data_property_key` (String) Property key for event-specific data.
+- `event_date_time` (String) Timestamp when the event occurred (ISO8601 format, UTC).
+- `event_type` (String) The type of event that occurred.
+- `group_id` (String) Identifier for grouping related events.
+- `id` (String) The opaque resource ID that uniquely identifies the resource.
+- `outcome` (String) The result of the action.
+- `subject_id` (String) Unique identifier of the subject.
+- `subject_name` (String) Display name of the subject.
+- `subject_type` (String) The type of entity that was affected.
 - `type` (String) The resource type.

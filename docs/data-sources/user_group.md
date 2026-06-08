@@ -35,14 +35,14 @@ output "example_user_group" {
 
 ### Read-Only
 
-- `created_date_time` (String) The created date and time.
-- `group_type` (String) The user group type.
-- `name` (String) The user group name.
-- `ou_id` (String) The organizational unit ID.
-- `status` (String) The user group status.
-- `total_member_count` (Number) The total member count.
+- `created_date_time` (String) The date and time the user group was created.
+- `group_type` (String) The type of group.
+- `name` (String) The name of the user group.
+- `ou_id` (String) The identifier of the organizational unit the group belongs to.
+- `status` (String) The status of the group.
+- `total_member_count` (Number) The total number of members in the group.
 - `type` (String) The resource type.
-- `updated_date_time` (String) The updated date and time.
+- `updated_date_time` (String) The date and time the user group was last modified.
 - `user_ids` (List of String) User IDs associated with the group.
 
 <a id="nestedatt--timeouts"></a>

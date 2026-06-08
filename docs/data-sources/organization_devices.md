@@ -66,6 +66,8 @@ Read-Only:
 - `purchase_source_id` (String) The unique ID of the purchase source type: Apple Customer Number or Reseller Number.
 - `purchase_source_type` (String) The type of the purchase source.
 - `released_from_org_date_time` (String) The date and time the device was released from an organization. This will be null if the device hasn't been released. Currently only querying by a single device is supported. Batch device queries aren't currently supported for this property.
+- `releaser_entity_type` (String) The type of entity that released the device from the organization.
+- `releaser_id` (String) The ID of the entity that released the device from the organization.
 - `serial_number` (String) The device's serial number.
 - `status` (String) The device's status: ASSIGNED or UNASSIGNED. If ASSIGNED, use a separate API to get the information of the assigned server.
 - `type` (String) The type of the device.

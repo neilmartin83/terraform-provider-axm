@@ -66,7 +66,7 @@ resource "axm_blueprint" "example" {
 - `app_license_deficient` (Boolean) Whether the Blueprint is missing app licenses.
 - `created_date_time` (String) The date and time the Blueprint was created.
 - `id` (String) The Blueprint ID.
-- `status` (String) The Blueprint status.
+- `status` (String) The current status of the Blueprint.
 - `updated_date_time` (String) The date and time the Blueprint was last updated.
 
 <a id="nestedatt--timeouts"></a>

@@ -50,9 +50,9 @@ EOF
 
 ### Optional
 
-- `configuration_profile` (String) The configuration profile payload (mobileconfig XML). Required for CUSTOM_SETTING configurations.
+- `configuration_profile` (String) The XML content of the configuration profile in Apple .plist format. Required for CUSTOM_SETTING configurations.
 - `configured_for_platforms` (Set of String) Platforms that the Configuration targets.
-- `filename` (String) Filename for the configuration profile. Required for CUSTOM_SETTING configurations.
+- `filename` (String) The filename for the configuration profile (for example, Settings.mobileconfig). Required for CUSTOM_SETTING configurations.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

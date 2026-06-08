@@ -33,7 +33,7 @@ Fetches information about a specific Blueprint from Apple Business Manager.
 - `device_ids` (Set of String) Device IDs associated with the Blueprint.
 - `name` (String) The Blueprint name.
 - `package_ids` (Set of String) Package IDs associated with the Blueprint.
-- `status` (String) The Blueprint status.
+- `status` (String) The current status of the Blueprint.
 - `updated_date_time` (String) The date and time the Blueprint was last updated.
 - `user_group_ids` (Set of String) User group IDs associated with the Blueprint.
 - `user_ids` (Set of String) User IDs associated with the Blueprint.

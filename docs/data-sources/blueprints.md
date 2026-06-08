@@ -42,5 +42,5 @@ Read-Only:
 - `description` (String) The Blueprint description.
 - `id` (String) The Blueprint ID.
 - `name` (String) The Blueprint name.
-- `status` (String) The Blueprint status.
+- `status` (String) The current status of the Blueprint.
 - `updated_date_time` (String) The date and time the Blueprint was last updated.
