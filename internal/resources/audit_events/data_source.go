@@ -82,23 +82,23 @@ func (d *AuditEventsDataSource) Schema(ctx context.Context, req datasource.Schem
 			"timeouts": timeouts.Attributes(ctx),
 			"start_timestamp": schema.StringAttribute{
 				Required:    true,
-				Description: "ISO8601 start timestamp for the query range.",
+				Description: "ISO8601 start timestamp for the query range (UTC).",
 			},
 			"end_timestamp": schema.StringAttribute{
 				Required:    true,
-				Description: "ISO8601 end timestamp for the query range.",
+				Description: "ISO8601 end timestamp for the query range (UTC).",
 			},
 			"actor_id": schema.StringAttribute{
 				Optional:    true,
-				Description: "Actor ID to filter by.",
+				Description: "Unique identifier of the actor to filter by.",
 			},
 			"subject_id": schema.StringAttribute{
 				Optional:    true,
-				Description: "Subject ID to filter by.",
+				Description: "Unique identifier of the subject to filter by.",
 			},
 			"event_type": schema.StringAttribute{
 				Optional:    true,
-				Description: "Event type to filter by.",
+				Description: "The type of event to filter by.",
 			},
 			"limit": schema.Int64Attribute{
 				Optional:    true,
@@ -120,7 +120,7 @@ func (d *AuditEventsDataSource) Schema(ctx context.Context, req datasource.Schem
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
 							Computed:    true,
-							Description: "The audit event ID.",
+							Description: "The opaque resource ID that uniquely identifies the resource.",
 						},
 						"type": schema.StringAttribute{
 							Computed:    true,
@@ -128,51 +128,51 @@ func (d *AuditEventsDataSource) Schema(ctx context.Context, req datasource.Schem
 						},
 						"event_date_time": schema.StringAttribute{
 							Computed:    true,
-							Description: "Timestamp when the event occurred.",
+							Description: "Timestamp when the event occurred (ISO8601 format, UTC).",
 						},
 						"event_type": schema.StringAttribute{
 							Computed:    true,
-							Description: "The event type.",
+							Description: "The type of event that occurred.",
 						},
 						"category": schema.StringAttribute{
 							Computed:    true,
-							Description: "The event category.",
+							Description: "The category of the event.",
 						},
 						"actor_type": schema.StringAttribute{
 							Computed:    true,
-							Description: "The actor type.",
+							Description: "The type of entity that performed the action.",
 						},
 						"actor_id": schema.StringAttribute{
 							Computed:    true,
-							Description: "The actor ID.",
+							Description: "Unique identifier of the actor.",
 						},
 						"actor_name": schema.StringAttribute{
 							Computed:    true,
-							Description: "The actor name.",
+							Description: "Display name of the actor.",
 						},
 						"subject_type": schema.StringAttribute{
 							Computed:    true,
-							Description: "The subject type.",
+							Description: "The type of entity that was affected.",
 						},
 						"subject_id": schema.StringAttribute{
 							Computed:    true,
-							Description: "The subject ID.",
+							Description: "Unique identifier of the subject.",
 						},
 						"subject_name": schema.StringAttribute{
 							Computed:    true,
-							Description: "The subject name.",
+							Description: "Display name of the subject.",
 						},
 						"outcome": schema.StringAttribute{
 							Computed:    true,
-							Description: "The outcome of the event.",
+							Description: "The result of the action.",
 						},
 						"group_id": schema.StringAttribute{
 							Computed:    true,
-							Description: "The event group ID.",
+							Description: "Identifier for grouping related events.",
 						},
 						"event_data_property_key": schema.StringAttribute{
 							Computed:    true,
-							Description: "The event data property key.",
+							Description: "Property key for event-specific data.",
 						},
 						"event_data_json": schema.StringAttribute{
 							Computed:    true,
