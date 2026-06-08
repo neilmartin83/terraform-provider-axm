@@ -60,7 +60,7 @@ func (r *BlueprintResource) Schema(ctx context.Context, req resource.SchemaReque
 			},
 			"status": schema.StringAttribute{
 				Computed:    true,
-				Description: "The Blueprint status.",
+				Description: "The current status of the Blueprint.",
 			},
 			"app_license_deficient": schema.BoolAttribute{
 				Computed:    true,

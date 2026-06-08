@@ -95,19 +95,19 @@ func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 			},
 			"status": schema.StringAttribute{
 				Computed:    true,
-				Description: "The user's status.",
+				Description: "The status of the user.",
 			},
 			"managed_apple_account": schema.StringAttribute{
 				Computed:    true,
-				Description: "The user's managed Apple account.",
+				Description: "The Apple Account of the user registered in the system.",
 			},
 			"is_external_user": schema.BoolAttribute{
 				Computed:    true,
-				Description: "Whether the user is external.",
+				Description: "Indicates if the user is an external user invited to the organization.",
 			},
 			"role_ou_list": schema.ListNestedAttribute{
 				Computed:    true,
-				Description: "Role and organizational unit mappings.",
+				Description: "A list of role-organizational unit mappings for the user.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"role_name": schema.StringAttribute{
@@ -127,35 +127,35 @@ func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 			},
 			"employee_number": schema.StringAttribute{
 				Computed:    true,
-				Description: "The employee number.",
+				Description: "The employee number of the user.",
 			},
 			"cost_center": schema.StringAttribute{
 				Computed:    true,
-				Description: "The cost center.",
+				Description: "The cost center the user belongs to in the organization.",
 			},
 			"division": schema.StringAttribute{
 				Computed:    true,
-				Description: "The division.",
+				Description: "The division the user belongs to in the organization.",
 			},
 			"department": schema.StringAttribute{
 				Computed:    true,
-				Description: "The department.",
+				Description: "The department the user belongs to in the organization.",
 			},
 			"job_title": schema.StringAttribute{
 				Computed:    true,
-				Description: "The job title.",
+				Description: "The job title the user holds in the organization.",
 			},
 			"start_date_time": schema.StringAttribute{
 				Computed:    true,
-				Description: "The start date and time.",
+				Description: "The date and time when the user started as part of the organization.",
 			},
 			"created_date_time": schema.StringAttribute{
 				Computed:    true,
-				Description: "The created date and time.",
+				Description: "The date and time that the user was created.",
 			},
 			"updated_date_time": schema.StringAttribute{
 				Computed:    true,
-				Description: "The updated date and time.",
+				Description: "The date and time that the user was last updated.",
 			},
 			"phone_numbers": schema.ListNestedAttribute{
 				Computed:    true,

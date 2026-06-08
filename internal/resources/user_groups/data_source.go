@@ -77,31 +77,31 @@ func (d *UserGroupsDataSource) Schema(ctx context.Context, req datasource.Schema
 						},
 						"ou_id": schema.StringAttribute{
 							Computed:    true,
-							Description: "The organizational unit ID.",
+							Description: "The identifier of the organizational unit the group belongs to.",
 						},
 						"name": schema.StringAttribute{
 							Computed:    true,
-							Description: "The user group name.",
+							Description: "The name of the user group.",
 						},
 						"group_type": schema.StringAttribute{
 							Computed:    true,
-							Description: "The user group type.",
+							Description: "The type of group.",
 						},
 						"total_member_count": schema.Int64Attribute{
 							Computed:    true,
-							Description: "The total member count.",
+							Description: "The total number of members in the group.",
 						},
 						"status": schema.StringAttribute{
 							Computed:    true,
-							Description: "The user group status.",
+							Description: "The status of the group.",
 						},
 						"created_date_time": schema.StringAttribute{
 							Computed:    true,
-							Description: "The created date and time.",
+							Description: "The date and time the user group was created.",
 						},
 						"updated_date_time": schema.StringAttribute{
 							Computed:    true,
-							Description: "The updated date and time.",
+							Description: "The date and time the user group was last modified.",
 						},
 					},
 				},

@@ -98,7 +98,7 @@ func (d *AppsDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 						},
 						"is_custom_app": schema.BoolAttribute{
 							Computed:    true,
-							Description: "Whether the app is custom.",
+							Description: "Indicates whether this is a custom B2B app.",
 						},
 						"app_store_url": schema.StringAttribute{
 							Computed:    true,
