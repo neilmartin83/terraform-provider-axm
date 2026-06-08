@@ -68,12 +68,12 @@ func (r *ConfigurationResource) Schema(ctx context.Context, req resource.SchemaR
 			"configuration_profile": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "The configuration profile payload (mobileconfig XML). Required for CUSTOM_SETTING configurations.",
+				Description: "The XML content of the configuration profile in Apple .plist format. Required for CUSTOM_SETTING configurations.",
 			},
 			"filename": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Filename for the configuration profile. Required for CUSTOM_SETTING configurations.",
+				Description: "The filename for the configuration profile (for example, Settings.mobileconfig). Required for CUSTOM_SETTING configurations.",
 			},
 			"created_date_time": schema.StringAttribute{
 				Computed:    true,
