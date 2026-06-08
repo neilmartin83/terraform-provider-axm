@@ -54,6 +54,8 @@ type OrganizationDeviceDataSourceModel struct {
 	WifiMacAddress          types.String   `tfsdk:"wifi_mac_address"`
 	BluetoothMacAddress     types.String   `tfsdk:"bluetooth_mac_address"`
 	EthernetMacAddress      []types.String `tfsdk:"ethernet_mac_address"`
+	ReleaserEntityType      types.String   `tfsdk:"releaser_entity_type"`
+	ReleaserID              types.String   `tfsdk:"releaser_id"`
 }
 
 func (d *OrganizationDeviceDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -160,6 +162,14 @@ func (d *OrganizationDeviceDataSource) Schema(ctx context.Context, req datasourc
 				Computed:    true,
 				Description: "The device's built-in Ethernet MAC addresses.",
 			},
+			"releaser_entity_type": schema.StringAttribute{
+				Computed:    true,
+				Description: "The type of entity that released the device from the organization.",
+			},
+			"releaser_id": schema.StringAttribute{
+				Computed:    true,
+				Description: "The ID of the entity that released the device from the organization.",
+			},
 		},
 	}
 }
@@ -223,6 +233,8 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 	data.EthernetMacAddress = common.StringsToTypesStrings(device.Attributes.EthernetMacAddress)
 	data.IMEI = common.StringsToTypesStrings(device.Attributes.IMEI)
 	data.MEID = common.StringsToTypesStrings(device.Attributes.MEID)
+	data.ReleaserEntityType = types.StringPointerValue(common.StringPointerOrNil(device.Attributes.ReleaserEntityType))
+	data.ReleaserID = types.StringPointerValue(common.StringPointerOrNil(device.Attributes.ReleaserID))
 
 	tflog.Debug(ctx, "Read organization device", map[string]any{
 		"device_id":     data.ID.ValueString(),
