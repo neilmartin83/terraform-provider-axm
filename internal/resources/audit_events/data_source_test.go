@@ -71,7 +71,15 @@ func TestAuditEventsDataSourceSchema(t *testing.T) {
 		t.Error("expected 'events' to be Computed")
 	}
 
-	if _, ok := eventsAttr.NestedObject.Attributes["event_data_json"]; !ok {
-		t.Error("nested attribute 'event_data_json' not found in events")
+	allNested := []string{
+		"id", "type", "event_date_time", "event_type", "category",
+		"actor_type", "actor_id", "actor_name", "subject_type",
+		"subject_id", "subject_name", "outcome", "group_id",
+		"event_data_property_key", "event_data_json",
+	}
+	for _, name := range allNested {
+		if _, ok := eventsAttr.NestedObject.Attributes[name]; !ok {
+			t.Errorf("nested attribute %q not found in events", name)
+		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
@@ -73,14 +74,38 @@ func TestOrganizationDevicesDataSourceSchema(t *testing.T) {
 	}
 
 	nestedAttrs := listNested.NestedObject.Attributes
-	expectedNested := []string{
+	allExpectedNested := []string{
 		"id", "type", "serial_number", "added_to_org_date_time",
-		"updated_date_time", "device_model", "product_family", "status",
-		"imei", "meid", "ethernet_mac_address",
+		"released_from_org_date_time", "updated_date_time", "device_model",
+		"product_family", "product_type", "device_capacity", "part_number",
+		"order_number", "color", "status", "order_date_time", "imei", "meid",
+		"eid", "purchase_source_id", "purchase_source_type", "wifi_mac_address",
+		"bluetooth_mac_address", "ethernet_mac_address",
+		"releaser_entity_type", "releaser_id",
 	}
-	for _, name := range expectedNested {
+	for _, name := range allExpectedNested {
 		if _, ok := nestedAttrs[name]; !ok {
 			t.Errorf("nested attribute %q not found in devices", name)
+		}
+	}
+
+	idAttr, ok = nestedAttrs["id"].(dsschema.StringAttribute)
+	if !ok {
+		t.Fatal("expected nested 'id' to be a StringAttribute")
+	}
+	if !idAttr.IsRequired() {
+		t.Error("expected nested 'id' to be Required")
+	}
+
+	listStringAttrs := []string{"imei", "meid", "ethernet_mac_address"}
+	for _, name := range listStringAttrs {
+		listAttr, ok := nestedAttrs[name].(dsschema.ListAttribute)
+		if !ok {
+			t.Errorf("expected %q to be a ListAttribute", name)
+			continue
+		}
+		if listAttr.ElementType != types.StringType {
+			t.Errorf("expected %q ElementType to be StringType", name)
 		}
 	}
 }
