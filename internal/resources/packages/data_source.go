@@ -82,11 +82,11 @@ func (d *PackagesDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 						},
 						"url": schema.StringAttribute{
 							Computed:    true,
-							Description: "The package URL.",
+							Description: "The HTTPS URL to download the package.",
 						},
 						"hash": schema.StringAttribute{
 							Computed:    true,
-							Description: "The package hash.",
+							Description: "The hex string hash of the package file.",
 						},
 						"bundle_ids": schema.ListAttribute{
 							ElementType: types.StringType,

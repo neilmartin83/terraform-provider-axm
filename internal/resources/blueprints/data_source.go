@@ -79,7 +79,7 @@ func (d *BlueprintsDataSource) Schema(ctx context.Context, req datasource.Schema
 						},
 						"status": schema.StringAttribute{
 							Computed:    true,
-							Description: "The Blueprint status.",
+							Description: "The current status of the Blueprint.",
 						},
 						"app_license_deficient": schema.BoolAttribute{
 							Computed:    true,
