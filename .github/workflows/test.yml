@@ -57,7 +57,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6.0.2
-      - uses: actions/setup-go@v6.4.0
+      - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
           cache: true
@@ -78,7 +78,7 @@ jobs:
           - "1.14.*"
     steps:
       - uses: actions/checkout@v6.0.2
-      - uses: actions/setup-go@v6.4.0
+      - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
           cache: true
