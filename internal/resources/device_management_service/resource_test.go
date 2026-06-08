@@ -179,6 +179,26 @@ func TestResourceSchema(t *testing.T) {
 	if deviceIDsAttr.ElementType != types.StringType {
 		t.Errorf("expected device_ids ElementType to be StringType, got %T", deviceIDsAttr.ElementType)
 	}
+
+	serverCertAttr, ok := resp.Schema.Attributes["server_certificate"].(resourceschema.SingleNestedAttribute)
+	if !ok {
+		t.Fatal("server_certificate is not a SingleNestedAttribute")
+	}
+	if !serverCertAttr.IsOptional() {
+		t.Error("expected server_certificate to be Optional")
+	}
+	for _, name := range []string{"name", "data"} {
+		if _, ok := serverCertAttr.Attributes[name]; !ok {
+			t.Errorf("nested attribute %q not found in server_certificate", name)
+		}
+	}
+	dataAttr, ok := serverCertAttr.Attributes["data"].(resourceschema.StringAttribute)
+	if !ok {
+		t.Fatal("server_certificate.data is not a StringAttribute")
+	}
+	if !dataAttr.Sensitive {
+		t.Error("expected server_certificate.data to be Sensitive")
+	}
 }
 
 func TestResourceIdentitySchema(t *testing.T) {
