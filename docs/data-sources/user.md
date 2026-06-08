@@ -35,24 +35,24 @@ output "example_user" {
 
 ### Read-Only
 
-- `cost_center` (String) The cost center.
-- `created_date_time` (String) The created date and time.
-- `department` (String) The department.
-- `division` (String) The division.
+- `cost_center` (String) The cost center the user belongs to in the organization.
+- `created_date_time` (String) The date and time that the user was created.
+- `department` (String) The department the user belongs to in the organization.
+- `division` (String) The division the user belongs to in the organization.
 - `email` (String) The user's email address.
-- `employee_number` (String) The employee number.
+- `employee_number` (String) The employee number of the user.
 - `first_name` (String) The user's first name.
-- `is_external_user` (Boolean) Whether the user is external.
-- `job_title` (String) The job title.
+- `is_external_user` (Boolean) Indicates if the user is an external user invited to the organization.
+- `job_title` (String) The job title the user holds in the organization.
 - `last_name` (String) The user's last name.
-- `managed_apple_account` (String) The user's managed Apple account.
+- `managed_apple_account` (String) The Apple Account of the user registered in the system.
 - `middle_name` (String) The user's middle name.
 - `phone_numbers` (Attributes List) Phone numbers for the user. (see [below for nested schema](#nestedatt--phone_numbers))
-- `role_ou_list` (Attributes List) Role and organizational unit mappings. (see [below for nested schema](#nestedatt--role_ou_list))
-- `start_date_time` (String) The start date and time.
-- `status` (String) The user's status.
+- `role_ou_list` (Attributes List) A list of role-organizational unit mappings for the user. (see [below for nested schema](#nestedatt--role_ou_list))
+- `start_date_time` (String) The date and time when the user started as part of the organization.
+- `status` (String) The status of the user.
 - `type` (String) The resource type.
-- `updated_date_time` (String) The updated date and time.
+- `updated_date_time` (String) The date and time that the user was last updated.
 
 <a id="nestedatt--timeouts"></a>
 ### Nested Schema for `timeouts`

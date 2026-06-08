@@ -38,11 +38,11 @@ output "example_package" {
 - `bundle_ids` (List of String) Bundle IDs in the package.
 - `created_date_time` (String) The created date and time.
 - `description` (String) The package description.
-- `hash` (String) The package hash.
+- `hash` (String) The hex string hash of the package file.
 - `name` (String) The package name.
 - `type` (String) The resource type.
 - `updated_date_time` (String) The updated date and time.
-- `url` (String) The package URL.
+- `url` (String) The HTTPS URL to download the package.
 - `version` (String) The package version.
 
 <a id="nestedatt--timeouts"></a>

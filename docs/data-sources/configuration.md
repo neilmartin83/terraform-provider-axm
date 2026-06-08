@@ -25,11 +25,11 @@ Fetches information about a specific configuration from Apple Business Manager.
 
 ### Read-Only
 
-- `configuration_profile` (String) The configuration profile payload. Only present for CUSTOM_SETTING configurations.
+- `configuration_profile` (String) The XML content of the configuration profile in Apple .plist format. Only present for CUSTOM_SETTING configurations.
 - `configuration_type` (String) The configuration type (e.g. AIR_DROP, AUTHENTICATION_SCREEN_LOCK, CUSTOM_SETTING).
 - `configured_for_platforms` (List of String) Platforms the configuration applies to.
 - `created_date_time` (String) The created date and time.
-- `filename` (String) The configuration profile filename. Only present for CUSTOM_SETTING configurations.
+- `filename` (String) The filename for the configuration profile (for example, Settings.mobileconfig). Only present for CUSTOM_SETTING configurations.
 - `name` (String) The configuration name.
 - `type` (String) The resource type.
 - `updated_date_time` (String) The updated date and time.

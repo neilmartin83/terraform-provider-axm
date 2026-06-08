@@ -48,7 +48,7 @@ Read-Only:
 - `app_store_url` (String) The App Store URL.
 - `bundle_id` (String) The app bundle identifier.
 - `id` (String) The app ID.
-- `is_custom_app` (Boolean) Whether the app is custom.
+- `is_custom_app` (Boolean) Indicates whether this is a custom B2B app.
 - `name` (String) The app name.
 - `supported_os` (List of String) Supported operating systems.
 - `type` (String) The resource type.
