@@ -138,9 +138,12 @@ type BlueprintRelationshipRequest struct {
 func (c *Client) GetBlueprints(ctx context.Context, queryParams url.Values) ([]Blueprint, error) {
 	var allBlueprints []Blueprint
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/blueprints", c.baseURL), nil)
 		if err != nil {
@@ -314,9 +317,12 @@ func (c *Client) DeleteBlueprint(ctx context.Context, id string) error {
 func (c *Client) GetBlueprintRelationshipIDs(ctx context.Context, blueprintID, relationship string) ([]string, error) {
 	var allIDs []string
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/blueprints/%s/relationships/%s", c.baseURL, blueprintID, relationship), nil)
 		if err != nil {

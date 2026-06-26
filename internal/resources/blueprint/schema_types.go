@@ -13,6 +13,7 @@ var blueprintTimeoutAttributeTypes = map[string]attr.Type{
 	"create": types.StringType,
 	"read":   types.StringType,
 	"update": types.StringType,
+	"delete": types.StringType,
 }
 
 // newBlueprintTimeoutsNullValue returns a timeouts.Value with all attributes set to null.

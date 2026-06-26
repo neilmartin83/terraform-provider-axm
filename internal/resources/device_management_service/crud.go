@@ -151,7 +151,6 @@ func (r *DeviceManagementServiceResource) Read(ctx context.Context, req resource
 		}
 
 		data.ID = identity.ID
-		data.Timeouts = newDeviceManagementServiceTimeoutsNullValue()
 	} else {
 		resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 		if resp.Diagnostics.HasError() {
@@ -369,7 +368,17 @@ func (r *DeviceManagementServiceResource) Delete(ctx context.Context, req resour
 		return
 	}
 
-	deleteCtx, cancel := context.WithTimeout(ctx, defaultUpdateTimeout)
+	deleteTimeout := defaultDeleteTimeout
+	if !data.Timeouts.IsNull() && !data.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := data.Timeouts.Delete(ctx, defaultDeleteTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		deleteTimeout = configuredTimeout
+	}
+
+	deleteCtx, cancel := context.WithTimeout(ctx, deleteTimeout)
 	defer cancel()
 
 	// GET the server first — confirms it exists and reveals current family assignments.

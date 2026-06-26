@@ -108,7 +108,7 @@ func (a *AuditEventAttributes) UnmarshalJSON(data []byte) error {
 func (c *Client) GetAuditEvents(ctx context.Context, queryParams url.Values) ([]AuditEvent, error) {
 	var allEvents []AuditEvent
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	if queryParams.Has("limit") {
 		if parsed, err := strconv.Atoi(queryParams.Get("limit")); err == nil {
@@ -117,6 +117,9 @@ func (c *Client) GetAuditEvents(ctx context.Context, queryParams url.Values) ([]
 	}
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/auditEvents", c.baseURL), nil)
 		if err != nil {

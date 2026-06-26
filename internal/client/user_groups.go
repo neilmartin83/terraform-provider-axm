@@ -82,9 +82,12 @@ type UserGroupUsersLinkagesResponse struct {
 func (c *Client) GetUserGroups(ctx context.Context, queryParams url.Values) ([]UserGroup, error) {
 	var allGroups []UserGroup
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/userGroups", c.baseURL), nil)
 		if err != nil {
@@ -167,9 +170,12 @@ func (c *Client) GetUserGroup(ctx context.Context, id string, queryParams url.Va
 func (c *Client) GetUserGroupUserIDs(ctx context.Context, groupID string) ([]string, error) {
 	var allUserIDs []string
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/userGroups/%s/relationships/users", c.baseURL, groupID), nil)
 		if err != nil {

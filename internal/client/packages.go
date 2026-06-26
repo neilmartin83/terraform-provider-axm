@@ -50,9 +50,12 @@ type PackageAttributes struct {
 func (c *Client) GetPackages(ctx context.Context, queryParams url.Values) ([]Package, error) {
 	var allPackages []Package
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/packages", c.baseURL), nil)
 		if err != nil {

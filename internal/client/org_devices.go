@@ -112,6 +112,10 @@ func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]O
 	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/orgDevices", c.baseURL), nil)
 		if err != nil {
@@ -258,6 +262,9 @@ func (c *Client) GetOrgDeviceAppleCareCoverage(ctx context.Context, deviceID str
 	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/orgDevices/%s/appleCareCoverage", c.baseURL, deviceID), nil)
 		if err != nil {

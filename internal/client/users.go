@@ -92,9 +92,12 @@ type UserPhoneNumber struct {
 func (c *Client) GetUsers(ctx context.Context, queryParams url.Values) ([]User, error) {
 	var allUsers []User
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/users", c.baseURL), nil)
 		if err != nil {

@@ -199,7 +199,20 @@ func (r *ConfigurationResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	if err := r.client.DeleteConfiguration(ctx, state.ID.ValueString()); err != nil {
+	deleteTimeout := defaultDeleteTimeout
+	if !state.Timeouts.IsNull() && !state.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := state.Timeouts.Delete(ctx, defaultDeleteTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		deleteTimeout = configuredTimeout
+	}
+
+	deleteCtx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
+	if err := r.client.DeleteConfiguration(deleteCtx, state.ID.ValueString()); err != nil {
 		if strings.Contains(err.Error(), "NOT_FOUND") {
 			return
 		}

@@ -132,9 +132,12 @@ type ConfigurationUpdateRequestAttributes struct {
 func (c *Client) GetConfigurations(ctx context.Context, queryParams url.Values) ([]Configuration, error) {
 	var allConfigs []Configuration
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/configurations", c.baseURL), nil)
 		if err != nil {
