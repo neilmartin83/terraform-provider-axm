@@ -26,9 +26,12 @@ func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServ
 
 func testAccPreCheck(t *testing.T) {
 	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC not set; skipping acceptance test")
+	}
 	for _, envVar := range []string{"AXM_CLIENT_ID", "AXM_KEY_ID", "AXM_PRIVATE_KEY", "AXM_SCOPE"} {
 		if os.Getenv(envVar) == "" {
-			t.Fatalf("%s must be set for acceptance tests", envVar)
+			t.Skipf("%s must be set for acceptance tests", envVar)
 		}
 	}
 }

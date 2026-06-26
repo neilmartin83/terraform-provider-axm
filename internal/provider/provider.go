@@ -45,11 +45,11 @@ import (
 
 // Constants for environment variable names.
 const (
-	envTeamID         = "AXM_TEAM_ID"
-	envClientID       = "AXM_CLIENT_ID"
-	envKeyID          = "AXM_KEY_ID"
-	envPrivateKey     = "AXM_PRIVATE_KEY"
-	envScope = "AXM_SCOPE"
+	envTeamID     = "AXM_TEAM_ID"
+	envClientID   = "AXM_CLIENT_ID"
+	envKeyID      = "AXM_KEY_ID"
+	envPrivateKey = "AXM_PRIVATE_KEY"
+	envScope      = "AXM_SCOPE"
 )
 
 // Ensure AxmProvider satisfies the provider.Provider interfaces.

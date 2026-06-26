@@ -5,13 +5,19 @@ package blueprint_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	tfresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
 	resourceschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
+	"github.com/neilmartin83/terraform-provider-axm/internal/provider"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/blueprint"
 )
 
@@ -117,4 +123,88 @@ func TestBlueprintResourceIdentitySchema(t *testing.T) {
 	if !idIdentityAttr.RequiredForImport {
 		t.Error("expected identity 'id' to have RequiredForImport=true")
 	}
+}
+
+func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+	return map[string]func() (tfprotov6.ProviderServer, error){
+		"axm": providerserver.NewProtocol6WithError(provider.New("test")()),
+	}
+}
+
+func testAccPreCheck(t *testing.T) {
+	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC not set; skipping acceptance test")
+	}
+	for _, envVar := range []string{"AXM_CLIENT_ID", "AXM_KEY_ID", "AXM_PRIVATE_KEY", "AXM_SCOPE"} {
+		if os.Getenv(envVar) == "" {
+			t.Skipf("%s must be set for acceptance tests", envVar)
+		}
+	}
+}
+
+func TestAccBlueprintResource_basic(t *testing.T) {
+	testAccPreCheck(t)
+	name := "tf-acc-test-blueprint-basic"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "axm_blueprint" "test" {
+						name        = %q
+						description = "Test blueprint created by Terraform acceptance test"
+					}
+				`, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("axm_blueprint.test", "id"),
+					resource.TestCheckResourceAttr("axm_blueprint.test", "name", name),
+					resource.TestCheckResourceAttr("axm_blueprint.test", "description", "Test blueprint created by Terraform acceptance test"),
+					resource.TestCheckResourceAttrSet("axm_blueprint.test", "status"),
+					resource.TestCheckResourceAttrSet("axm_blueprint.test", "created_date_time"),
+					resource.TestCheckResourceAttrSet("axm_blueprint.test", "updated_date_time"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(`
+					resource "axm_blueprint" "test" {
+						name        = %q
+						description = "Updated description"
+					}
+				`, name+"-updated"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("axm_blueprint.test", "name", name+"-updated"),
+					resource.TestCheckResourceAttr("axm_blueprint.test", "description", "Updated description"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBlueprintResource_import(t *testing.T) {
+	testAccPreCheck(t)
+	name := "tf-acc-test-blueprint-import"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "axm_blueprint" "test" {
+						name        = %q
+						description = "Blueprint for import test"
+					}
+				`, name),
+			},
+			{
+				ResourceName:            "axm_blueprint.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"timeouts"},
+			},
+		},
+	})
 }
