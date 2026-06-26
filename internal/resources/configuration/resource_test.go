@@ -5,13 +5,19 @@ package configuration_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	tfresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
 	resourceschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
+	"github.com/neilmartin83/terraform-provider-axm/internal/provider"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/configuration"
 )
 
@@ -109,4 +115,150 @@ func TestConfigurationResourceIdentitySchema(t *testing.T) {
 	if !idIdentityAttr.RequiredForImport {
 		t.Error("expected identity 'id' to have RequiredForImport=true")
 	}
+}
+
+func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+	return map[string]func() (tfprotov6.ProviderServer, error){
+		"axm": providerserver.NewProtocol6WithError(provider.New("test")()),
+	}
+}
+
+func testAccPreCheck(t *testing.T) {
+	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC not set; skipping acceptance test")
+	}
+	for _, envVar := range []string{"AXM_CLIENT_ID", "AXM_KEY_ID", "AXM_PRIVATE_KEY", "AXM_SCOPE"} {
+		if os.Getenv(envVar) == "" {
+			t.Skipf("%s must be set for acceptance tests", envVar)
+		}
+	}
+}
+
+func TestAccConfigurationResource_basic(t *testing.T) {
+	testAccPreCheck(t)
+	name := "tf-acc-test-config-basic"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "axm_configuration" "test" {
+						name                    = %q
+						configured_for_platforms = ["MACOS"]
+						configuration_profile    = <<-EOT
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array/>
+    <key>PayloadDisplayName</key>
+    <string>Test Config</string>
+    <key>PayloadIdentifier</key>
+    <string>com.test.profile</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>00000000-0000-0000-0000-000000000000</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>
+EOT
+						filename                = "test-configuration.mobileconfig"
+					}
+				`, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("axm_configuration.test", "id"),
+					resource.TestCheckResourceAttr("axm_configuration.test", "name", name),
+					resource.TestCheckResourceAttrSet("axm_configuration.test", "type"),
+					resource.TestCheckResourceAttr("axm_configuration.test", "configuration_type", "CUSTOM_SETTING"),
+					resource.TestCheckResourceAttr("axm_configuration.test", "filename", "test-configuration.mobileconfig"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(`
+					resource "axm_configuration" "test" {
+						name                    = %q
+						configured_for_platforms = ["MACOS"]
+						configuration_profile    = <<-EOT
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array/>
+    <key>PayloadDisplayName</key>
+    <string>Updated Config</string>
+    <key>PayloadIdentifier</key>
+    <string>com.test.profile.updated</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>00000000-0000-0000-0000-000000000001</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>
+EOT
+						filename                = "updated-configuration.mobileconfig"
+					}
+				`, name+"-updated"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("axm_configuration.test", "name", name+"-updated"),
+					resource.TestCheckResourceAttr("axm_configuration.test", "filename", "updated-configuration.mobileconfig"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccConfigurationResource_import(t *testing.T) {
+	testAccPreCheck(t)
+	name := "tf-acc-test-config-import"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "axm_configuration" "test" {
+						name                    = %q
+						configured_for_platforms = ["MACOS"]
+						configuration_profile    = <<-EOT
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array/>
+    <key>PayloadDisplayName</key>
+    <string>Import Config</string>
+    <key>PayloadIdentifier</key>
+    <string>com.test.profile.import</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>00000000-0000-0000-0000-000000000002</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>
+EOT
+						filename                = "import-configuration.mobileconfig"
+					}
+				`, name),
+			},
+			{
+				ResourceName:            "axm_configuration.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"timeouts", "configuration_profile", "filename"},
+			},
+		},
+	})
 }

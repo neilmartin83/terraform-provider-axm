@@ -5,11 +5,14 @@ package configuration_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/configuration"
 )
@@ -59,4 +62,26 @@ func TestConfigurationDataSourceSchema(t *testing.T) {
 			t.Errorf("attribute %q not found", name)
 		}
 	}
+}
+
+func TestAccConfigurationDataSource(t *testing.T) {
+	configurationID := os.Getenv("AXM_TEST_CONFIGURATION_ID")
+	if configurationID == "" {
+		t.Skip("AXM_TEST_CONFIGURATION_ID must be set for this test")
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`data "axm_configuration" "test" { id = %q }`, configurationID),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.axm_configuration.test", "id", configurationID),
+					resource.TestCheckResourceAttrSet("data.axm_configuration.test", "name"),
+					resource.TestCheckResourceAttrSet("data.axm_configuration.test", "type"),
+				),
+			},
+		},
+	})
 }

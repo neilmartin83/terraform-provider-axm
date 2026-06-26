@@ -5,11 +5,14 @@ package blueprint_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/blueprint"
 )
@@ -60,4 +63,26 @@ func TestBlueprintDataSourceSchema(t *testing.T) {
 			t.Errorf("attribute %q not found", name)
 		}
 	}
+}
+
+func TestAccBlueprintDataSource(t *testing.T) {
+	blueprintID := os.Getenv("AXM_TEST_BLUEPRINT_ID")
+	if blueprintID == "" {
+		t.Skip("AXM_TEST_BLUEPRINT_ID must be set for this test")
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`data "axm_blueprint" "test" { id = %q }`, blueprintID),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.axm_blueprint.test", "id", blueprintID),
+					resource.TestCheckResourceAttrSet("data.axm_blueprint.test", "name"),
+					resource.TestCheckResourceAttrSet("data.axm_blueprint.test", "status"),
+				),
+			},
+		},
+	})
 }

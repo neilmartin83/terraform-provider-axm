@@ -5,10 +5,15 @@ package default_device_assignment_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	tfresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
+	"github.com/neilmartin83/terraform-provider-axm/internal/provider"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/default_device_assignment"
 )
 
@@ -76,4 +81,39 @@ func TestDefaultDeviceAssignmentResourceDoesNotImplementIdentity(t *testing.T) {
 	if ok {
 		t.Error("expected resource to NOT implement ResourceWithIdentity")
 	}
+}
+
+func testAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+	return map[string]func() (tfprotov6.ProviderServer, error){
+		"axm": providerserver.NewProtocol6WithError(provider.New("test")()),
+	}
+}
+
+func testAccPreCheck(t *testing.T) {
+	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC not set; skipping acceptance test")
+	}
+	for _, envVar := range []string{"AXM_CLIENT_ID", "AXM_KEY_ID", "AXM_PRIVATE_KEY", "AXM_SCOPE"} {
+		if os.Getenv(envVar) == "" {
+			t.Skipf("%s must be set for acceptance tests", envVar)
+		}
+	}
+}
+
+func TestAccDefaultDeviceAssignmentResource_basic(t *testing.T) {
+	testAccPreCheck(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: `resource "axm_default_device_assignment" "this" {}`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("axm_default_device_assignment.this", "id", "default"),
+				),
+			},
+		},
+	})
 }
