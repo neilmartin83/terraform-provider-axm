@@ -58,8 +58,8 @@ func TestGetMdmDevices_MultiPage(t *testing.T) {
 		count := requestCount.Add(1)
 		q := r.URL.Query()
 
-		if q.Get("limit") != "100" {
-			t.Errorf("expected limit=100, got %s", q.Get("limit"))
+		if q.Get("limit") != "1000" {
+			t.Errorf("expected limit=1000, got %s", q.Get("limit"))
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -69,7 +69,7 @@ func TestGetMdmDevices_MultiPage(t *testing.T) {
 					{Type: "mdmDevices", ID: "dev-1", Attributes: MdmDeviceAttribute{SerialNumber: "SN001", DeviceName: "Work Mac", ProductFamily: "Mac"}},
 					{Type: "mdmDevices", ID: "dev-2", Attributes: MdmDeviceAttribute{SerialNumber: "SN002", DeviceName: "Lab iPad", ProductFamily: "iPad"}},
 				},
-				Meta: Meta{Paging: Paging{Limit: 100, NextCursor: "next-page"}},
+				Meta: Meta{Paging: Paging{Limit: 1000, NextCursor: "next-page"}},
 			}
 			_, _ = w.Write(mustMarshalJSON(t, resp))
 			return

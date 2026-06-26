@@ -21,8 +21,9 @@ import (
 const (
 	configurationResourceType = "configurations"
 	customSettingType         = "CUSTOM_SETTING"
-	defaultCreateTimeout      = 90 * time.Second
-	defaultUpdateTimeout      = 90 * time.Second
+	defaultCreateTimeout      = 10 * time.Minute
+	defaultUpdateTimeout      = 10 * time.Minute
+	defaultDeleteTimeout      = 10 * time.Minute
 )
 
 var _ resource.Resource = &ConfigurationResource{}
@@ -87,6 +88,7 @@ func (r *ConfigurationResource) Schema(ctx context.Context, req resource.SchemaR
 				Create: true,
 				Read:   true,
 				Update: true,
+				Delete: true,
 			}),
 		},
 	}

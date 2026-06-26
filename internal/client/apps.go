@@ -62,9 +62,12 @@ type AppAttributes struct {
 func (c *Client) GetApps(ctx context.Context, queryParams url.Values) ([]App, error) {
 	var allApps []App
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/apps", c.baseURL), nil)
 		if err != nil {

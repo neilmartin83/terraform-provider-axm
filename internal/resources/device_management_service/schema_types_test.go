@@ -55,7 +55,7 @@ func TestEnsureDeviceManagementServiceTimeouts_ZeroValue(t *testing.T) {
 	}
 
 	attrTypes := result.AttributeTypes(context.TODO())
-	if len(attrTypes) != 3 {
-		t.Errorf("expected 3 attribute types, got %d", len(attrTypes))
+	if len(attrTypes) != 4 {
+		t.Errorf("expected 4 attribute types, got %d", len(attrTypes))
 	}
 }

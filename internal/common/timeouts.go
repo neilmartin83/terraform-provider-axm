@@ -12,7 +12,7 @@ import (
 
 // DefaultReadTimeout is the standard read timeout used by data sources and resources
 // when no user-configured timeout is specified.
-const DefaultReadTimeout = 90 * time.Second
+const DefaultReadTimeout = 10 * time.Minute
 
 // TimeoutReader abstracts both datasource/timeouts.Value and resource/timeouts.Value
 // so that timeout resolution can be shared across construct types.

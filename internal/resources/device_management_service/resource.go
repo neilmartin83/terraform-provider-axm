@@ -29,8 +29,9 @@ var _ resource.ResourceWithIdentity = &DeviceManagementServiceResource{}
 var _ resource.ResourceWithImportState = &DeviceManagementServiceResource{}
 
 const (
-	defaultCreateTimeout = 90 * time.Second
-	defaultUpdateTimeout = 90 * time.Second
+	defaultCreateTimeout = 10 * time.Minute
+	defaultUpdateTimeout = 10 * time.Minute
+	defaultDeleteTimeout = 10 * time.Minute
 )
 
 // NewDeviceManagementServiceResource returns a new resource for managing MDM servers.
@@ -147,6 +148,7 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 				Create: true,
 				Read:   true,
 				Update: true,
+				Delete: true,
 			}),
 			"device_ids": schema.SetAttribute{
 				ElementType: types.StringType,

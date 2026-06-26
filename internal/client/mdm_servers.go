@@ -147,6 +147,10 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context, queryParams ur
 	nextCursor := ""
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		params := make(url.Values)
 		maps.Copy(params, queryParams)
 		params.Set("limit", strconv.Itoa(1000))
@@ -200,9 +204,13 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context, queryParams ur
 func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, serverID string) ([]string, error) {
 	var allSerialNumbers []string
 	nextCursor := ""
-	limit := 100
+	limit := 1000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 			fmt.Sprintf("%s/v1/mdmServers/%s/relationships/devices", c.baseURL, serverID), nil)
 		if err != nil {

@@ -20,8 +20,9 @@ import (
 
 const (
 	blueprintResourceType = "blueprints"
-	defaultCreateTimeout  = 90 * time.Second
-	defaultUpdateTimeout  = 90 * time.Second
+	defaultCreateTimeout  = 10 * time.Minute
+	defaultUpdateTimeout  = 10 * time.Minute
+	defaultDeleteTimeout  = 10 * time.Minute
 )
 
 var _ resource.Resource = &BlueprintResource{}
@@ -114,6 +115,7 @@ func (r *BlueprintResource) Schema(ctx context.Context, req resource.SchemaReque
 				Create: true,
 				Read:   true,
 				Update: true,
+				Delete: true,
 			}),
 		},
 	}

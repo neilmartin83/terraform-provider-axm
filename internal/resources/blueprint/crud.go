@@ -207,7 +207,20 @@ func (r *BlueprintResource) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	if err := r.client.DeleteBlueprint(ctx, state.ID.ValueString()); err != nil {
+	deleteTimeout := defaultDeleteTimeout
+	if !state.Timeouts.IsNull() && !state.Timeouts.IsUnknown() {
+		configuredTimeout, timeoutDiags := state.Timeouts.Delete(ctx, defaultDeleteTimeout)
+		resp.Diagnostics.Append(timeoutDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		deleteTimeout = configuredTimeout
+	}
+
+	deleteCtx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
+	if err := r.client.DeleteBlueprint(deleteCtx, state.ID.ValueString()); err != nil {
 		if strings.Contains(err.Error(), "NOT_FOUND") {
 			return
 		}
