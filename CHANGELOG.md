@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.10.0...v1.10.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* honor read timeout on import and delete timeout across resources ([27e0760](https://github.com/neilmartin83/terraform-provider-axm/commit/27e07608993d0723a86d0e575073b18a78a1a72b))
+
 ## [1.10.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.9.0...v1.10.0) (2026-06-08)
 
 
