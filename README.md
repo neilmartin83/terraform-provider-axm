@@ -1,5 +1,30 @@
 # terraform-provider-axm
 
+> **⚠️ This is the final release of the `neilmartin83/axm` provider.**
+>
+> The provider is moving to the [macadmins](https://github.com/macadmins) GitHub organisation and future releases will be published as `macadmins/axm`.
+>
+> **Once the new provider is available**, migrate by updating your `required_providers` block:
+>
+> ```terraform
+> terraform {
+>   required_providers {
+>     axm = {
+>       source = "macadmins/axm"
+>     }
+>   }
+> }
+> ```
+>
+> If you have existing state, migrate provider references before re-initialising:
+>
+> ```shell
+> terraform state replace-provider neilmartin83/axm macadmins/axm
+> terraform init -upgrade
+> ```
+>
+> See [github.com/macadmins/terraform-provider-axm](https://github.com/macadmins/terraform-provider-axm) for all future releases.
+
 Terraform Provider for the Apple School and Business Manager API
 
 If you're new to Terraform, [check out this excellent tutorial series](https://macadminmusings.com/blog/2025/10/14/terraform-101-introduction/) by Scott Blake.

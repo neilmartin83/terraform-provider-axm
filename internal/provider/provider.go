@@ -79,6 +79,25 @@ func (p *AxmProvider) Metadata(ctx context.Context, req provider.MetadataRequest
 func (p *AxmProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Automate device management actions and access data about devices that enroll using Automated Device Enrollment with the Apple School and Business Manager API. https://developer.apple.com/documentation/apple-school-and-business-manager-api",
+		MarkdownDescription: "Automate device management actions and access data about devices that enroll using Automated Device Enrollment with the Apple School and Business Manager API.\n\n" +
+			"> **⚠️ This is the final release of the `neilmartin83/axm` provider.**\n" +
+			"> The provider is moving to the [macadmins](https://github.com/macadmins) GitHub organisation and future releases will be published as `macadmins/axm`.\n" +
+			"> Once the new provider is available, migrate by updating your `required_providers` block:\n" +
+			"> ```terraform\n" +
+			"> terraform {\n" +
+			">   required_providers {\n" +
+			">     axm = {\n" +
+			">       source  = \"macadmins/axm\"\n" +
+			">     }\n" +
+			">   }\n" +
+			"> }\n" +
+			"> ```\n" +
+			"> If you have existing state, also run:\n" +
+			"> ```shell\n" +
+			"> terraform state replace-provider neilmartin83/axm macadmins/axm\n" +
+			"> terraform init -upgrade\n" +
+			"> ```\n" +
+			"> See https://github.com/macadmins/terraform-provider-axm for details.",
 		Attributes: map[string]schema.Attribute{
 			"team_id": schema.StringAttribute{
 				Optional:    true,
@@ -197,6 +216,18 @@ func (p *AxmProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	}
 
 	clientObj.SetLogger(NewTerraformLogger())
+
+	resp.Diagnostics.AddWarning(
+		"Provider migration notice",
+		"This is the final release of the neilmartin83/axm provider. "+
+			"The provider is moving to the macadmins GitHub organisation and "+
+			"future releases will be published as macadmins/axm.\n\n"+
+			"To migrate to the new provider once available:\n"+
+			"  1. Update required_providers to source = \"macadmins/axm\"\n"+
+			"  2. Run: terraform state replace-provider neilmartin83/axm macadmins/axm\n"+
+			"  3. Run: terraform init -upgrade\n\n"+
+			"See https://github.com/macadmins/terraform-provider-axm for details.",
+	)
 
 	p.client = clientObj
 	resp.DataSourceData = clientObj
