@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.11.0...v1.12.0) (2026-07-05)
+
+
+### Features
+
+* add deprecation notice for migration to macadmins/axm ([20755ed](https://github.com/neilmartin83/terraform-provider-axm/commit/20755ed9ca17c37cacc7627f880d16aa585b9bc0))
+
 ## [1.10.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.9.0...v1.10.0) (2026-06-08)
 
 
