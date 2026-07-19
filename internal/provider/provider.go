@@ -35,6 +35,8 @@ import (
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device_applecare_coverage"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_device_assigned_server_information"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organization_devices"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organizational_unit"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/organizational_units"
 	packageinfo "github.com/neilmartin83/terraform-provider-axm/internal/resources/package"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/packages"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/user"
@@ -257,6 +259,8 @@ func (p *AxmProvider) DataSources(ctx context.Context) []func() datasource.DataS
 		configurations.NewConfigurationsDataSource,
 		organization_device.NewOrganizationDeviceDataSource,
 		organization_devices.NewOrganizationDevicesDataSource,
+		organizational_unit.NewOrganizationalUnitDataSource,
+		organizational_units.NewOrganizationalUnitsDataSource,
 		device_management_service.NewDeviceManagementServiceDataSource,
 		device_management_services.NewDeviceManagementServicesDataSource,
 		device_management_service_serialnumbers.NewDeviceManagementServiceSerialNumbersDataSource,
