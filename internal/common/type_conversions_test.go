@@ -56,11 +56,8 @@ func TestStringPointerOrNil(t *testing.T) {
 				}
 				return
 			}
-			if result == nil {
-				t.Fatal("expected non-nil pointer")
-			}
-			if *result != tt.input {
-				t.Fatalf("expected %q, got %q", tt.input, *result)
+			if result == nil || *result != tt.input {
+				t.Fatalf("expected %q, got %v", tt.input, result)
 			}
 		})
 	}
