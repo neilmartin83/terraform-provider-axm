@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.12.0...v1.13.0) (2026-07-19)
+
+
+### Features
+
+* add organizational units data sources ([dddb6f2](https://github.com/neilmartin83/terraform-provider-axm/commit/dddb6f27d2ce6389e14f442b6f84653819b414e5))
+
 ## [1.12.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.11.0...v1.12.0) (2026-07-05)
 
 
