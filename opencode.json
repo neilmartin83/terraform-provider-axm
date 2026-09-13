@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "sosumi": {
+      "type": "remote",
+      "url": "https://sosumi.ai/mcp",
+      "enabled": true
+    }
+  }
+}
