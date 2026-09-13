@@ -38,31 +38,34 @@ type OrganizationDevicesDataSourceModel struct {
 
 // OrganizationDeviceModel describes an organization device.
 type OrganizationDeviceModel struct {
-	ID                  types.String   `tfsdk:"id"`
-	Type                types.String   `tfsdk:"type"`
-	SerialNumber        types.String   `tfsdk:"serial_number"`
-	AddedDateTime       types.String   `tfsdk:"added_to_org_date_time"`
-	ReleasedDateTime    types.String   `tfsdk:"released_from_org_date_time"`
-	UpdatedDateTime     types.String   `tfsdk:"updated_date_time"`
-	DeviceModel         types.String   `tfsdk:"device_model"`
-	ProductFamily       types.String   `tfsdk:"product_family"`
-	ProductType         types.String   `tfsdk:"product_type"`
-	DeviceCapacity      types.String   `tfsdk:"device_capacity"`
-	PartNumber          types.String   `tfsdk:"part_number"`
-	OrderNumber         types.String   `tfsdk:"order_number"`
-	Color               types.String   `tfsdk:"color"`
-	Status              types.String   `tfsdk:"status"`
-	OrderDateTime       types.String   `tfsdk:"order_date_time"`
-	IMEI                []types.String `tfsdk:"imei"`
-	MEID                []types.String `tfsdk:"meid"`
-	EID                 types.String   `tfsdk:"eid"`
-	PurchaseSourceID    types.String   `tfsdk:"purchase_source_id"`
-	PurchaseSourceType  types.String   `tfsdk:"purchase_source_type"`
-	WifiMacAddress      types.String   `tfsdk:"wifi_mac_address"`
-	BluetoothMacAddress types.String   `tfsdk:"bluetooth_mac_address"`
-	EthernetMacAddress  []types.String `tfsdk:"ethernet_mac_address"`
-	ReleaserEntityType  types.String   `tfsdk:"releaser_entity_type"`
-	ReleaserID          types.String   `tfsdk:"releaser_id"`
+	ID                           types.String   `tfsdk:"id"`
+	Type                         types.String   `tfsdk:"type"`
+	SerialNumber                 types.String   `tfsdk:"serial_number"`
+	AddedDateTime                types.String   `tfsdk:"added_to_org_date_time"`
+	ReleasedDateTime             types.String   `tfsdk:"released_from_org_date_time"`
+	UpdatedDateTime              types.String   `tfsdk:"updated_date_time"`
+	DeviceModel                  types.String   `tfsdk:"device_model"`
+	ProductFamily                types.String   `tfsdk:"product_family"`
+	ProductType                  types.String   `tfsdk:"product_type"`
+	DeviceCapacity               types.String   `tfsdk:"device_capacity"`
+	PartNumber                   types.String   `tfsdk:"part_number"`
+	OrderNumber                  types.String   `tfsdk:"order_number"`
+	Color                        types.String   `tfsdk:"color"`
+	Status                       types.String   `tfsdk:"status"`
+	OrderDateTime                types.String   `tfsdk:"order_date_time"`
+	IMEI                         []types.String `tfsdk:"imei"`
+	MEID                         []types.String `tfsdk:"meid"`
+	EID                          types.String   `tfsdk:"eid"`
+	PurchaseSourceID             types.String   `tfsdk:"purchase_source_id"`
+	PurchaseSourceType           types.String   `tfsdk:"purchase_source_type"`
+	WifiMacAddress               types.String   `tfsdk:"wifi_mac_address"`
+	BluetoothMacAddress          types.String   `tfsdk:"bluetooth_mac_address"`
+	EthernetMacAddress           []types.String `tfsdk:"ethernet_mac_address"`
+	ReleaserEntityType           types.String   `tfsdk:"releaser_entity_type"`
+	ReleaserID                   types.String   `tfsdk:"releaser_id"`
+	IsMdmMigrationCapable        types.Bool     `tfsdk:"is_mdm_migration_capable"`
+	MdmMigrationStatus           types.String   `tfsdk:"mdm_migration_status"`
+	MdmMigrationDeadlineDateTime types.String   `tfsdk:"mdm_migration_deadline_date_time"`
 }
 
 func (d *OrganizationDevicesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -186,6 +189,18 @@ func (d *OrganizationDevicesDataSource) Schema(ctx context.Context, req datasour
 							Computed:    true,
 							Description: "The ID of the entity that released the device from the organization.",
 						},
+						"is_mdm_migration_capable": schema.BoolAttribute{
+							Computed:    true,
+							Description: "Whether the device is eligible for device management service migration.",
+						},
+						"mdm_migration_status": schema.StringAttribute{
+							Computed:    true,
+							Description: "The device's current device management service migration state, if a migration has been requested.",
+						},
+						"mdm_migration_deadline_date_time": schema.StringAttribute{
+							Computed:    true,
+							Description: "The deadline, in ISO 8601 format, by which the device needs to complete its device management service migration, if a migration has been requested.",
+						},
 					},
 				},
 			},
@@ -230,31 +245,34 @@ func (d *OrganizationDevicesDataSource) Read(ctx context.Context, req datasource
 	data.Devices = make([]OrganizationDeviceModel, 0, len(devices))
 	for _, device := range devices {
 		deviceModel := OrganizationDeviceModel{
-			ID:                  types.StringValue(device.ID),
-			Type:                types.StringValue(device.Type),
-			SerialNumber:        types.StringValue(device.Attributes.SerialNumber),
-			AddedDateTime:       types.StringValue(device.Attributes.AddedToOrgDateTime),
-			ReleasedDateTime:    types.StringValue(device.Attributes.ReleasedFromOrgDateTime),
-			UpdatedDateTime:     types.StringValue(device.Attributes.UpdatedDateTime),
-			DeviceModel:         types.StringValue(device.Attributes.DeviceModel),
-			ProductFamily:       types.StringValue(device.Attributes.ProductFamily),
-			ProductType:         types.StringValue(device.Attributes.ProductType),
-			DeviceCapacity:      types.StringValue(device.Attributes.DeviceCapacity),
-			PartNumber:          types.StringValue(device.Attributes.PartNumber),
-			OrderNumber:         types.StringValue(device.Attributes.OrderNumber),
-			Color:               types.StringValue(device.Attributes.Color),
-			Status:              types.StringValue(device.Attributes.Status),
-			OrderDateTime:       types.StringValue(device.Attributes.OrderDateTime),
-			EID:                 types.StringValue(device.Attributes.EID),
-			PurchaseSourceID:    types.StringValue(device.Attributes.PurchaseSourceID),
-			PurchaseSourceType:  types.StringValue(device.Attributes.PurchaseSourceType),
-			WifiMacAddress:      types.StringValue(device.Attributes.WifiMacAddress),
-			BluetoothMacAddress: types.StringValue(device.Attributes.BluetoothMacAddress),
-			EthernetMacAddress:  common.StringsToTypesStrings(device.Attributes.EthernetMacAddress),
-			IMEI:                common.StringsToTypesStrings(device.Attributes.IMEI),
-			MEID:                common.StringsToTypesStrings(device.Attributes.MEID),
-			ReleaserEntityType:  types.StringPointerValue(common.StringPointerOrNil(device.Attributes.ReleaserEntityType)),
-			ReleaserID:          types.StringPointerValue(common.StringPointerOrNil(device.Attributes.ReleaserID)),
+			ID:                           types.StringValue(device.ID),
+			Type:                         types.StringValue(device.Type),
+			SerialNumber:                 types.StringValue(device.Attributes.SerialNumber),
+			AddedDateTime:                types.StringValue(device.Attributes.AddedToOrgDateTime),
+			ReleasedDateTime:             types.StringValue(device.Attributes.ReleasedFromOrgDateTime),
+			UpdatedDateTime:              types.StringValue(device.Attributes.UpdatedDateTime),
+			DeviceModel:                  types.StringValue(device.Attributes.DeviceModel),
+			ProductFamily:                types.StringValue(device.Attributes.ProductFamily),
+			ProductType:                  types.StringValue(device.Attributes.ProductType),
+			DeviceCapacity:               types.StringValue(device.Attributes.DeviceCapacity),
+			PartNumber:                   types.StringValue(device.Attributes.PartNumber),
+			OrderNumber:                  types.StringValue(device.Attributes.OrderNumber),
+			Color:                        types.StringValue(device.Attributes.Color),
+			Status:                       types.StringValue(device.Attributes.Status),
+			OrderDateTime:                types.StringValue(device.Attributes.OrderDateTime),
+			EID:                          types.StringValue(device.Attributes.EID),
+			PurchaseSourceID:             types.StringValue(device.Attributes.PurchaseSourceID),
+			PurchaseSourceType:           types.StringValue(device.Attributes.PurchaseSourceType),
+			WifiMacAddress:               types.StringValue(device.Attributes.WifiMacAddress),
+			BluetoothMacAddress:          types.StringValue(device.Attributes.BluetoothMacAddress),
+			EthernetMacAddress:           common.StringsToTypesStrings(device.Attributes.EthernetMacAddress),
+			IMEI:                         common.StringsToTypesStrings(device.Attributes.IMEI),
+			MEID:                         common.StringsToTypesStrings(device.Attributes.MEID),
+			ReleaserEntityType:           types.StringPointerValue(common.StringPointerOrNil(device.Attributes.ReleaserEntityType)),
+			ReleaserID:                   types.StringPointerValue(common.StringPointerOrNil(device.Attributes.ReleaserID)),
+			IsMdmMigrationCapable:        types.BoolValue(device.Attributes.IsMdmMigrationCapable),
+			MdmMigrationStatus:           types.StringPointerValue(common.StringPointerOrNil(device.Attributes.MdmMigrationStatus)),
+			MdmMigrationDeadlineDateTime: types.StringPointerValue(common.StringPointerOrNil(device.Attributes.MdmMigrationDeadlineDateTime)),
 		}
 
 		data.Devices = append(data.Devices, deviceModel)

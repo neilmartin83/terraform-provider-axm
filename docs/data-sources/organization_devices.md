@@ -57,6 +57,9 @@ Read-Only:
 - `eid` (String) The device's EID (if available).
 - `ethernet_mac_address` (List of String) The device's built-in Ethernet MAC addresses.
 - `imei` (List of String) The device's IMEI (if available).
+- `is_mdm_migration_capable` (Boolean) Whether the device is eligible for device management service migration.
+- `mdm_migration_deadline_date_time` (String) The deadline, in ISO 8601 format, by which the device needs to complete its device management service migration, if a migration has been requested.
+- `mdm_migration_status` (String) The device's current device management service migration state, if a migration has been requested.
 - `meid` (List of String) The device's MEID (if available).
 - `order_date_time` (String) The date and time of placing the device's order.
 - `order_number` (String) The order number of the device.

@@ -85,6 +85,7 @@ func TestOrganizationDevicesDataSourceSchema(t *testing.T) {
 		"eid", "purchase_source_id", "purchase_source_type", "wifi_mac_address",
 		"bluetooth_mac_address", "ethernet_mac_address",
 		"releaser_entity_type", "releaser_id",
+		"is_mdm_migration_capable", "mdm_migration_status", "mdm_migration_deadline_date_time",
 	}
 	for _, name := range allExpectedNested {
 		if _, ok := nestedAttrs[name]; !ok {

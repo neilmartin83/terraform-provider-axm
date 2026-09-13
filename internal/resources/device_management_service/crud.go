@@ -85,7 +85,7 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 
 	deviceIDs := extractStrings(data.DeviceIDs)
 	if len(deviceIDs) > 0 {
-		activity, err := r.client.AssignDevicesToMDMServer(createCtx, srv.ID, deviceIDs, true)
+		activity, err := r.client.CreateOrgDeviceActivity(createCtx, client.OrgDeviceActivityAssignDevices, deviceIDs, client.WithMdmServer(srv.ID))
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to assign devices", err.Error())
 			return
@@ -313,7 +313,7 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 	}
 
 	if len(toUnassign) > 0 {
-		activity, err := r.client.AssignDevicesToMDMServer(updateCtx, plan.ID.ValueString(), toUnassign, false)
+		activity, err := r.client.CreateOrgDeviceActivity(updateCtx, client.OrgDeviceActivityUnassignDevices, toUnassign, client.WithMdmServer(plan.ID.ValueString()))
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to unassign devices", err.Error())
 			return
@@ -325,7 +325,7 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 	}
 
 	if len(toAssign) > 0 {
-		activity, err := r.client.AssignDevicesToMDMServer(updateCtx, plan.ID.ValueString(), toAssign, true)
+		activity, err := r.client.CreateOrgDeviceActivity(updateCtx, client.OrgDeviceActivityAssignDevices, toAssign, client.WithMdmServer(plan.ID.ValueString()))
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to assign devices", err.Error())
 			return
@@ -408,7 +408,7 @@ func (r *DeviceManagementServiceResource) Delete(ctx context.Context, req resour
 	}
 
 	if len(currentDeviceIDs) > 0 {
-		activity, err := r.client.AssignDevicesToMDMServer(deleteCtx, data.ID.ValueString(), currentDeviceIDs, false)
+		activity, err := r.client.CreateOrgDeviceActivity(deleteCtx, client.OrgDeviceActivityUnassignDevices, currentDeviceIDs, client.WithMdmServer(data.ID.ValueString()))
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to unassign devices before deletion", err.Error())
 			return

@@ -235,6 +235,41 @@ func TestGetOrgDevice_Success(t *testing.T) {
 	}
 }
 
+func TestGetOrgDevice_MDMigrationFields(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"data": {
+				"type": "orgDevices",
+				"id": "DEV001",
+				"attributes": {
+					"serialNumber": "SN001",
+					"status": "ASSIGNED",
+					"isMdmMigrationCapable": true,
+					"mdmMigrationStatus": "REQUESTED",
+					"mdmMigrationDeadlineDateTime": "2026-09-15T17:00:00.000Z"
+				}
+			}
+		}`))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	device, err := c.GetOrgDevice(context.Background(), "DEV001", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !device.Attributes.IsMdmMigrationCapable {
+		t.Error("expected isMdmMigrationCapable to be true")
+	}
+	if device.Attributes.MdmMigrationStatus != "REQUESTED" {
+		t.Errorf("expected mdmMigrationStatus REQUESTED, got %s", device.Attributes.MdmMigrationStatus)
+	}
+	if device.Attributes.MdmMigrationDeadlineDateTime != "2026-09-15T17:00:00.000Z" {
+		t.Errorf("expected deadline 2026-09-15T17:00:00.000Z, got %s", device.Attributes.MdmMigrationDeadlineDateTime)
+	}
+}
+
 func TestGetOrgDevice_NotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
