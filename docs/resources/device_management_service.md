@@ -42,6 +42,7 @@ resource "axm_device_management_service" "example" {
 
 - `allow_release` (Boolean) A Boolean value that indicates whether the device management service is allowed to disown its enrolled devices.
 - `device_ids` (Set of String) Set of device serial numbers to assign to this MDM server.
+- `migrated_devices` (Attributes Set) Devices that are being migrated to this MDM server, with the deadline by which each device must complete its MDM migration (RFC 3339, within 90 days). (see [below for nested schema](#nestedatt--migrated_devices))
 - `server_certificate` (Attributes) X.509 MDM certificate. Required when creating a new server. Not returned by the API; stored in state as provided. (see [below for nested schema](#nestedatt--server_certificate))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
@@ -56,6 +57,15 @@ resource "axm_device_management_service" "example" {
 - `status` (String) The operational status of the device management service. Read only.
 - `type` (String) The type of device management service: MDM, APPLE_CONFIGURATOR, APPLE_MDM. Read only.
 - `updated_date_time` (String) The date and time of the most-recent update for the resource.
+
+<a id="nestedatt--migrated_devices"></a>
+### Nested Schema for `migrated_devices`
+
+Required:
+
+- `id` (String) Device serial number.
+- `migration_deadline` (String) RFC 3339 deadline by which the device must complete its MDM migration.
+
 
 <a id="nestedatt--server_certificate"></a>
 ### Nested Schema for `server_certificate`

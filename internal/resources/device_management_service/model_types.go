@@ -21,6 +21,13 @@ type MdmServerCertificateModel struct {
 	Data types.String `tfsdk:"data"`
 }
 
+// MdmDeviceMigrationModel describes a device being migrated to this MDM server
+// and the deadline by which its migration must complete.
+type MdmDeviceMigrationModel struct {
+	ID                types.String `tfsdk:"id"`
+	MigrationDeadline types.String `tfsdk:"migration_deadline"`
+}
+
 // MdmDeviceAssignmentModel describes the Terraform state for an MDM server and its device assignments.
 type MdmDeviceAssignmentModel struct {
 	ID                     types.String               `tfsdk:"id"`
@@ -37,6 +44,7 @@ type MdmDeviceAssignmentModel struct {
 	ServerCertificate      *MdmServerCertificateModel `tfsdk:"server_certificate"`
 	Timeouts               timeouts.Value             `tfsdk:"timeouts"`
 	DeviceIDs              types.Set                  `tfsdk:"device_ids"`
+	MigratedDevices        []MdmDeviceMigrationModel  `tfsdk:"migrated_devices"`
 }
 
 // DeviceManagementServiceListResourceModel captures filters supported by the list query.
