@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 )
@@ -23,15 +24,22 @@ func main() {
 	}
 
 	if len(os.Args) < 3 {
-		log.Fatal("Usage: Assign <server-id> <device-id> [device-id...]")
+		log.Fatal("Usage: AssignWithDeadline <server-id> <device-id> [device-id...]")
 	}
 	serverID := os.Args[1]
 	deviceIDs := os.Args[2:]
 
-	fmt.Println("Assigning devices to MDM server...")
-	activity, err := c.CreateOrgDeviceActivity(context.Background(), client.OrgDeviceActivityAssignDevices, deviceIDs, client.WithMdmServer(serverID))
+	deadline := time.Now().Add(48 * time.Hour).UTC().Format("2006-01-02T15:04:05.000Z")
+	fmt.Printf("Assigning devices to MDM server %s with migration deadline %s...\n", serverID, deadline)
+	activity, err := c.CreateOrgDeviceActivity(
+		context.Background(),
+		client.OrgDeviceActivityAssignWithMDMMigrationDeadline,
+		deviceIDs,
+		client.WithMdmServer(serverID),
+		client.WithMigrationDeadline(deadline),
+	)
 	if err != nil {
-		log.Fatalf("Error assigning devices: %v", err)
+		log.Fatalf("Error assigning devices with deadline: %v", err)
 	}
 
 	fmt.Printf("Assignment completed successfully:\n"+
@@ -44,10 +52,6 @@ func main() {
 		activity.Attributes.SubStatus,
 		activity.Attributes.CreatedDateTime,
 	)
-
-	if activity.Attributes.DownloadURL != "" {
-		fmt.Printf("Results available at: %s\n", activity.Attributes.DownloadURL)
-	}
 }
 
 func requireEnv(key string) string {

@@ -12,6 +12,43 @@ import (
 	"net/url"
 )
 
+// OrgDeviceActivityType is the type of organization device activity to create.
+type OrgDeviceActivityType string
+
+// Organization device activity types supported by the Apple School and Business Manager APIs.
+const (
+	OrgDeviceActivityAssignDevices                  OrgDeviceActivityType = "ASSIGN_DEVICES"
+	OrgDeviceActivityUnassignDevices                OrgDeviceActivityType = "UNASSIGN_DEVICES"
+	OrgDeviceActivityAssignWithMDMMigrationDeadline OrgDeviceActivityType = "ASSIGN_DEVICES_WITH_MDM_MIGRATION_DEADLINE"
+	OrgDeviceActivityUpdateMDMMigrationDeadline     OrgDeviceActivityType = "UPDATE_MDM_MIGRATION_DEADLINE"
+	OrgDeviceActivityCancelMDMMigration             OrgDeviceActivityType = "CANCEL_MDM_MIGRATION"
+	OrgDeviceActivityReleaseDevices                 OrgDeviceActivityType = "RELEASE_DEVICES"
+)
+
+// ActivityOption configures an organization device activity create request.
+type ActivityOption func(*orgDeviceActivityOptions)
+
+// orgDeviceActivityOptions holds the optional fields for an organization device activity create request.
+type orgDeviceActivityOptions struct {
+	serverID string
+	deadline string
+}
+
+// WithMdmServer sets the mdmServer relationship of an organization device activity create request.
+func WithMdmServer(serverID string) ActivityOption {
+	return func(o *orgDeviceActivityOptions) {
+		o.serverID = serverID
+	}
+}
+
+// WithMigrationDeadline sets activityTypeMetadata.mdmMigrationDeadlineDateTime on an organization
+// device activity create request.
+func WithMigrationDeadline(deadline string) ActivityOption {
+	return func(o *orgDeviceActivityOptions) {
+		o.deadline = deadline
+	}
+}
+
 // OrgDeviceActivity represents the data structure that represents an organization device activity resource.
 type OrgDeviceActivity struct {
 	Type       string                      `json:"type"`
@@ -47,15 +84,21 @@ type OrgDeviceActivityCreateRequestData struct {
 	Relationships OrgDeviceActivityCreateRequestRelationships `json:"relationships"`
 }
 
-// OrgDeviceActivityCreateRequestAttributes represents attributes with values that you’re changing as part of the create request.
+// OrgDeviceActivityCreateRequestAttributes represents attributes with values that you're changing as part of the create request.
 type OrgDeviceActivityCreateRequestAttributes struct {
-	ActivityType string `json:"activityType"`
+	ActivityType         string                     `json:"activityType"`
+	ActivityTypeMetadata *OrgDeviceActivityMetadata `json:"activityTypeMetadata,omitempty"`
+}
+
+// OrgDeviceActivityMetadata represents additional metadata for an organization device activity, used by device management service migration activity types.
+type OrgDeviceActivityMetadata struct {
+	MdmMigrationDeadlineDateTime string `json:"mdmMigrationDeadlineDateTime,omitempty"`
 }
 
 // OrgDeviceActivityCreateRequestRelationships represents the relationships you include in the request, and those that you can operate on.
 type OrgDeviceActivityCreateRequestRelationships struct {
-	MdmServer OrgDeviceActivityCreateRequestDataRelationshipsMdmServer `json:"mdmServer"`
-	Devices   OrgDeviceActivityCreateRequestDataRelationships          `json:"devices"`
+	MdmServer *OrgDeviceActivityCreateRequestDataRelationshipsMdmServer `json:"mdmServer,omitempty"`
+	Devices   OrgDeviceActivityCreateRequestDataRelationships           `json:"devices"`
 }
 
 // OrgDeviceActivityCreateRequestDataRelationshipsMdmServer represents the data that describe the relationship between the resources.
@@ -68,14 +111,25 @@ type OrgDeviceActivityCreateRequestDataRelationships struct {
 	Data []Data `json:"data"`
 }
 
-// AssignDevicesToMDMServer assigns or unassigns devices to/from an MDM server
-// Returns the created activity. Caller is responsible for polling activity status if needed.
-func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, deviceIDs []string, assign bool) (*OrgDeviceActivity, error) {
-	activityType := "ASSIGN_DEVICES"
-	if !assign {
-		activityType = "UNASSIGN_DEVICES"
+// CreateOrgDeviceActivity creates an organization device activity for the given activity type and devices.
+// Activity types that assign devices to a device management service include WithMdmServer, and activity
+// types that schedule or manage a device management service migration include WithMigrationDeadline.
+func (c *Client) CreateOrgDeviceActivity(ctx context.Context, activityType OrgDeviceActivityType, deviceIDs []string, opts ...ActivityOption) (*OrgDeviceActivity, error) {
+	var options orgDeviceActivityOptions
+	for _, opt := range opts {
+		opt(&options)
 	}
 
+	var metadata *OrgDeviceActivityMetadata
+	if options.deadline != "" {
+		metadata = &OrgDeviceActivityMetadata{MdmMigrationDeadlineDateTime: options.deadline}
+	}
+
+	return c.postOrgDeviceActivity(ctx, string(activityType), metadata, options.serverID, deviceIDs)
+}
+
+// postOrgDeviceActivity posts an organization device activity. An empty serverID omits the mdmServer relationship from the request.
+func (c *Client) postOrgDeviceActivity(ctx context.Context, activityType string, metadata *OrgDeviceActivityMetadata, serverID string, deviceIDs []string) (*OrgDeviceActivity, error) {
 	devices := make([]Data, len(deviceIDs))
 	for i, id := range deviceIDs {
 		devices[i] = Data{
@@ -88,20 +142,24 @@ func (c *Client) AssignDevicesToMDMServer(ctx context.Context, serverID string, 
 		Data: OrgDeviceActivityCreateRequestData{
 			Type: "orgDeviceActivities",
 			Attributes: OrgDeviceActivityCreateRequestAttributes{
-				ActivityType: activityType,
+				ActivityType:         activityType,
+				ActivityTypeMetadata: metadata,
 			},
 			Relationships: OrgDeviceActivityCreateRequestRelationships{
-				MdmServer: OrgDeviceActivityCreateRequestDataRelationshipsMdmServer{
-					Data: Data{
-						Type: "mdmServers",
-						ID:   serverID,
-					},
-				},
 				Devices: OrgDeviceActivityCreateRequestDataRelationships{
 					Data: devices,
 				},
 			},
 		},
+	}
+
+	if serverID != "" {
+		request.Data.Relationships.MdmServer = &OrgDeviceActivityCreateRequestDataRelationshipsMdmServer{
+			Data: Data{
+				Type: "mdmServers",
+				ID:   serverID,
+			},
+		}
 	}
 
 	jsonData, err := json.Marshal(request)

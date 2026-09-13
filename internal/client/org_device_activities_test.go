@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-func TestAssignDevicesToMDMServer_Assign(t *testing.T) {
+func TestCreateOrgDeviceActivity_Assign(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
@@ -31,6 +31,12 @@ func TestAssignDevicesToMDMServer_Assign(t *testing.T) {
 
 		if req.Data.Attributes.ActivityType != "ASSIGN_DEVICES" {
 			t.Errorf("expected ASSIGN_DEVICES, got %s", req.Data.Attributes.ActivityType)
+		}
+		if req.Data.Attributes.ActivityTypeMetadata != nil {
+			t.Error("expected no activityTypeMetadata for ASSIGN_DEVICES")
+		}
+		if req.Data.Relationships.MdmServer == nil {
+			t.Fatal("expected mdmServer relationship, got nil")
 		}
 		if req.Data.Relationships.MdmServer.Data.ID != "srv-1" {
 			t.Errorf("expected server ID srv-1, got %s", req.Data.Relationships.MdmServer.Data.ID)
@@ -69,7 +75,7 @@ func TestAssignDevicesToMDMServer_Assign(t *testing.T) {
 	defer server.Close()
 
 	c := newTestClient(t, server)
-	activity, err := c.AssignDevicesToMDMServer(context.Background(), "srv-1", []string{"DEV001", "DEV002", "DEV003"}, true)
+	activity, err := c.CreateOrgDeviceActivity(context.Background(), OrgDeviceActivityAssignDevices, []string{"DEV001", "DEV002", "DEV003"}, WithMdmServer("srv-1"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -81,7 +87,7 @@ func TestAssignDevicesToMDMServer_Assign(t *testing.T) {
 	}
 }
 
-func TestAssignDevicesToMDMServer_Unassign(t *testing.T) {
+func TestCreateOrgDeviceActivity_Unassign(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var req OrgDeviceActivityCreateRequest
@@ -91,6 +97,12 @@ func TestAssignDevicesToMDMServer_Unassign(t *testing.T) {
 
 		if req.Data.Attributes.ActivityType != "UNASSIGN_DEVICES" {
 			t.Errorf("expected UNASSIGN_DEVICES, got %s", req.Data.Attributes.ActivityType)
+		}
+		if req.Data.Relationships.MdmServer == nil {
+			t.Fatal("expected mdmServer relationship, got nil")
+		}
+		if req.Data.Relationships.MdmServer.Data.ID != "srv-1" {
+			t.Errorf("expected server ID srv-1, got %s", req.Data.Relationships.MdmServer.Data.ID)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -107,7 +119,7 @@ func TestAssignDevicesToMDMServer_Unassign(t *testing.T) {
 	defer server.Close()
 
 	c := newTestClient(t, server)
-	activity, err := c.AssignDevicesToMDMServer(context.Background(), "srv-1", []string{"DEV001", "DEV002"}, false)
+	activity, err := c.CreateOrgDeviceActivity(context.Background(), OrgDeviceActivityUnassignDevices, []string{"DEV001", "DEV002"}, WithMdmServer("srv-1"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -116,7 +128,7 @@ func TestAssignDevicesToMDMServer_Unassign(t *testing.T) {
 	}
 }
 
-func TestAssignDevicesToMDMServer_SingleDevice(t *testing.T) {
+func TestCreateOrgDeviceActivity_SingleDevice(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var req OrgDeviceActivityCreateRequest
@@ -142,7 +154,7 @@ func TestAssignDevicesToMDMServer_SingleDevice(t *testing.T) {
 	defer server.Close()
 
 	c := newTestClient(t, server)
-	activity, err := c.AssignDevicesToMDMServer(context.Background(), "srv-1", []string{"DEV001"}, true)
+	activity, err := c.CreateOrgDeviceActivity(context.Background(), OrgDeviceActivityAssignDevices, []string{"DEV001"}, WithMdmServer("srv-1"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -151,7 +163,45 @@ func TestAssignDevicesToMDMServer_SingleDevice(t *testing.T) {
 	}
 }
 
-func TestAssignDevicesToMDMServer_Error(t *testing.T) {
+func TestCreateOrgDeviceActivity_NoOptions(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var req OrgDeviceActivityCreateRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			t.Fatalf("failed to parse request body: %v", err)
+		}
+
+		if req.Data.Attributes.ActivityTypeMetadata != nil {
+			t.Error("expected no activityTypeMetadata without WithMigrationDeadline")
+		}
+		if req.Data.Relationships.MdmServer != nil {
+			t.Error("expected no mdmServer relationship without WithMdmServer")
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		resp := OrgDeviceActivityResponse{
+			Data: OrgDeviceActivity{
+				Type:       "orgDeviceActivities",
+				ID:         "activity-8",
+				Attributes: OrgDeviceActivityAttributes{Status: "IN_PROGRESS"},
+			},
+		}
+		_, _ = w.Write(mustMarshalJSON(t, resp))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	activity, err := c.CreateOrgDeviceActivity(context.Background(), OrgDeviceActivityReleaseDevices, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if activity.ID != "activity-8" {
+		t.Errorf("expected activity ID activity-8, got %s", activity.ID)
+	}
+}
+
+func TestCreateOrgDeviceActivity_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
@@ -160,12 +210,218 @@ func TestAssignDevicesToMDMServer_Error(t *testing.T) {
 	defer server.Close()
 
 	c := newTestClient(t, server)
-	_, err := c.AssignDevicesToMDMServer(context.Background(), "srv-1", []string{"INVALID"}, true)
+	_, err := c.CreateOrgDeviceActivity(context.Background(), OrgDeviceActivityAssignDevices, []string{"INVALID"}, WithMdmServer("srv-1"))
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
 	if !strings.Contains(err.Error(), "Bad Request") {
 		t.Errorf("expected 'Bad Request' in error, got %q", err.Error())
+	}
+}
+
+func TestCreateOrgDeviceActivity_AssignWithMigrationDeadline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		body, _ := io.ReadAll(r.Body)
+		var req OrgDeviceActivityCreateRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			t.Fatalf("failed to parse request body: %v", err)
+		}
+
+		if req.Data.Attributes.ActivityType != "ASSIGN_DEVICES_WITH_MDM_MIGRATION_DEADLINE" {
+			t.Errorf("expected ASSIGN_DEVICES_WITH_MDM_MIGRATION_DEADLINE, got %s", req.Data.Attributes.ActivityType)
+		}
+		if req.Data.Attributes.ActivityTypeMetadata == nil {
+			t.Fatal("expected activityTypeMetadata, got nil")
+		}
+		if req.Data.Attributes.ActivityTypeMetadata.MdmMigrationDeadlineDateTime != "2026-09-15T17:00:00.000Z" {
+			t.Errorf("expected deadline 2026-09-15T17:00:00.000Z, got %s", req.Data.Attributes.ActivityTypeMetadata.MdmMigrationDeadlineDateTime)
+		}
+		if req.Data.Relationships.MdmServer == nil {
+			t.Fatal("expected mdmServer relationship, got nil")
+		}
+		if req.Data.Relationships.MdmServer.Data.ID != "srv-9" {
+			t.Errorf("expected server ID srv-9, got %s", req.Data.Relationships.MdmServer.Data.ID)
+		}
+		if len(req.Data.Relationships.Devices.Data) != 2 {
+			t.Fatalf("expected 2 devices, got %d", len(req.Data.Relationships.Devices.Data))
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		resp := OrgDeviceActivityResponse{
+			Data: OrgDeviceActivity{
+				Type:       "orgDeviceActivities",
+				ID:         "activity-4",
+				Attributes: OrgDeviceActivityAttributes{Status: "IN_PROGRESS"},
+			},
+		}
+		_, _ = w.Write(mustMarshalJSON(t, resp))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	activity, err := c.CreateOrgDeviceActivity(context.Background(), OrgDeviceActivityAssignWithMDMMigrationDeadline, []string{"DEV001", "DEV002"},
+		WithMdmServer("srv-9"), WithMigrationDeadline("2026-09-15T17:00:00.000Z"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if activity.ID != "activity-4" {
+		t.Errorf("expected activity ID activity-4, got %s", activity.ID)
+	}
+}
+
+func TestCreateOrgDeviceActivity_UpdateMigrationDeadline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		body, _ := io.ReadAll(r.Body)
+		var req OrgDeviceActivityCreateRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			t.Fatalf("failed to parse request body: %v", err)
+		}
+
+		if req.Data.Attributes.ActivityType != "UPDATE_MDM_MIGRATION_DEADLINE" {
+			t.Errorf("expected UPDATE_MDM_MIGRATION_DEADLINE, got %s", req.Data.Attributes.ActivityType)
+		}
+		if req.Data.Attributes.ActivityTypeMetadata == nil {
+			t.Fatal("expected activityTypeMetadata, got nil")
+		}
+		if req.Data.Attributes.ActivityTypeMetadata.MdmMigrationDeadlineDateTime != "2026-09-16T09:00:00.000Z" {
+			t.Errorf("expected deadline 2026-09-16T09:00:00.000Z, got %s", req.Data.Attributes.ActivityTypeMetadata.MdmMigrationDeadlineDateTime)
+		}
+		if req.Data.Relationships.MdmServer != nil {
+			t.Error("expected no mdmServer relationship for UPDATE_MDM_MIGRATION_DEADLINE")
+		}
+		if len(req.Data.Relationships.Devices.Data) != 2 {
+			t.Fatalf("expected 2 devices, got %d", len(req.Data.Relationships.Devices.Data))
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		resp := OrgDeviceActivityResponse{
+			Data: OrgDeviceActivity{
+				Type:       "orgDeviceActivities",
+				ID:         "activity-5",
+				Attributes: OrgDeviceActivityAttributes{Status: "IN_PROGRESS"},
+			},
+		}
+		_, _ = w.Write(mustMarshalJSON(t, resp))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	activity, err := c.CreateOrgDeviceActivity(context.Background(), OrgDeviceActivityUpdateMDMMigrationDeadline, []string{"DEV001", "DEV002"}, WithMigrationDeadline("2026-09-16T09:00:00.000Z"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if activity.ID != "activity-5" {
+		t.Errorf("expected activity ID activity-5, got %s", activity.ID)
+	}
+}
+
+func TestCreateOrgDeviceActivity_CancelMigration(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		body, _ := io.ReadAll(r.Body)
+		var req OrgDeviceActivityCreateRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			t.Fatalf("failed to parse request body: %v", err)
+		}
+
+		if req.Data.Attributes.ActivityType != "CANCEL_MDM_MIGRATION" {
+			t.Errorf("expected CANCEL_MDM_MIGRATION, got %s", req.Data.Attributes.ActivityType)
+		}
+		if req.Data.Attributes.ActivityTypeMetadata != nil {
+			t.Error("expected no activityTypeMetadata for CANCEL_MDM_MIGRATION")
+		}
+		if req.Data.Relationships.MdmServer != nil {
+			t.Error("expected no mdmServer relationship for CANCEL_MDM_MIGRATION")
+		}
+		if len(req.Data.Relationships.Devices.Data) != 1 {
+			t.Fatalf("expected 1 device, got %d", len(req.Data.Relationships.Devices.Data))
+		}
+		if req.Data.Relationships.Devices.Data[0].ID != "DEV001" {
+			t.Errorf("expected device DEV001, got %s", req.Data.Relationships.Devices.Data[0].ID)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		resp := OrgDeviceActivityResponse{
+			Data: OrgDeviceActivity{
+				Type:       "orgDeviceActivities",
+				ID:         "activity-6",
+				Attributes: OrgDeviceActivityAttributes{Status: "IN_PROGRESS"},
+			},
+		}
+		_, _ = w.Write(mustMarshalJSON(t, resp))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	activity, err := c.CreateOrgDeviceActivity(context.Background(), OrgDeviceActivityCancelMDMMigration, []string{"DEV001"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if activity.ID != "activity-6" {
+		t.Errorf("expected activity ID activity-6, got %s", activity.ID)
+	}
+}
+
+func TestCreateOrgDeviceActivity_ReleaseDevices(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		body, _ := io.ReadAll(r.Body)
+		var req OrgDeviceActivityCreateRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			t.Fatalf("failed to parse request body: %v", err)
+		}
+
+		if req.Data.Attributes.ActivityType != "RELEASE_DEVICES" {
+			t.Errorf("expected RELEASE_DEVICES, got %s", req.Data.Attributes.ActivityType)
+		}
+		if req.Data.Attributes.ActivityTypeMetadata != nil {
+			t.Error("expected no activityTypeMetadata for RELEASE_DEVICES")
+		}
+		if req.Data.Relationships.MdmServer != nil {
+			t.Error("expected no mdmServer relationship for RELEASE_DEVICES")
+		}
+		if len(req.Data.Relationships.Devices.Data) != 2 {
+			t.Fatalf("expected 2 devices, got %d", len(req.Data.Relationships.Devices.Data))
+		}
+		for _, d := range req.Data.Relationships.Devices.Data {
+			if d.Type != "orgDevices" {
+				t.Errorf("expected type orgDevices, got %s", d.Type)
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		resp := OrgDeviceActivityResponse{
+			Data: OrgDeviceActivity{
+				Type:       "orgDeviceActivities",
+				ID:         "activity-7",
+				Attributes: OrgDeviceActivityAttributes{Status: "IN_PROGRESS"},
+			},
+		}
+		_, _ = w.Write(mustMarshalJSON(t, resp))
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	activity, err := c.CreateOrgDeviceActivity(context.Background(), OrgDeviceActivityReleaseDevices, []string{"DEV001", "DEV002"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if activity.ID != "activity-7" {
+		t.Errorf("expected activity ID activity-7, got %s", activity.ID)
 	}
 }
 

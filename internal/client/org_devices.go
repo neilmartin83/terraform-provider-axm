@@ -37,29 +37,32 @@ type OrgDevice struct {
 
 // DeviceAttribute represents attributes that describe an organization device resource.
 type DeviceAttribute struct {
-	SerialNumber            string   `json:"serialNumber"`
-	AddedToOrgDateTime      string   `json:"addedToOrgDateTime"`
-	ReleasedFromOrgDateTime string   `json:"releasedFromOrgDateTime,omitempty"`
-	UpdatedDateTime         string   `json:"updatedDateTime"`
-	DeviceModel             string   `json:"deviceModel"`
-	ProductFamily           string   `json:"productFamily"`
-	ProductType             string   `json:"productType"`
-	DeviceCapacity          string   `json:"deviceCapacity"`
-	PartNumber              string   `json:"partNumber,omitempty"`
-	OrderNumber             string   `json:"orderNumber,omitempty"`
-	Color                   string   `json:"color"`
-	Status                  string   `json:"status"`
-	OrderDateTime           string   `json:"orderDateTime,omitempty"`
-	IMEI                    []string `json:"imei,omitempty"`
-	MEID                    []string `json:"meid,omitempty"`
-	EID                     string   `json:"eid,omitempty"`
-	PurchaseSourceID        string   `json:"purchaseSourceId"`
-	PurchaseSourceType      string   `json:"purchaseSourceType"`
-	WifiMacAddress          string   `json:"wifiMacAddress,omitempty"`
-	BluetoothMacAddress     string   `json:"bluetoothMacAddress,omitempty"`
-	EthernetMacAddress      []string `json:"ethernetMacAddress,omitempty"`
-	ReleaserEntityType      string   `json:"releaserEntityType,omitempty"`
-	ReleaserID              string   `json:"releaserId,omitempty"`
+	SerialNumber                 string   `json:"serialNumber"`
+	AddedToOrgDateTime           string   `json:"addedToOrgDateTime"`
+	ReleasedFromOrgDateTime      string   `json:"releasedFromOrgDateTime,omitempty"`
+	UpdatedDateTime              string   `json:"updatedDateTime"`
+	DeviceModel                  string   `json:"deviceModel"`
+	ProductFamily                string   `json:"productFamily"`
+	ProductType                  string   `json:"productType"`
+	DeviceCapacity               string   `json:"deviceCapacity"`
+	PartNumber                   string   `json:"partNumber,omitempty"`
+	OrderNumber                  string   `json:"orderNumber,omitempty"`
+	Color                        string   `json:"color"`
+	Status                       string   `json:"status"`
+	OrderDateTime                string   `json:"orderDateTime,omitempty"`
+	IMEI                         []string `json:"imei,omitempty"`
+	MEID                         []string `json:"meid,omitempty"`
+	EID                          string   `json:"eid,omitempty"`
+	PurchaseSourceID             string   `json:"purchaseSourceId"`
+	PurchaseSourceType           string   `json:"purchaseSourceType"`
+	WifiMacAddress               string   `json:"wifiMacAddress,omitempty"`
+	BluetoothMacAddress          string   `json:"bluetoothMacAddress,omitempty"`
+	EthernetMacAddress           []string `json:"ethernetMacAddress,omitempty"`
+	ReleaserEntityType           string   `json:"releaserEntityType,omitempty"`
+	ReleaserID                   string   `json:"releaserId,omitempty"`
+	IsMdmMigrationCapable        bool     `json:"isMdmMigrationCapable"`
+	MdmMigrationStatus           string   `json:"mdmMigrationStatus,omitempty"`
+	MdmMigrationDeadlineDateTime string   `json:"mdmMigrationDeadlineDateTime,omitempty"`
 }
 
 // AppleCareCoverageResponse represents a response that contains AppleCare Coverage for an organization device.

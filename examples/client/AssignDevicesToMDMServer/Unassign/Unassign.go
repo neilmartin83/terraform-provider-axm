@@ -29,7 +29,7 @@ func main() {
 	deviceIDs := os.Args[2:]
 
 	fmt.Println("Unassigning devices from MDM server...")
-	activity, err := c.AssignDevicesToMDMServer(context.Background(), serverID, deviceIDs, false)
+	activity, err := c.CreateOrgDeviceActivity(context.Background(), client.OrgDeviceActivityUnassignDevices, deviceIDs, client.WithMdmServer(serverID))
 	if err != nil {
 		log.Fatalf("Error unassigning devices: %v", err)
 	}

@@ -39,7 +39,10 @@ const (
 // mdmServersFields is the complete list of server attributes the provider needs.
 // Apple's API uses JSON:API sparse fieldsets — omitting this param causes it to
 // return a default subset that may exclude lastConnectedDateTime and lastConnectedIp.
-const mdmServersFields = "serverName,serverType,status,deviceCount,enableMdmDisownFlag,defaultProductFamilies,lastConnectedDateTime,lastConnectedIp,createdDateTime,updatedDateTime"
+// deviceCount is rejected as a sparse field name (PARAMETER_ERROR.INVALID) and Apple
+// no longer populates it (it returns null even for servers with assigned devices), so
+// it must not be listed here.
+const mdmServersFields = "serverName,serverType,status,enableMdmDisownFlag,defaultProductFamilies,lastConnectedDateTime,lastConnectedIp,createdDateTime,updatedDateTime"
 
 // MdmServerResponse represents a response that contains a single device management service resource.
 type MdmServerResponse struct {

@@ -30,32 +30,35 @@ type OrganizationDeviceDataSource struct {
 
 // OrganizationDeviceDataSourceModel describes the data source data model.
 type OrganizationDeviceDataSourceModel struct {
-	ID                      types.String   `tfsdk:"id"`
-	Timeouts                timeouts.Value `tfsdk:"timeouts"`
-	Type                    types.String   `tfsdk:"type"`
-	SerialNumber            types.String   `tfsdk:"serial_number"`
-	AddedToOrgDateTime      types.String   `tfsdk:"added_to_org_date_time"`
-	ReleasedFromOrgDateTime types.String   `tfsdk:"released_from_org_date_time"`
-	UpdatedDateTime         types.String   `tfsdk:"updated_date_time"`
-	DeviceModel             types.String   `tfsdk:"device_model"`
-	ProductFamily           types.String   `tfsdk:"product_family"`
-	ProductType             types.String   `tfsdk:"product_type"`
-	DeviceCapacity          types.String   `tfsdk:"device_capacity"`
-	PartNumber              types.String   `tfsdk:"part_number"`
-	OrderNumber             types.String   `tfsdk:"order_number"`
-	Color                   types.String   `tfsdk:"color"`
-	Status                  types.String   `tfsdk:"status"`
-	OrderDateTime           types.String   `tfsdk:"order_date_time"`
-	IMEI                    []types.String `tfsdk:"imei"`
-	MEID                    []types.String `tfsdk:"meid"`
-	EID                     types.String   `tfsdk:"eid"`
-	PurchaseSourceID        types.String   `tfsdk:"purchase_source_id"`
-	PurchaseSourceType      types.String   `tfsdk:"purchase_source_type"`
-	WifiMacAddress          types.String   `tfsdk:"wifi_mac_address"`
-	BluetoothMacAddress     types.String   `tfsdk:"bluetooth_mac_address"`
-	EthernetMacAddress      []types.String `tfsdk:"ethernet_mac_address"`
-	ReleaserEntityType      types.String   `tfsdk:"releaser_entity_type"`
-	ReleaserID              types.String   `tfsdk:"releaser_id"`
+	ID                           types.String   `tfsdk:"id"`
+	Timeouts                     timeouts.Value `tfsdk:"timeouts"`
+	Type                         types.String   `tfsdk:"type"`
+	SerialNumber                 types.String   `tfsdk:"serial_number"`
+	AddedToOrgDateTime           types.String   `tfsdk:"added_to_org_date_time"`
+	ReleasedFromOrgDateTime      types.String   `tfsdk:"released_from_org_date_time"`
+	UpdatedDateTime              types.String   `tfsdk:"updated_date_time"`
+	DeviceModel                  types.String   `tfsdk:"device_model"`
+	ProductFamily                types.String   `tfsdk:"product_family"`
+	ProductType                  types.String   `tfsdk:"product_type"`
+	DeviceCapacity               types.String   `tfsdk:"device_capacity"`
+	PartNumber                   types.String   `tfsdk:"part_number"`
+	OrderNumber                  types.String   `tfsdk:"order_number"`
+	Color                        types.String   `tfsdk:"color"`
+	Status                       types.String   `tfsdk:"status"`
+	OrderDateTime                types.String   `tfsdk:"order_date_time"`
+	IMEI                         []types.String `tfsdk:"imei"`
+	MEID                         []types.String `tfsdk:"meid"`
+	EID                          types.String   `tfsdk:"eid"`
+	PurchaseSourceID             types.String   `tfsdk:"purchase_source_id"`
+	PurchaseSourceType           types.String   `tfsdk:"purchase_source_type"`
+	WifiMacAddress               types.String   `tfsdk:"wifi_mac_address"`
+	BluetoothMacAddress          types.String   `tfsdk:"bluetooth_mac_address"`
+	EthernetMacAddress           []types.String `tfsdk:"ethernet_mac_address"`
+	ReleaserEntityType           types.String   `tfsdk:"releaser_entity_type"`
+	ReleaserID                   types.String   `tfsdk:"releaser_id"`
+	IsMdmMigrationCapable        types.Bool     `tfsdk:"is_mdm_migration_capable"`
+	MdmMigrationStatus           types.String   `tfsdk:"mdm_migration_status"`
+	MdmMigrationDeadlineDateTime types.String   `tfsdk:"mdm_migration_deadline_date_time"`
 }
 
 func (d *OrganizationDeviceDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -170,6 +173,18 @@ func (d *OrganizationDeviceDataSource) Schema(ctx context.Context, req datasourc
 				Computed:    true,
 				Description: "The ID of the entity that released the device from the organization.",
 			},
+			"is_mdm_migration_capable": schema.BoolAttribute{
+				Computed:    true,
+				Description: "Whether the device is eligible for device management service migration.",
+			},
+			"mdm_migration_status": schema.StringAttribute{
+				Computed:    true,
+				Description: "The device's current device management service migration state, if a migration has been requested.",
+			},
+			"mdm_migration_deadline_date_time": schema.StringAttribute{
+				Computed:    true,
+				Description: "The deadline, in ISO 8601 format, by which the device needs to complete its device management service migration, if a migration has been requested.",
+			},
 		},
 	}
 }
@@ -235,6 +250,9 @@ func (d *OrganizationDeviceDataSource) Read(ctx context.Context, req datasource.
 	data.MEID = common.StringsToTypesStrings(device.Attributes.MEID)
 	data.ReleaserEntityType = types.StringPointerValue(common.StringPointerOrNil(device.Attributes.ReleaserEntityType))
 	data.ReleaserID = types.StringPointerValue(common.StringPointerOrNil(device.Attributes.ReleaserID))
+	data.IsMdmMigrationCapable = types.BoolValue(device.Attributes.IsMdmMigrationCapable)
+	data.MdmMigrationStatus = types.StringPointerValue(common.StringPointerOrNil(device.Attributes.MdmMigrationStatus))
+	data.MdmMigrationDeadlineDateTime = types.StringPointerValue(common.StringPointerOrNil(device.Attributes.MdmMigrationDeadlineDateTime))
 
 	tflog.Debug(ctx, "Read organization device", map[string]any{
 		"device_id":     data.ID.ValueString(),

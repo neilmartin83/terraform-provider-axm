@@ -75,6 +75,8 @@ func TestOrganizationDeviceDataSourceSchema(t *testing.T) {
 		"device_capacity", "part_number", "order_number", "color", "status",
 		"order_date_time", "eid", "purchase_source_id", "purchase_source_type",
 		"wifi_mac_address", "bluetooth_mac_address",
+		"releaser_entity_type", "releaser_id",
+		"is_mdm_migration_capable", "mdm_migration_status", "mdm_migration_deadline_date_time",
 	}
 	for _, name := range computedAttrs {
 		attr, ok := resp.Schema.Attributes[name]
