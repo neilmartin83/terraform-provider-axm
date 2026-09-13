@@ -146,6 +146,14 @@ func testAccPreCheck(t *testing.T) {
 func TestAccBlueprintResource_basic(t *testing.T) {
 	testAccPreCheck(t)
 	name := "tf-acc-test-blueprint-basic"
+	appID := os.Getenv("AXM_TEST_APP_ID")
+	if appID == "" {
+		t.Skip("AXM_TEST_APP_ID must be set for this test")
+	}
+	deviceID := os.Getenv("AXM_TEST_DEVICE_ID")
+	if deviceID == "" {
+		t.Skip("AXM_TEST_DEVICE_ID must be set for this test")
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -156,12 +164,16 @@ func TestAccBlueprintResource_basic(t *testing.T) {
 					resource "axm_blueprint" "test" {
 						name        = %q
 						description = "Test blueprint created by Terraform acceptance test"
+						app_ids     = [%q]
+						device_ids  = [%q]
 					}
-				`, name),
+				`, name, appID, deviceID),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("axm_blueprint.test", "id"),
 					resource.TestCheckResourceAttr("axm_blueprint.test", "name", name),
 					resource.TestCheckResourceAttr("axm_blueprint.test", "description", "Test blueprint created by Terraform acceptance test"),
+					resource.TestCheckResourceAttr("axm_blueprint.test", "app_ids.#", "1"),
+					resource.TestCheckResourceAttr("axm_blueprint.test", "device_ids.#", "1"),
 					resource.TestCheckResourceAttrSet("axm_blueprint.test", "status"),
 					resource.TestCheckResourceAttrSet("axm_blueprint.test", "created_date_time"),
 					resource.TestCheckResourceAttrSet("axm_blueprint.test", "updated_date_time"),
@@ -172,11 +184,15 @@ func TestAccBlueprintResource_basic(t *testing.T) {
 					resource "axm_blueprint" "test" {
 						name        = %q
 						description = "Updated description"
+						app_ids     = [%q]
+						device_ids  = [%q]
 					}
-				`, name+"-updated"),
+				`, name+"-updated", appID, deviceID),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("axm_blueprint.test", "name", name+"-updated"),
 					resource.TestCheckResourceAttr("axm_blueprint.test", "description", "Updated description"),
+					resource.TestCheckResourceAttr("axm_blueprint.test", "app_ids.#", "1"),
+					resource.TestCheckResourceAttr("axm_blueprint.test", "device_ids.#", "1"),
 				),
 			},
 		},
@@ -186,6 +202,14 @@ func TestAccBlueprintResource_basic(t *testing.T) {
 func TestAccBlueprintResource_import(t *testing.T) {
 	testAccPreCheck(t)
 	name := "tf-acc-test-blueprint-import"
+	appID := os.Getenv("AXM_TEST_APP_ID")
+	if appID == "" {
+		t.Skip("AXM_TEST_APP_ID must be set for this test")
+	}
+	deviceID := os.Getenv("AXM_TEST_DEVICE_ID")
+	if deviceID == "" {
+		t.Skip("AXM_TEST_DEVICE_ID must be set for this test")
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -196,8 +220,10 @@ func TestAccBlueprintResource_import(t *testing.T) {
 					resource "axm_blueprint" "test" {
 						name        = %q
 						description = "Blueprint for import test"
+						app_ids     = [%q]
+						device_ids  = [%q]
 					}
-				`, name),
+				`, name, appID, deviceID),
 			},
 			{
 				ResourceName:            "axm_blueprint.test",
