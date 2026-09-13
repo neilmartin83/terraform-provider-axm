@@ -5,6 +5,7 @@ package device_management_service
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -18,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
@@ -27,6 +29,8 @@ import (
 var _ resource.Resource = &DeviceManagementServiceResource{}
 var _ resource.ResourceWithIdentity = &DeviceManagementServiceResource{}
 var _ resource.ResourceWithImportState = &DeviceManagementServiceResource{}
+var _ resource.ResourceWithValidateConfig = &DeviceManagementServiceResource{}
+var _ resource.ResourceWithModifyPlan = &DeviceManagementServiceResource{}
 
 const (
 	defaultCreateTimeout = 10 * time.Minute
@@ -159,8 +163,82 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"migrated_devices": schema.SetNestedAttribute{
+				Optional:    true,
+				Description: "Devices that are being migrated to this MDM server, with the deadline by which each device must complete its MDM migration (RFC 3339, within 90 days).",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"id": schema.StringAttribute{
+							Required:    true,
+							Description: "Device serial number.",
+						},
+						"migration_deadline": schema.StringAttribute{
+							Required:    true,
+							Description: "RFC 3339 deadline by which the device must complete its MDM migration.",
+							Validators: []validator.String{
+								validRFC3339(),
+							},
+						},
+					},
+				},
+			},
 		},
 	}
+}
+
+// ValidateConfig checks plan-time configuration that requires no API access.
+func (r *DeviceManagementServiceResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data MdmDeviceAssignmentModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if len(data.MigratedDevices) == 0 {
+		return
+	}
+
+	deviceIDs := extractStrings(data.DeviceIDs)
+
+	outside := migratedOutsideDeviceIDs(deviceIDs, data.MigratedDevices)
+	if len(outside) > 0 {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("migrated_devices"),
+			"Invalid migrated_devices",
+			"Every device in migrated_devices must also be listed in device_ids. The following migrated devices are not in device_ids: "+strings.Join(outside, ", ")+".",
+		)
+	}
+}
+
+// ModifyPlan validates plan-time configuration that requires API access to the
+// Apple Business Manager API.
+func (r *DeviceManagementServiceResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var plan MdmDeviceAssignmentModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if len(plan.MigratedDevices) == 0 {
+		return
+	}
+
+	if r.client == nil {
+		resp.Diagnostics.AddError(
+			"Missing API client",
+			"The resource was not configured with an API client before planning.",
+		)
+		return
+	}
+
+	readiness := checkMigrationReadiness(ctx, plan.MigratedDevices, func(ctx context.Context, id string) (*client.OrgDevice, error) {
+		return r.client.GetOrgDevice(ctx, id, nil)
+	})
+	planMigrationDiagnostics(readiness, &resp.Diagnostics)
 }
 
 func (r *DeviceManagementServiceResource) IdentitySchema(ctx context.Context, req resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {

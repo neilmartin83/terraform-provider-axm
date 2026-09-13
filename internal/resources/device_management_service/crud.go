@@ -7,6 +7,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -14,6 +15,25 @@ import (
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 	"github.com/neilmartin83/terraform-provider-axm/internal/common"
 )
+
+// runActivity creates an org device activity and waits for completion.
+func (r *DeviceManagementServiceResource) runActivity(ctx context.Context, activityType client.OrgDeviceActivityType, deadline, serverID string, deviceIDs []string, action string, diags *diag.Diagnostics) {
+	opts := make([]client.ActivityOption, 0)
+	if deadline != "" {
+		opts = append(opts, client.WithMigrationDeadline(deadline))
+	}
+	if serverID != "" {
+		opts = append(opts, client.WithMdmServer(serverID))
+	}
+	activity, err := r.client.CreateOrgDeviceActivity(ctx, activityType, deviceIDs, opts...)
+	if err != nil {
+		diags.AddError("Failed to "+action, err.Error())
+		return
+	}
+	if err := r.waitForActivityCompletion(ctx, activity.ID, diags); err != nil {
+		diags.AddError("Failed to complete "+action, err.Error())
+	}
+}
 
 // Create creates a new MDM server (business scope) and optionally assigns devices to it.
 func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -53,6 +73,23 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 		return
 	}
 
+	// Verify migration eligibility before creating anything, so a failed
+	// eligibility check leaves no orphaned server behind.
+	if len(data.MigratedDevices) > 0 {
+		serials := make([]string, 0, len(data.MigratedDevices))
+		for _, device := range data.MigratedDevices {
+			if !device.ID.IsNull() && !device.ID.IsUnknown() {
+				serials = append(serials, device.ID.ValueString())
+			}
+		}
+		if err := verifyMigrationsCapable(createCtx, serials, func(ctx context.Context, id string) (*client.OrgDevice, error) {
+			return r.client.GetOrgDevice(ctx, id, nil)
+		}, migrationEligibilityTimeout); err != nil {
+			resp.Diagnostics.AddError("Failed to verify MDM migration eligibility", err.Error())
+			return
+		}
+	}
+
 	enableDisown := data.AllowRelease.ValueBoolPointer()
 	attrs := client.MdmServerCreateAttributes{
 		ServerName: data.Name.ValueString(),
@@ -80,19 +117,31 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 	data.CreatedDateTime = types.StringValue(srv.Attributes.CreatedDateTime)
 	data.UpdatedDateTime = types.StringValue(srv.Attributes.UpdatedDateTime)
 	data.DefaultProductFamilies = common.StringsToList(ctx, srv.Attributes.DefaultProductFamilies)
-	// AllowRelease is not reliably echoed by the create response; keep the plan value.
-	// Read will reconcile on the next refresh if Apple silently ignored it.
+	// AllowRelease is not reliably echoed by the create response; keep the
+	// requested value so the field is known after apply. Read reconciles on the
+	// next refresh if Apple silently ignored it.
+	data.AllowRelease = types.BoolPointerValue(enableDisown)
 
 	deviceIDs := extractStrings(data.DeviceIDs)
 	if len(deviceIDs) > 0 {
-		activity, err := r.client.CreateOrgDeviceActivity(createCtx, client.OrgDeviceActivityAssignDevices, deviceIDs, client.WithMdmServer(srv.ID))
+		migrations, err := migrationMap(data.MigratedDevices)
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to assign devices", err.Error())
+			resp.Diagnostics.AddError("Invalid migrated_devices", err.Error())
 			return
 		}
-		if err := r.waitForActivityCompletion(createCtx, activity.ID, &resp.Diagnostics); err != nil {
-			resp.Diagnostics.AddError("Failed to complete device assignment", err.Error())
-			return
+		plain, byDeadline := partitionMigrations(deviceIDs, migrations)
+
+		if len(plain) > 0 {
+			r.runActivity(createCtx, client.OrgDeviceActivityAssignDevices, "", srv.ID, plain, "assign devices", &resp.Diagnostics)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+		}
+		for _, group := range byDeadline {
+			r.runActivity(createCtx, client.OrgDeviceActivityAssignWithMDMMigrationDeadline, group.deadline, srv.ID, group.devices, "assign devices with migration deadline", &resp.Diagnostics)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 		}
 	}
 
@@ -299,6 +348,17 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 		currentMap[id] = true
 	}
 
+	planMigrations, err := migrationMap(plan.MigratedDevices)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid migrated_devices", err.Error())
+		return
+	}
+	stateMigrations, err := migrationMap(state.MigratedDevices)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid migrated_devices", err.Error())
+		return
+	}
+
 	var toUnassign []string
 	for _, id := range currentDeviceIDs {
 		if !plannedMap[id] {
@@ -312,26 +372,75 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 		}
 	}
 
-	if len(toUnassign) > 0 {
-		activity, err := r.client.CreateOrgDeviceActivity(updateCtx, client.OrgDeviceActivityUnassignDevices, toUnassign, client.WithMdmServer(plan.ID.ValueString()))
-		if err != nil {
-			resp.Diagnostics.AddError("Failed to unassign devices", err.Error())
+	// Cancel migrations for devices dropped from migrated_devices but still assigned,
+	// and for devices being unassigned that had an in-progress migration.
+	var toCancel []string
+	for serial := range stateMigrations {
+		if plannedMap[serial] && planMigrations[serial] == "" {
+			toCancel = append(toCancel, serial)
+		}
+	}
+	for _, serial := range toUnassign {
+		if _, ok := stateMigrations[serial]; ok {
+			toCancel = append(toCancel, serial)
+		}
+	}
+
+	// Update deadlines for devices already assigned where the deadline changed.
+	toUpdate := make(map[string][]string)
+	for serial, deadline := range planMigrations {
+		if currentMap[serial] {
+			if stateDeadline, ok := stateMigrations[serial]; ok && stateDeadline != deadline {
+				toUpdate[deadline] = append(toUpdate[deadline], serial)
+			}
+		}
+	}
+
+	if len(toCancel) > 0 {
+		r.runActivity(updateCtx, client.OrgDeviceActivityCancelMDMMigration, "", "", toCancel, "cancel MDM migration", &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
 			return
 		}
-		if err := r.waitForActivityCompletion(updateCtx, activity.ID, &resp.Diagnostics); err != nil {
-			resp.Diagnostics.AddError("Failed to complete device unassignment", err.Error())
+	}
+	if len(toUnassign) > 0 {
+		r.runActivity(updateCtx, client.OrgDeviceActivityUnassignDevices, "", plan.ID.ValueString(), toUnassign, "unassign devices", &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 
-	if len(toAssign) > 0 {
-		activity, err := r.client.CreateOrgDeviceActivity(updateCtx, client.OrgDeviceActivityAssignDevices, toAssign, client.WithMdmServer(plan.ID.ValueString()))
-		if err != nil {
-			resp.Diagnostics.AddError("Failed to assign devices", err.Error())
+	plain, byDeadline := partitionMigrations(toAssign, planMigrations)
+
+	// Verify eligibility for devices being newly assigned with a migration
+	// deadline before issuing any activity.
+	var migrationSerials []string
+	for _, group := range byDeadline {
+		migrationSerials = append(migrationSerials, group.devices...)
+	}
+	if len(migrationSerials) > 0 {
+		if err := verifyMigrationsCapable(updateCtx, migrationSerials, func(ctx context.Context, id string) (*client.OrgDevice, error) {
+			return r.client.GetOrgDevice(ctx, id, nil)
+		}, migrationEligibilityTimeout); err != nil {
+			resp.Diagnostics.AddError("Failed to verify MDM migration eligibility", err.Error())
 			return
 		}
-		if err := r.waitForActivityCompletion(updateCtx, activity.ID, &resp.Diagnostics); err != nil {
-			resp.Diagnostics.AddError("Failed to complete device assignment", err.Error())
+	}
+
+	if len(plain) > 0 {
+		r.runActivity(updateCtx, client.OrgDeviceActivityAssignDevices, "", plan.ID.ValueString(), plain, "assign devices", &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+	for _, group := range byDeadline {
+		r.runActivity(updateCtx, client.OrgDeviceActivityAssignWithMDMMigrationDeadline, group.deadline, plan.ID.ValueString(), group.devices, "assign devices with migration deadline", &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+	for deadline, serials := range toUpdate {
+		r.runActivity(updateCtx, client.OrgDeviceActivityUpdateMDMMigrationDeadline, deadline, "", serials, "update migration deadline", &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
@@ -407,14 +516,28 @@ func (r *DeviceManagementServiceResource) Delete(ctx context.Context, req resour
 		return
 	}
 
-	if len(currentDeviceIDs) > 0 {
-		activity, err := r.client.CreateOrgDeviceActivity(deleteCtx, client.OrgDeviceActivityUnassignDevices, currentDeviceIDs, client.WithMdmServer(data.ID.ValueString()))
-		if err != nil {
-			resp.Diagnostics.AddError("Failed to unassign devices before deletion", err.Error())
+	// Cancel any in-progress MDM migrations before unassigning their devices.
+	stateMigrations, err := migrationMap(data.MigratedDevices)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid migrated_devices", err.Error())
+		return
+	}
+	var toCancel []string
+	for _, serial := range currentDeviceIDs {
+		if _, ok := stateMigrations[serial]; ok {
+			toCancel = append(toCancel, serial)
+		}
+	}
+	if len(toCancel) > 0 {
+		r.runActivity(deleteCtx, client.OrgDeviceActivityCancelMDMMigration, "", "", toCancel, "cancel MDM migration before deletion", &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
 			return
 		}
-		if err := r.waitForActivityCompletion(deleteCtx, activity.ID, &resp.Diagnostics); err != nil {
-			resp.Diagnostics.AddError("Failed to complete device unassignment before deletion", err.Error())
+	}
+
+	if len(currentDeviceIDs) > 0 {
+		r.runActivity(deleteCtx, client.OrgDeviceActivityUnassignDevices, "", data.ID.ValueString(), currentDeviceIDs, "unassign devices before deletion", &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
 			return
 		}
 	}

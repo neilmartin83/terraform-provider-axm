@@ -5,10 +5,13 @@ package device_management_service_test
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	tfresource "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -48,6 +51,17 @@ func testAccResourcePreCheck(t *testing.T) {
 		if os.Getenv(envVar) == "" {
 			t.Skipf("%s must be set for resource acceptance tests", envVar)
 		}
+	}
+}
+
+// testAccMigrationSerialPreCheck skips unless API creds and the
+// AXM_TEST_DEVICE_SERIAL_1 test device are present. The migration tests create
+// a fresh server, so AXM_TEST_SERVER_ID is not required.
+func testAccMigrationSerialPreCheck(t *testing.T) {
+	t.Helper()
+	testAccPreCheck(t)
+	if os.Getenv("AXM_TEST_DEVICE_SERIAL_1") == "" {
+		t.Skip("AXM_TEST_DEVICE_SERIAL_1 must be set for migration acceptance tests")
 	}
 }
 
@@ -154,6 +168,7 @@ func TestResourceSchema(t *testing.T) {
 		{"updated_date_time", false, false, true},
 		{"allow_release", false, true, true},
 		{"device_ids", false, true, true},
+		{"migrated_devices", false, true, false},
 		{"timeouts", false, true, false},
 	}
 
@@ -201,6 +216,27 @@ func TestResourceSchema(t *testing.T) {
 	}
 	if !dataAttr.Sensitive {
 		t.Error("expected server_certificate.data to be Sensitive")
+	}
+
+	migratedAttr, ok := resp.Schema.Attributes["migrated_devices"].(resourceschema.SetNestedAttribute)
+	if !ok {
+		t.Fatal("migrated_devices is not a SetNestedAttribute")
+	}
+	if !migratedAttr.IsOptional() {
+		t.Error("expected migrated_devices to be Optional")
+	}
+	for _, name := range []string{"id", "migration_deadline"} {
+		if _, ok := migratedAttr.NestedObject.Attributes[name]; !ok {
+			t.Errorf("nested attribute %q not found in migrated_devices", name)
+		}
+	}
+	if idAttr, ok := migratedAttr.NestedObject.Attributes["id"].(resourceschema.StringAttribute); !ok || !idAttr.IsRequired() {
+		t.Error("expected migrated_devices.id to be a Required StringAttribute")
+	}
+	if deadlineAttr, ok := migratedAttr.NestedObject.Attributes["migration_deadline"].(resourceschema.StringAttribute); !ok || !deadlineAttr.IsRequired() {
+		t.Error("expected migrated_devices.migration_deadline to be a Required StringAttribute")
+	} else if len(deadlineAttr.Validators) == 0 {
+		t.Error("expected migrated_devices.migration_deadline to have at least one validator")
 	}
 }
 
@@ -333,6 +369,145 @@ func TestAccDeviceManagementServiceResource_import(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"timeouts"},
+			},
+		},
+	})
+}
+
+// testAccServerCertificateData returns the base64-encoded PEM certificate used
+// when creating a new device management service.
+func testAccServerCertificateData(t *testing.T) string {
+	t.Helper()
+	pubKey := os.Getenv("AXM_TEST_SERVER_PUBLIC_KEY")
+	if pubKey == "" {
+		t.Skip("AXM_TEST_SERVER_PUBLIC_KEY must be set to create a device management service")
+	}
+	return base64.StdEncoding.EncodeToString([]byte(pubKey))
+}
+
+// testAccIsMdmMigrationCapable reports whether the live API marks the device as
+// eligible for MDM migration.
+func testAccIsMdmMigrationCapable(t *testing.T, c *client.Client, serial string) bool {
+	t.Helper()
+	device, err := c.GetOrgDevice(context.Background(), serial, nil)
+	if err != nil {
+		t.Fatalf("failed to query device %s: %v", serial, err)
+	}
+	return device.Attributes.IsMdmMigrationCapable
+}
+
+// testAccMigrationSerial reports whether the AXM_TEST_DEVICE_SERIAL_1 test
+// device is eligible for MDM migration, logging the serial it checked.
+func testAccMigrationSerial(t *testing.T) bool {
+	t.Helper()
+	testAccMigrationSerialPreCheck(t)
+	serial := os.Getenv("AXM_TEST_DEVICE_SERIAL_1")
+	c := testAccNewClient(t)
+	capable := testAccIsMdmMigrationCapable(t, c, serial)
+	t.Logf("device %s isMdmMigrationCapable=%t", serial, capable)
+	return capable
+}
+
+// migratedDeviceHCL builds the HCL object literal for a single migrated_devices
+// entry.
+func migratedDeviceHCL(serial, deadline string) string {
+	return fmt.Sprintf("{ id = %q, migration_deadline = %q }", serial, deadline)
+}
+
+func TestAccDeviceManagementServiceResource_migration(t *testing.T) {
+	testAccMigrationSerialPreCheck(t)
+	serial := os.Getenv("AXM_TEST_DEVICE_SERIAL_1")
+	if !testAccMigrationSerial(t) {
+		t.Skip("AXM_TEST_DEVICE_SERIAL_1 is not eligible for MDM migration; a device must be enrolled in another MDM server to become eligible")
+	}
+
+	deadline := time.Now().Add(72 * time.Hour).UTC().Format(time.RFC3339)
+	name := fmt.Sprintf("tf-acc-migration-%d", time.Now().Unix())
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccMigrationSerialPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "axm_device_management_service" "test" {
+						name = %q
+
+						server_certificate = {
+							name = "PublicKey.pem"
+							data = %q
+						}
+
+						device_ids = [
+							%q,
+						]
+
+						migrated_devices = [
+							%s,
+						]
+
+						timeouts = {
+							create = "15m"
+							update = "15m"
+							delete = "15m"
+						}
+					}
+				`,
+					name,
+					testAccServerCertificateData(t),
+					serial,
+					migratedDeviceHCL(serial, deadline),
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("axm_device_management_service.test", "id"),
+					resource.TestCheckResourceAttr("axm_device_management_service.test", "name", name),
+					resource.TestCheckResourceAttr("axm_device_management_service.test", "device_ids.#", "1"),
+					resource.TestCheckResourceAttr("axm_device_management_service.test", "migrated_devices.#", "1"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDeviceManagementServiceResource_migrationNotCapable(t *testing.T) {
+	testAccMigrationSerialPreCheck(t)
+	serial := os.Getenv("AXM_TEST_DEVICE_SERIAL_1")
+	if testAccMigrationSerial(t) {
+		t.Skip("AXM_TEST_DEVICE_SERIAL_1 supports MDM migration; negative test not applicable")
+	}
+
+	deadline := time.Now().Add(72 * time.Hour).UTC().Format(time.RFC3339)
+	name := fmt.Sprintf("tf-acc-migration-lock-%d", time.Now().Unix())
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccMigrationSerialPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					resource "axm_device_management_service" "test" {
+						name = %q
+
+						server_certificate = {
+							name = "PublicKey.pem"
+							data = %q
+						}
+
+						device_ids = [
+							%q,
+						]
+
+						migrated_devices = [
+							%s,
+						]
+					}
+				`,
+					name,
+					testAccServerCertificateData(t),
+					serial,
+					migratedDeviceHCL(serial, deadline),
+				),
+				ExpectError: regexp.MustCompile(`not eligible for MDM migration`),
 			},
 		},
 	})
