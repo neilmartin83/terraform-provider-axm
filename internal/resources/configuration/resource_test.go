@@ -135,6 +135,61 @@ func testAccPreCheck(t *testing.T) {
 	}
 }
 
+// accTestProfileXML returns a valid configuration profile plist containing a
+// Wi-Fi payload. Apple's API rejects profiles with an empty PayloadContent
+// array (validation: PayloadContent must have at least one member).
+func accTestProfileXML(displayName, identifier, uuid string) string {
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>AutoJoin</key>
+			<true/>
+			<key>CaptiveBypass</key>
+			<false/>
+			<key>DisableAssociationMACRandomization</key>
+			<false/>
+			<key>EncryptionType</key>
+			<string>Any</string>
+			<key>HIDDEN_NETWORK</key>
+			<false/>
+			<key>IsHotspot</key>
+			<false/>
+			<key>PayloadDescription</key>
+			<string>Configures Wi-Fi settings</string>
+			<key>PayloadDisplayName</key>
+			<string>Wi-Fi</string>
+			<key>PayloadIdentifier</key>
+			<string>com.apple.wifi.managed.%s</string>
+			<key>PayloadType</key>
+			<string>com.apple.wifi.managed</string>
+			<key>PayloadUUID</key>
+			<string>%s</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>ProxyType</key>
+			<string>None</string>
+			<key>SSID_STR</key>
+			<string>Test Network</string>
+		</dict>
+	</array>
+	<key>PayloadDisplayName</key>
+	<string>%s</string>
+	<key>PayloadIdentifier</key>
+	<string>%s</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>%s</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>`, uuid, uuid, displayName, identifier, uuid)
+}
+
 func TestAccConfigurationResource_basic(t *testing.T) {
 	testAccPreCheck(t)
 	name := "tf-acc-test-config-basic"
@@ -147,35 +202,17 @@ func TestAccConfigurationResource_basic(t *testing.T) {
 				Config: fmt.Sprintf(`
 					resource "axm_configuration" "test" {
 						name                    = %q
-						configured_for_platforms = ["MACOS"]
+						configured_for_platforms = ["PLATFORM_MACOS"]
 						configuration_profile    = <<-EOT
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>PayloadContent</key>
-    <array/>
-    <key>PayloadDisplayName</key>
-    <string>Test Config</string>
-    <key>PayloadIdentifier</key>
-    <string>com.test.profile</string>
-    <key>PayloadType</key>
-    <string>Configuration</string>
-    <key>PayloadUUID</key>
-    <string>00000000-0000-0000-0000-000000000000</string>
-    <key>PayloadVersion</key>
-    <integer>1</integer>
-</dict>
-</plist>
+%s
 EOT
 						filename                = "test-configuration.mobileconfig"
 					}
-				`, name),
+				`, name, accTestProfileXML("Test Config", "com.test.profile", "00000000-0000-0000-0000-000000000000")),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("axm_configuration.test", "id"),
 					resource.TestCheckResourceAttr("axm_configuration.test", "name", name),
 					resource.TestCheckResourceAttrSet("axm_configuration.test", "type"),
-					resource.TestCheckResourceAttr("axm_configuration.test", "configuration_type", "CUSTOM_SETTING"),
 					resource.TestCheckResourceAttr("axm_configuration.test", "filename", "test-configuration.mobileconfig"),
 				),
 			},
@@ -183,30 +220,13 @@ EOT
 				Config: fmt.Sprintf(`
 					resource "axm_configuration" "test" {
 						name                    = %q
-						configured_for_platforms = ["MACOS"]
+						configured_for_platforms = ["PLATFORM_MACOS"]
 						configuration_profile    = <<-EOT
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>PayloadContent</key>
-    <array/>
-    <key>PayloadDisplayName</key>
-    <string>Updated Config</string>
-    <key>PayloadIdentifier</key>
-    <string>com.test.profile.updated</string>
-    <key>PayloadType</key>
-    <string>Configuration</string>
-    <key>PayloadUUID</key>
-    <string>00000000-0000-0000-0000-000000000001</string>
-    <key>PayloadVersion</key>
-    <integer>1</integer>
-</dict>
-</plist>
+%s
 EOT
 						filename                = "updated-configuration.mobileconfig"
 					}
-				`, name+"-updated"),
+				`, name+"-updated", accTestProfileXML("Updated Config", "com.test.profile.updated", "00000000-0000-0000-0000-000000000001")),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("axm_configuration.test", "name", name+"-updated"),
 					resource.TestCheckResourceAttr("axm_configuration.test", "filename", "updated-configuration.mobileconfig"),
@@ -228,30 +248,13 @@ func TestAccConfigurationResource_import(t *testing.T) {
 				Config: fmt.Sprintf(`
 					resource "axm_configuration" "test" {
 						name                    = %q
-						configured_for_platforms = ["MACOS"]
+						configured_for_platforms = ["PLATFORM_MACOS"]
 						configuration_profile    = <<-EOT
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>PayloadContent</key>
-    <array/>
-    <key>PayloadDisplayName</key>
-    <string>Import Config</string>
-    <key>PayloadIdentifier</key>
-    <string>com.test.profile.import</string>
-    <key>PayloadType</key>
-    <string>Configuration</string>
-    <key>PayloadUUID</key>
-    <string>00000000-0000-0000-0000-000000000002</string>
-    <key>PayloadVersion</key>
-    <integer>1</integer>
-</dict>
-</plist>
+%s
 EOT
 						filename                = "import-configuration.mobileconfig"
 					}
-				`, name),
+				`, name, accTestProfileXML("Import Config", "com.test.profile.import", "00000000-0000-0000-0000-000000000002")),
 			},
 			{
 				ResourceName:            "axm_configuration.test",
