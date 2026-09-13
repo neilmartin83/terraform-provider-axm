@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.14.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.13.0...v1.14.0) (2026-09-13)
+
+
+### Features
+
+* **client:** add MDM migration features to org_device_activities and org_devices ([249f142](https://github.com/neilmartin83/terraform-provider-axm/commit/249f142fcb9d82650355493c1b0c4ec9a3f3ef55))
+* **device_management_service:** add support for device migration management ([4f095a3](https://github.com/neilmartin83/terraform-provider-axm/commit/4f095a3d8933bd4db9e746051ad423fd7534e59a))
+
+
+### Bug Fixes
+
+* **tests:** add accTestProfileXML function for generating Wi-Fi configuration profiles ([20cf420](https://github.com/neilmartin83/terraform-provider-axm/commit/20cf420b6a60bb11173e2fbce039791befd5d97a))
+* **tests:** enhance acceptance tests for blueprint resource with app and device ID checks ([d3cc73d](https://github.com/neilmartin83/terraform-provider-axm/commit/d3cc73df302ddd024de651f0c74bf0a6cff7a849))
+
 ## [1.12.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.11.0...v1.12.0) (2026-07-05)
 
 
