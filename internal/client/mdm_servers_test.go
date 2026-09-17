@@ -5,8 +5,10 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -469,6 +471,93 @@ func TestUpdateDeviceManagementService_Success(t *testing.T) {
 	}
 	if len(srv.Attributes.DefaultProductFamilies) != 2 {
 		t.Errorf("expected 2 product families, got %d", len(srv.Attributes.DefaultProductFamilies))
+	}
+}
+
+func TestDeviceManagementService_DefaultFamiliesRequest(t *testing.T) {
+	tests := []struct {
+		name       string
+		clear      bool
+		attributes MdmServerUpdateAttributes
+		want       string
+	}{
+		{
+			name:  "clear_helper_sends_empty_array",
+			clear: true,
+			want:  `{"defaultProductFamilies":[]}`,
+		},
+		{
+			name:       "empty_update_sends_empty_array",
+			attributes: MdmServerUpdateAttributes{DefaultProductFamilies: []MdmServerProductFamily{}},
+			want:       `{"defaultProductFamilies":[]}`,
+		},
+		{
+			name:       "unrelated_update_omits_families",
+			attributes: MdmServerUpdateAttributes{ServerName: new("Renamed MDM")},
+			want:       `{"serverName":"Renamed MDM"}`,
+		},
+		{
+			name:       "nonempty_update_preserves_families",
+			attributes: MdmServerUpdateAttributes{DefaultProductFamilies: []MdmServerProductFamily{MdmServerProductFamilyIPhone, MdmServerProductFamilyMac}},
+			want:       `{"defaultProductFamilies":["IPHONE","MAC"]}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var want map[string]any
+			if err := json.Unmarshal([]byte(tt.want), &want); err != nil {
+				t.Fatal(err)
+			}
+			var requests atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				if r.Method != http.MethodPatch || r.URL.Path != "/v1/mdmServers/srv-1" {
+					t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+				}
+				var body struct {
+					Data struct {
+						Type       string         `json:"type"`
+						ID         string         `json:"id"`
+						Attributes map[string]any `json:"attributes"`
+					} `json:"data"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+					t.Errorf("decode request: %v", err)
+					http.Error(w, "invalid JSON", http.StatusBadRequest)
+					return
+				}
+				if body.Data.Type != "mdmServers" || body.Data.ID != "srv-1" {
+					t.Errorf("unexpected resource: %s %s", body.Data.Type, body.Data.ID)
+				}
+				if !reflect.DeepEqual(body.Data.Attributes, want) {
+					t.Errorf("request attributes = %#v, want %#v", body.Data.Attributes, want)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"data":{"type":"mdmServers","id":"srv-1","attributes":{"defaultProductFamilies":[]}}}`))
+			}))
+			defer server.Close()
+
+			c := newTestClient(t, server)
+			var srv *MdmServer
+			var err error
+			if tt.clear {
+				srv, err = c.ClearDeviceManagementServiceDefaultFamilies(context.Background(), "srv-1")
+			} else {
+				srv, err = c.UpdateDeviceManagementService(context.Background(), MdmServerUpdateRequest{
+					Data: MdmServerUpdateRequestData{Type: "mdmServers", ID: "srv-1", Attributes: tt.attributes},
+				})
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if srv.ID != "srv-1" {
+				t.Errorf("expected returned server srv-1, got %s", srv.ID)
+			}
+			if got := requests.Load(); got != 1 {
+				t.Errorf("expected one request, got %d", got)
+			}
+		})
 	}
 }
 
