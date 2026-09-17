@@ -140,7 +140,7 @@ type MdmServerUpdateRequestData struct {
 type MdmServerUpdateAttributes struct {
 	ServerName             *string                  `json:"serverName,omitempty"`
 	ServerCertificate      *MdmServerCertificate    `json:"serverCertificate,omitempty"`
-	DefaultProductFamilies []MdmServerProductFamily `json:"defaultProductFamilies,omitempty"`
+	DefaultProductFamilies []MdmServerProductFamily `json:"defaultProductFamilies,omitzero"`
 	EnableMdmDisownFlag    *bool                    `json:"enableMdmDisownFlag,omitempty"`
 }
 
@@ -369,7 +369,7 @@ func (c *Client) UpdateDeviceManagementService(ctx context.Context, request MdmS
 }
 
 // ClearDeviceManagementServiceDefaultFamilies removes all default product family assignments
-// from an MDM server by sending defaultProductFamilies: null explicitly.
+// from an MDM server by sending defaultProductFamilies: [] explicitly.
 func (c *Client) ClearDeviceManagementServiceDefaultFamilies(ctx context.Context, id string) (*MdmServer, error) {
 	request := MdmServerUpdateRequest{
 		Data: MdmServerUpdateRequestData{
