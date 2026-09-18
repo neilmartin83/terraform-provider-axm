@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.14.0...v1.14.1) (2026-09-18)
+
+
+### Bug Fixes
+
+* **client:** preserve explicit empty default product families ([e7340cb](https://github.com/neilmartin83/terraform-provider-axm/commit/e7340cbd560391f8ff5d47ce7b60c9631a57f329))
+
 ## [1.14.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.13.0...v1.14.0) (2026-09-13)
 
 
