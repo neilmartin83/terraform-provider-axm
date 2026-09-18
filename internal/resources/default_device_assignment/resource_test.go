@@ -5,13 +5,20 @@ package default_device_assignment_test
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"slices"
+	"sort"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	tfresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+
+	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/provider"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/default_device_assignment"
@@ -112,6 +119,139 @@ func TestAccDefaultDeviceAssignmentResource_basic(t *testing.T) {
 				Config: `resource "axm_default_device_assignment" "this" {}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("axm_default_device_assignment.this", "id", "default"),
+				),
+			},
+		},
+	})
+}
+
+func testAccBaseURL() string {
+	if os.Getenv("AXM_SCOPE") == "school.api" {
+		return "https://api-school.apple.com"
+	}
+	return "https://api-business.apple.com"
+}
+
+// testAccNewClient creates a real API client for verifying live server state.
+func testAccNewClient(t *testing.T) *client.Client {
+	t.Helper()
+	teamID := os.Getenv("AXM_TEAM_ID")
+	if teamID == "" {
+		teamID = os.Getenv("AXM_CLIENT_ID")
+	}
+	c, err := client.NewClient(
+		testAccBaseURL(),
+		teamID,
+		os.Getenv("AXM_CLIENT_ID"),
+		os.Getenv("AXM_KEY_ID"),
+		os.Getenv("AXM_SCOPE"),
+		os.Getenv("AXM_PRIVATE_KEY"),
+	)
+	if err != nil {
+		t.Fatalf("failed to create API client: %v", err)
+	}
+	return c
+}
+
+func testAccAssignmentPreCheck(t *testing.T) {
+	t.Helper()
+	testAccPreCheck(t)
+	if os.Getenv("AXM_SCOPE") != "business.api" {
+		t.Skip("default device assignment requires the business.api scope")
+	}
+	if os.Getenv("AXM_TEST_DEVICE_MANAGEMENT_SERVICE_CERTIFICATE") == "" {
+		t.Skip("AXM_TEST_DEVICE_MANAGEMENT_SERVICE_CERTIFICATE must be set to create device management services")
+	}
+}
+
+// testAccCheckLiveFamilies asserts the live API reports exactly the wanted default
+// product families for the server tracked by the named resource.
+func testAccCheckLiveFamilies(t *testing.T, resourceName string, want ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceName)
+		}
+		srv, err := testAccNewClient(t).GetDeviceManagementService(context.Background(), rs.Primary.ID, nil)
+		if err != nil {
+			return fmt.Errorf("GET %s: %w", rs.Primary.ID, err)
+		}
+		got := make([]string, 0, len(srv.Attributes.DefaultProductFamilies))
+		for _, f := range srv.Attributes.DefaultProductFamilies {
+			got = append(got, string(f))
+		}
+		sort.Strings(got)
+		wantSorted := slices.Clone(want)
+		sort.Strings(wantSorted)
+		if !slices.Equal(got, wantSorted) {
+			return fmt.Errorf("%s live defaultProductFamilies = %v, want %v", resourceName, got, wantSorted)
+		}
+		return nil
+	}
+}
+
+// TestAccDefaultDeviceAssignmentResource_moveAndClear covers the PATCH bodies that
+// an empty defaultProductFamilies slice must produce: moving a family between
+// servers clears the source, and unassigning clears the last remaining family.
+func TestAccDefaultDeviceAssignmentResource_moveAndClear(t *testing.T) {
+	testAccAssignmentPreCheck(t)
+
+	cert := os.Getenv("AXM_TEST_DEVICE_MANAGEMENT_SERVICE_CERTIFICATE")
+	suffix := time.Now().UnixNano()
+
+	config := func(macTarget string) string {
+		return fmt.Sprintf(`
+			resource "axm_device_management_service" "a" {
+				name = "tf-acc-dda-a-%[1]d"
+				server_certificate = {
+					name = "tf-acc-dda-a-%[1]d-cert"
+					data = %[2]q
+				}
+			}
+
+			resource "axm_device_management_service" "b" {
+				name = "tf-acc-dda-b-%[1]d"
+				server_certificate = {
+					name = "tf-acc-dda-b-%[1]d-cert"
+					data = %[2]q
+				}
+			}
+
+			resource "axm_default_device_assignment" "this" {
+				mac = %[3]s
+			}
+		`, suffix, cert, macTarget)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccAssignmentPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: config("axm_device_management_service.a.id"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrPair(
+						"axm_default_device_assignment.this", "mac",
+						"axm_device_management_service.a", "id"),
+					testAccCheckLiveFamilies(t, "axm_device_management_service.a", "MAC"),
+					testAccCheckLiveFamilies(t, "axm_device_management_service.b"),
+				),
+			},
+			{
+				Config: config("axm_device_management_service.b.id"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrPair(
+						"axm_default_device_assignment.this", "mac",
+						"axm_device_management_service.b", "id"),
+					testAccCheckLiveFamilies(t, "axm_device_management_service.a"),
+					testAccCheckLiveFamilies(t, "axm_device_management_service.b", "MAC"),
+				),
+			},
+			{
+				Config: config(`""`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckLiveFamilies(t, "axm_device_management_service.a"),
+					testAccCheckLiveFamilies(t, "axm_device_management_service.b"),
 				),
 			},
 		},
