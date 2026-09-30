@@ -117,8 +117,8 @@ func TestProviderResources(t *testing.T) {
 	ctx := context.Background()
 	resources := p.Resources(ctx)
 
-	if len(resources) != 4 {
-		t.Fatalf("expected 4 resources, got %d", len(resources))
+	if len(resources) != 5 {
+		t.Fatalf("expected 5 resources, got %d", len(resources))
 	}
 
 	var got []string
@@ -133,6 +133,7 @@ func TestProviderResources(t *testing.T) {
 		"axm_blueprint",
 		"axm_configuration",
 		"axm_default_device_assignment",
+		"axm_device_assignment_policy",
 		"axm_device_management_service",
 	}
 
