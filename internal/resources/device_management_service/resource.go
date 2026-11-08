@@ -121,9 +121,6 @@ func (r *DeviceManagementServiceResource) Schema(ctx context.Context, req resour
 			"updated_date_time": schema.StringAttribute{
 				Computed:    true,
 				Description: "The date and time of the most-recent update for the resource.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"allow_release": schema.BoolAttribute{
 				Optional:    true,
