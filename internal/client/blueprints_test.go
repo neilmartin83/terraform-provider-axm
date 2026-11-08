@@ -5,7 +5,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -94,7 +94,7 @@ func TestCreateBlueprint(t *testing.T) {
 		}
 
 		var request BlueprintCreateRequest
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		if err := json.UnmarshalRead(r.Body, &request); err != nil {
 			t.Fatalf("failed to decode request: %v", err)
 		}
 		if request.Data.Attributes.Name != "Marketing" {
@@ -142,7 +142,7 @@ func TestUpdateBlueprint(t *testing.T) {
 		}
 
 		var request BlueprintUpdateRequest
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		if err := json.UnmarshalRead(r.Body, &request); err != nil {
 			t.Fatalf("failed to decode request: %v", err)
 		}
 		if request.Data.ID != "blueprint-123" {

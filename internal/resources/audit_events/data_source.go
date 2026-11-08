@@ -5,7 +5,8 @@ package audit_events
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"net/url"
 	"strconv"
 	"strings"
@@ -264,7 +265,7 @@ func (d *AuditEventsDataSource) Read(ctx context.Context, req datasource.ReadReq
 }
 
 func flattenAuditEvent(event client.AuditEvent) AuditEventModel {
-	additional, _ := json.Marshal(event.Attributes.Additional)
+	additional, _ := json.Marshal(event.Attributes.Additional, json.Deterministic(true), json.FormatNilMapAsNull(true), jsontext.EscapeForHTML(true))
 
 	return AuditEventModel{
 		ID:                   types.StringValue(event.ID),

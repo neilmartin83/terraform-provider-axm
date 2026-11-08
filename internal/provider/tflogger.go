@@ -5,7 +5,8 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -30,7 +31,7 @@ func prettyPrintJSON(data []byte) string {
 		return string(data)
 	}
 
-	pretty, err := json.MarshalIndent(obj, "", "  ")
+	pretty, err := json.Marshal(obj, jsontext.WithIndent("  "), json.Deterministic(true))
 	if err != nil {
 		return string(data)
 	}

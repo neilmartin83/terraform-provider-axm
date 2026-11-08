@@ -5,7 +5,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"maps"
 	"net/http"
@@ -64,16 +64,16 @@ type MdmDeviceDetailAttribute struct {
 	DeviceName           string   `json:"deviceName,omitempty"`
 	EthernetMacAddress   string   `json:"ethernetMacAddress,omitempty"`
 	IMEI                 []string `json:"imei,omitempty"`
-	IsFileVaultEnabled   *bool    `json:"isFileVaultEnabled,omitempty"`
-	IsFirewallEnabled    *bool    `json:"isFirewallEnabled,omitempty"`
+	IsFileVaultEnabled   *bool    `json:"isFileVaultEnabled,omitzero"`
+	IsFirewallEnabled    *bool    `json:"isFirewallEnabled,omitzero"`
 	LastCheckInDateTime  string   `json:"lastCheckInDateTime,omitempty"`
 	LostModeStatus       string   `json:"lostModeStatus,omitempty"`
 	MEID                 []string `json:"meid,omitempty"`
 	OsVersion            string   `json:"osVersion,omitempty"`
 	Platform             string   `json:"platform,omitempty"`
 	SerialNumber         string   `json:"serialNumber,omitempty"`
-	StorageFreeCapacity  *int64   `json:"storageFreeCapacity,omitempty"`
-	StorageTotalCapacity *int64   `json:"storageTotalCapacity,omitempty"`
+	StorageFreeCapacity  *int64   `json:"storageFreeCapacity,omitzero"`
+	StorageTotalCapacity *int64   `json:"storageTotalCapacity,omitzero"`
 	WifiMacAddress       string   `json:"wifiMacAddress,omitempty"`
 }
 
@@ -116,7 +116,7 @@ func (c *Client) GetMdmDevices(ctx context.Context, queryParams url.Values) ([]M
 			}
 
 			var response MdmDeviceResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
@@ -161,7 +161,7 @@ func (c *Client) GetMdmDeviceDetail(ctx context.Context, id string, queryParams 
 	}
 
 	var response MdmDeviceDetailResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 

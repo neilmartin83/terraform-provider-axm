@@ -5,7 +5,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -522,7 +522,7 @@ func TestDeviceManagementService_DefaultFamiliesRequest(t *testing.T) {
 						Attributes map[string]any `json:"attributes"`
 					} `json:"data"`
 				}
-				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				if err := json.UnmarshalRead(r.Body, &body); err != nil {
 					t.Errorf("decode request: %v", err)
 					http.Error(w, "invalid JSON", http.StatusBadRequest)
 					return

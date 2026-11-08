@@ -5,7 +5,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"maps"
 	"net/http"
@@ -54,7 +54,7 @@ type AppAttributes struct {
 	WebsiteURL  string        `json:"websiteUrl,omitempty"`
 	Version     string        `json:"version,omitempty"`
 	SupportedOS []SupportedOS `json:"supportedOS,omitempty"`
-	IsCustomApp bool          `json:"isCustomApp,omitempty"`
+	IsCustomApp bool          `json:"isCustomApp,omitzero"`
 	AppStoreURL string        `json:"appStoreUrl,omitempty"`
 }
 
@@ -95,7 +95,7 @@ func (c *Client) GetApps(ctx context.Context, queryParams url.Values) ([]App, er
 			}
 
 			var response AppsResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
@@ -139,7 +139,7 @@ func (c *Client) GetApp(ctx context.Context, id string, queryParams url.Values) 
 	}
 
 	var response AppResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 

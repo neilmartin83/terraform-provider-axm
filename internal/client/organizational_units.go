@@ -5,7 +5,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"maps"
 	"net/http"
@@ -97,7 +97,7 @@ func (c *Client) GetOrganizationalUnits(ctx context.Context, queryParams url.Val
 			}
 
 			var response OrganizationalUnitsResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
@@ -141,7 +141,7 @@ func (c *Client) GetOrganizationalUnit(ctx context.Context, id string, queryPara
 	}
 
 	var response OrganizationalUnitResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -185,7 +185,7 @@ func (c *Client) GetOrganizationalUnitUserIDs(ctx context.Context, ouID string) 
 			}
 
 			var response OrganizationalUnitUsersLinkagesResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
