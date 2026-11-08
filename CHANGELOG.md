@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.15.0](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.14.1...v1.15.0) (2026-11-08)
+
+
+### Features
+
+* add Apple Business webhook support ([e5eef02](https://github.com/neilmartin83/terraform-provider-axm/commit/e5eef02ea951e8e57e0c63048dfce90da4d1192d))
+
+
+### Bug Fixes
+
+* **device-management-service:** allow updated_date_time to change ([587e61d](https://github.com/neilmartin83/terraform-provider-axm/commit/587e61dd59b468fdcef0631d06b8e160a86d0252))
+
+
+### Performance Improvements
+
+* **device-management-service:** batch org device lookups ([9a04fb4](https://github.com/neilmartin83/terraform-provider-axm/commit/9a04fb462fd9d1627fff6ff154fd2879946d38d4))
+
 ## [1.14.1](https://github.com/neilmartin83/terraform-provider-axm/compare/v1.14.0...v1.14.1) (2026-09-18)
 
 
