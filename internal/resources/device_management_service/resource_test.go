@@ -20,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/neilmartin83/terraform-provider-axm/internal/client"
 	"github.com/neilmartin83/terraform-provider-axm/internal/provider"
@@ -74,14 +75,14 @@ func testAccBaseURL() string {
 	return "https://api-business.apple.com"
 }
 
-// testAccNewClient creates a real API client for pre-test queries.
-func testAccNewClient(t *testing.T) *client.Client {
-	t.Helper()
+// testAccNewAPIClient creates a real API client without requiring a *testing.T,
+// so it can be reused from destroy check functions.
+func testAccNewAPIClient() (*client.Client, error) {
 	teamID := os.Getenv("AXM_TEAM_ID")
 	if teamID == "" {
 		teamID = os.Getenv("AXM_CLIENT_ID")
 	}
-	c, err := client.NewClient(
+	return client.NewClient(
 		testAccBaseURL(),
 		teamID,
 		os.Getenv("AXM_CLIENT_ID"),
@@ -89,6 +90,12 @@ func testAccNewClient(t *testing.T) *client.Client {
 		os.Getenv("AXM_SCOPE"),
 		os.Getenv("AXM_PRIVATE_KEY"),
 	)
+}
+
+// testAccNewClient creates a real API client for pre-test queries.
+func testAccNewClient(t *testing.T) *client.Client {
+	t.Helper()
+	c, err := testAccNewAPIClient()
 	if err != nil {
 		t.Fatalf("failed to create API client: %v", err)
 	}
@@ -372,6 +379,83 @@ func TestAccDeviceManagementServiceResource_import(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccDeviceManagementServiceResource_crud creates a new MDM server, renames
+// it, and deletes it. It needs only AXM_TEST_SERVER_PUBLIC_KEY; no
+// AXM_TEST_SERVER_ID or device serial numbers are required.
+func TestAccDeviceManagementServiceResource_crud(t *testing.T) {
+	testAccPreCheck(t)
+	if os.Getenv("AXM_SCOPE") != "business.api" {
+		t.Skip("creating and deleting device management services requires the business.api scope")
+	}
+	cert := testAccServerCertificateData(t)
+	name := fmt.Sprintf("tf-acc-mdm-crud-%d", time.Now().UnixNano())
+	updatedName := name + "-renamed"
+
+	config := func(n string) string {
+		return fmt.Sprintf(`
+			resource "axm_device_management_service" "test" {
+				name = %q
+
+				server_certificate = {
+					name = "PublicKey.pem"
+					data = %q
+				}
+
+				timeouts = {
+					create = "15m"
+					read   = "2m"
+					update = "15m"
+					delete = "15m"
+				}
+			}
+		`, n, cert)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckDeviceManagementServiceDestroyed,
+		Steps: []resource.TestStep{
+			{
+				Config: config(name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("axm_device_management_service.test", "id"),
+					resource.TestCheckResourceAttr("axm_device_management_service.test", "name", name),
+					resource.TestCheckResourceAttrSet("axm_device_management_service.test", "type"),
+					resource.TestCheckResourceAttrSet("axm_device_management_service.test", "status"),
+				),
+			},
+			{
+				Config: config(updatedName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("axm_device_management_service.test", "id"),
+					resource.TestCheckResourceAttr("axm_device_management_service.test", "name", updatedName),
+				),
+			},
+		},
+	})
+}
+
+// testAccCheckDeviceManagementServiceDestroyed verifies that every server
+// created by the test is gone from the live API.
+func testAccCheckDeviceManagementServiceDestroyed(s *terraform.State) error {
+	c, err := testAccNewAPIClient()
+	if err != nil {
+		return fmt.Errorf("failed to create API client: %w", err)
+	}
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "axm_device_management_service" {
+			continue
+		}
+		if _, err := c.GetDeviceManagementService(context.Background(), rs.Primary.ID, nil); err == nil {
+			return fmt.Errorf("device management service %s still exists", rs.Primary.ID)
+		} else if !strings.Contains(err.Error(), "NOT_FOUND") {
+			return fmt.Errorf("unexpected error checking device management service %s: %w", rs.Primary.ID, err)
+		}
+	}
+	return nil
 }
 
 // testAccServerCertificateData returns the base64-encoded PEM certificate used
