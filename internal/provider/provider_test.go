@@ -117,8 +117,8 @@ func TestProviderResources(t *testing.T) {
 	ctx := context.Background()
 	resources := p.Resources(ctx)
 
-	if len(resources) != 4 {
-		t.Fatalf("expected 4 resources, got %d", len(resources))
+	if len(resources) != 5 {
+		t.Fatalf("expected 5 resources, got %d", len(resources))
 	}
 
 	var got []string
@@ -134,6 +134,7 @@ func TestProviderResources(t *testing.T) {
 		"axm_configuration",
 		"axm_default_device_assignment",
 		"axm_device_management_service",
+		"axm_webhook",
 	}
 
 	sort.Strings(got)
@@ -149,8 +150,8 @@ func TestProviderDataSources(t *testing.T) {
 	ctx := context.Background()
 	dataSources := p.DataSources(ctx)
 
-	if len(dataSources) != 24 {
-		t.Fatalf("expected 24 data sources, got %d", len(dataSources))
+	if len(dataSources) != 27 {
+		t.Fatalf("expected 27 data sources, got %d", len(dataSources))
 	}
 
 	expected := []string{
@@ -178,6 +179,9 @@ func TestProviderDataSources(t *testing.T) {
 		"axm_user_group",
 		"axm_user_groups",
 		"axm_users",
+		"axm_webhook",
+		"axm_webhook_deliveries",
+		"axm_webhooks",
 	}
 
 	var got []string
@@ -209,8 +213,8 @@ func TestProviderListResources(t *testing.T) {
 	}
 
 	listResources := plr.ListResources(ctx)
-	if len(listResources) != 3 {
-		t.Fatalf("expected 3 list resources, got %d", len(listResources))
+	if len(listResources) != 4 {
+		t.Fatalf("expected 4 list resources, got %d", len(listResources))
 	}
 
 	var got []string
@@ -225,6 +229,7 @@ func TestProviderListResources(t *testing.T) {
 		"axm_blueprint",
 		"axm_configuration",
 		"axm_device_management_service",
+		"axm_webhook",
 	}
 
 	sort.Strings(got)

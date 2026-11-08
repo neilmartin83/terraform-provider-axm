@@ -43,6 +43,9 @@ import (
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/user_group"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/user_groups"
 	"github.com/neilmartin83/terraform-provider-axm/internal/resources/users"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/webhook"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/webhook_deliveries"
+	"github.com/neilmartin83/terraform-provider-axm/internal/resources/webhooks"
 )
 
 // Constants for environment variable names.
@@ -243,6 +246,7 @@ func (p *AxmProvider) Resources(ctx context.Context) []func() resource.Resource 
 		configuration.NewConfigurationResource,
 		default_device_assignment.NewDefaultDeviceAssignmentResource,
 		device_management_service.NewDeviceManagementServiceResource,
+		webhook.NewWebhookResource,
 	}
 }
 
@@ -272,6 +276,9 @@ func (p *AxmProvider) DataSources(ctx context.Context) []func() datasource.DataS
 		user_group.NewUserGroupDataSource,
 		user_groups.NewUserGroupsDataSource,
 		users.NewUsersDataSource,
+		webhook.NewWebhookDataSource,
+		webhooks.NewWebhooksDataSource,
+		webhook_deliveries.NewWebhookDeliveriesDataSource,
 	}
 }
 
@@ -280,6 +287,7 @@ func (p *AxmProvider) ListResources(ctx context.Context) []func() list.ListResou
 		blueprint.NewBlueprintListResource,
 		configuration.NewConfigurationListResource,
 		device_management_service.NewDeviceManagementServiceListResource,
+		webhook.NewWebhookListResource,
 	}
 }
 

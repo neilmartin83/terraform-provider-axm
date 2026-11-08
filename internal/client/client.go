@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -240,7 +241,11 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 		}
 
 		if c.logger != nil {
-			c.logger.LogRequest(ctx, req.Method, req.URL.String(), requestBody)
+			logBody := requestBody
+			if req.URL.Path == "/v1/webhooks" || strings.HasPrefix(req.URL.Path, "/v1/webhooks/") {
+				logBody = nil
+			}
+			c.logger.LogRequest(ctx, req.Method, req.URL.String(), logBody)
 		}
 
 		resp, err := c.httpClient.Do(req)
