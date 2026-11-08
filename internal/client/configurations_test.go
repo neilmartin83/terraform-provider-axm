@@ -5,7 +5,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -89,7 +89,7 @@ func TestCreateConfiguration(t *testing.T) {
 		}
 
 		var request ConfigurationCreateRequest
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		if err := json.UnmarshalRead(r.Body, &request); err != nil {
 			t.Fatalf("failed to decode request: %v", err)
 		}
 		if request.Data.Attributes.Name != "Wi-Fi" {
@@ -145,7 +145,7 @@ func TestUpdateConfiguration(t *testing.T) {
 		}
 
 		var request ConfigurationUpdateRequest
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		if err := json.UnmarshalRead(r.Body, &request); err != nil {
 			t.Fatalf("failed to decode request: %v", err)
 		}
 		if request.Data.ID != "config-123" {

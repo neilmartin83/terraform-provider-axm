@@ -6,7 +6,7 @@ package client
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"maps"
 	"net/http"
@@ -49,7 +49,7 @@ type BlueprintAttributes struct {
 	Name                string          `json:"name,omitempty"`
 	Description         string          `json:"description,omitempty"`
 	Status              BlueprintStatus `json:"status,omitempty"`
-	AppLicenseDeficient *bool           `json:"appLicenseDeficient,omitempty"`
+	AppLicenseDeficient *bool           `json:"appLicenseDeficient,omitzero"`
 	CreatedDateTime     string          `json:"createdDateTime,omitempty"`
 	UpdatedDateTime     string          `json:"updatedDateTime,omitempty"`
 }
@@ -79,7 +79,7 @@ type BlueprintCreateRequest struct {
 type BlueprintCreateRequestData struct {
 	Type          string                         `json:"type"`
 	Attributes    BlueprintCreateAttributes      `json:"attributes"`
-	Relationships *BlueprintRelationshipsRequest `json:"relationships,omitempty"`
+	Relationships *BlueprintRelationshipsRequest `json:"relationships,omitzero"`
 }
 
 // BlueprintCreateAttributes represents attributes for creating a Blueprint.
@@ -97,24 +97,24 @@ type BlueprintUpdateRequest struct {
 type BlueprintUpdateRequestData struct {
 	Type          string                         `json:"type"`
 	ID            string                         `json:"id"`
-	Attributes    *BlueprintUpdateAttributes     `json:"attributes,omitempty"`
-	Relationships *BlueprintRelationshipsRequest `json:"relationships,omitempty"`
+	Attributes    *BlueprintUpdateAttributes     `json:"attributes,omitzero"`
+	Relationships *BlueprintRelationshipsRequest `json:"relationships,omitzero"`
 }
 
 // BlueprintUpdateAttributes represents attributes for updating a Blueprint.
 type BlueprintUpdateAttributes struct {
-	Name        *string `json:"name,omitempty"`
-	Description *string `json:"description,omitempty"`
+	Name        *string `json:"name,omitzero"`
+	Description *string `json:"description,omitzero"`
 }
 
 // BlueprintRelationshipsRequest represents relationships included in a Blueprint request.
 type BlueprintRelationshipsRequest struct {
-	Apps           *BlueprintRelationshipData `json:"apps,omitempty"`
-	Configurations *BlueprintRelationshipData `json:"configurations,omitempty"`
-	Packages       *BlueprintRelationshipData `json:"packages,omitempty"`
-	OrgDevices     *BlueprintRelationshipData `json:"orgDevices,omitempty"`
-	Users          *BlueprintRelationshipData `json:"users,omitempty"`
-	UserGroups     *BlueprintRelationshipData `json:"userGroups,omitempty"`
+	Apps           *BlueprintRelationshipData `json:"apps,omitzero"`
+	Configurations *BlueprintRelationshipData `json:"configurations,omitzero"`
+	Packages       *BlueprintRelationshipData `json:"packages,omitzero"`
+	OrgDevices     *BlueprintRelationshipData `json:"orgDevices,omitzero"`
+	Users          *BlueprintRelationshipData `json:"users,omitzero"`
+	UserGroups     *BlueprintRelationshipData `json:"userGroups,omitzero"`
 }
 
 // BlueprintRelationshipData represents related resource IDs in a Blueprint request.
@@ -171,7 +171,7 @@ func (c *Client) GetBlueprints(ctx context.Context, queryParams url.Values) ([]B
 			}
 
 			var response BlueprintsResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
@@ -215,7 +215,7 @@ func (c *Client) GetBlueprint(ctx context.Context, id string, queryParams url.Va
 	}
 
 	var response BlueprintResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -249,7 +249,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, request BlueprintCreateReq
 	}
 
 	var response BlueprintResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -283,7 +283,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, request BlueprintUpdateReq
 	}
 
 	var response BlueprintResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -350,7 +350,7 @@ func (c *Client) GetBlueprintRelationshipIDs(ctx context.Context, blueprintID, r
 			}
 
 			var response BlueprintLinkagesResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 

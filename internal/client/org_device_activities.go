@@ -6,7 +6,7 @@ package client
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -87,7 +87,7 @@ type OrgDeviceActivityCreateRequestData struct {
 // OrgDeviceActivityCreateRequestAttributes represents attributes with values that you're changing as part of the create request.
 type OrgDeviceActivityCreateRequestAttributes struct {
 	ActivityType         string                     `json:"activityType"`
-	ActivityTypeMetadata *OrgDeviceActivityMetadata `json:"activityTypeMetadata,omitempty"`
+	ActivityTypeMetadata *OrgDeviceActivityMetadata `json:"activityTypeMetadata,omitzero"`
 }
 
 // OrgDeviceActivityMetadata represents additional metadata for an organization device activity, used by device management service migration activity types.
@@ -97,7 +97,7 @@ type OrgDeviceActivityMetadata struct {
 
 // OrgDeviceActivityCreateRequestRelationships represents the relationships you include in the request, and those that you can operate on.
 type OrgDeviceActivityCreateRequestRelationships struct {
-	MdmServer *OrgDeviceActivityCreateRequestDataRelationshipsMdmServer `json:"mdmServer,omitempty"`
+	MdmServer *OrgDeviceActivityCreateRequestDataRelationshipsMdmServer `json:"mdmServer,omitzero"`
 	Devices   OrgDeviceActivityCreateRequestDataRelationships           `json:"devices"`
 }
 
@@ -187,7 +187,7 @@ func (c *Client) postOrgDeviceActivity(ctx context.Context, activityType string,
 	}
 
 	var response OrgDeviceActivityResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -219,7 +219,7 @@ func (c *Client) GetOrgDeviceActivity(ctx context.Context, activityID string, qu
 	}
 
 	var response OrgDeviceActivityResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 

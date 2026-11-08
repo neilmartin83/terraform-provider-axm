@@ -6,7 +6,7 @@ package client
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -53,9 +53,9 @@ type Error struct {
 	Code   string       `json:"code"`
 	Title  string       `json:"title"`
 	Detail string       `json:"detail"`
-	Source *ErrorSource `json:"source,omitempty"`
-	Links  *ErrorLinks  `json:"links,omitempty"`
-	Meta   any          `json:"meta,omitempty"`
+	Source *ErrorSource `json:"source,omitzero"`
+	Links  *ErrorLinks  `json:"links,omitzero"`
+	Meta   any          `json:"meta,omitzero"`
 }
 
 // ErrorSource represents one of two possible types of values — source.Parameter when a query parameter produces the error, or source.JsonPointer when a problem with the entity produces the error.
@@ -67,7 +67,7 @@ type ErrorSource struct {
 // ErrorLinks provides links related to the error.
 type ErrorLinks struct {
 	About      string                `json:"about,omitempty"`
-	Associated *ErrorLinksAssociated `json:"associated,omitempty"`
+	Associated *ErrorLinksAssociated `json:"associated,omitzero"`
 }
 
 // ErrorLinksAssociated provides additional information about associated errors.
@@ -109,7 +109,7 @@ type Meta struct {
 type Paging struct {
 	Limit      int    `json:"limit"`
 	NextCursor string `json:"nextCursor,omitempty"`
-	Total      int    `json:"total,omitempty"`
+	Total      int    `json:"total,omitzero"`
 }
 
 // Data represents a generic data structure used in relationships.

@@ -8,7 +8,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -128,14 +129,14 @@ func (s *appleTokenSource) Token() (*oauth2.Token, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		var apiErr AuthErrorResponse
-		if err := json.NewDecoder(resp.Body).Decode(&apiErr); err != nil {
+		if err := json.UnmarshalRead(resp.Body, &apiErr); err != nil {
 			return nil, fmt.Errorf("token request failed with status %d", resp.StatusCode)
 		}
 		return nil, fmt.Errorf("token request failed: %s - %s", apiErr.Error, apiErr.ErrorDescription)
 	}
 
 	var tokenResp TokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &tokenResp); err != nil {
 		return nil, fmt.Errorf("failed to parse token response: %w", err)
 	}
 
@@ -428,7 +429,7 @@ func (s *appleTokenSource) saveCachedAssertion() error {
 		KeyID:     s.config.KeyID,
 	}
 
-	data, err := json.MarshalIndent(cached, "", "  ")
+	data, err := json.Marshal(cached, jsontext.WithIndent("  "))
 	if err != nil {
 		return fmt.Errorf("failed to marshal cache: %w", err)
 	}
@@ -469,7 +470,7 @@ func (s *appleTokenSource) saveCachedToken(token *oauth2.Token) error {
 		KeyID:       s.config.KeyID,
 	}
 
-	data, err := json.MarshalIndent(cached, "", "  ")
+	data, err := json.Marshal(cached, jsontext.WithIndent("  "))
 	if err != nil {
 		return fmt.Errorf("failed to marshal token cache: %w", err)
 	}

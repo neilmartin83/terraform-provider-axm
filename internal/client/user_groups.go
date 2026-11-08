@@ -5,7 +5,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"maps"
 	"net/http"
@@ -55,7 +55,7 @@ type UserGroupAttributes struct {
 	OuID             string          `json:"ouId,omitempty"`
 	Name             string          `json:"name,omitempty"`
 	Type             UserGroupType   `json:"type,omitempty"`
-	TotalMemberCount int             `json:"totalMemberCount,omitempty"`
+	TotalMemberCount int             `json:"totalMemberCount,omitzero"`
 	Status           UserGroupStatus `json:"status,omitempty"`
 	CreatedDateTime  string          `json:"createdDateTime,omitempty"`
 	UpdatedDateTime  string          `json:"updatedDateTime,omitempty"`
@@ -115,7 +115,7 @@ func (c *Client) GetUserGroups(ctx context.Context, queryParams url.Values) ([]U
 			}
 
 			var response UserGroupsResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
@@ -159,7 +159,7 @@ func (c *Client) GetUserGroup(ctx context.Context, id string, queryParams url.Va
 	}
 
 	var response UserGroupResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -203,7 +203,7 @@ func (c *Client) GetUserGroupUserIDs(ctx context.Context, groupID string) ([]str
 			}
 
 			var response UserGroupUsersLinkagesResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 

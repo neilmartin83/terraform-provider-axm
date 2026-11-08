@@ -6,7 +6,7 @@ package client
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"maps"
 	"net/http"
@@ -121,7 +121,7 @@ type MdmServerCreateRequestData struct {
 type MdmServerCreateAttributes struct {
 	ServerName          string               `json:"serverName"`
 	ServerCertificate   MdmServerCertificate `json:"serverCertificate"`
-	EnableMdmDisownFlag *bool                `json:"enableMdmDisownFlag,omitempty"`
+	EnableMdmDisownFlag *bool                `json:"enableMdmDisownFlag,omitzero"`
 }
 
 // MdmServerUpdateRequest represents a request to update an existing device management service.
@@ -138,10 +138,10 @@ type MdmServerUpdateRequestData struct {
 
 // MdmServerUpdateAttributes represents attributes for updating a device management service.
 type MdmServerUpdateAttributes struct {
-	ServerName             *string                  `json:"serverName,omitempty"`
-	ServerCertificate      *MdmServerCertificate    `json:"serverCertificate,omitempty"`
+	ServerName             *string                  `json:"serverName,omitzero"`
+	ServerCertificate      *MdmServerCertificate    `json:"serverCertificate,omitzero"`
 	DefaultProductFamilies []MdmServerProductFamily `json:"defaultProductFamilies,omitzero"`
-	EnableMdmDisownFlag    *bool                    `json:"enableMdmDisownFlag,omitempty"`
+	EnableMdmDisownFlag    *bool                    `json:"enableMdmDisownFlag,omitzero"`
 }
 
 // GetDeviceManagementServices retrieves all MDM servers configured in the organization.
@@ -184,7 +184,7 @@ func (c *Client) GetDeviceManagementServices(ctx context.Context, queryParams ur
 			}
 
 			var response MdmServersResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
@@ -242,7 +242,7 @@ func (c *Client) GetDeviceManagementServiceSerialNumbers(ctx context.Context, se
 			}
 
 			var response MdmServerDevicesLinkagesResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
@@ -295,7 +295,7 @@ func (c *Client) GetDeviceManagementService(ctx context.Context, id string, quer
 	}
 
 	var response MdmServerResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -328,7 +328,7 @@ func (c *Client) CreateDeviceManagementService(ctx context.Context, request MdmS
 	}
 
 	var response MdmServerResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -361,7 +361,7 @@ func (c *Client) UpdateDeviceManagementService(ctx context.Context, request MdmS
 	}
 
 	var response MdmServerResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -405,7 +405,7 @@ func (c *Client) ClearDeviceManagementServiceDefaultFamilies(ctx context.Context
 	}
 
 	var response MdmServerResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 

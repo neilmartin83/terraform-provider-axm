@@ -5,7 +5,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"maps"
 	"net/http"
@@ -147,7 +147,7 @@ func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]O
 			}
 
 			var response OrgDevicesResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
@@ -191,7 +191,7 @@ func (c *Client) GetOrgDevice(ctx context.Context, id string, queryParams url.Va
 	}
 
 	var response OrgDeviceResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -219,7 +219,7 @@ func (c *Client) GetOrgDeviceAssignedServerID(ctx context.Context, deviceID stri
 	}
 
 	var response OrgDeviceAssignedServerLinkageResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -251,7 +251,7 @@ func (c *Client) GetOrgDeviceAssignedServer(ctx context.Context, deviceID string
 	}
 
 	var response MdmServerResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -296,7 +296,7 @@ func (c *Client) GetOrgDeviceAppleCareCoverage(ctx context.Context, deviceID str
 			}
 
 			var response AppleCareCoverageResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 

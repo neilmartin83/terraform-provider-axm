@@ -6,7 +6,7 @@ package client
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"maps"
 	"net/http"
@@ -79,7 +79,7 @@ type ConfigurationAttributes struct {
 	Type                   ConfigurationType       `json:"type,omitempty"`
 	Name                   string                  `json:"name,omitempty"`
 	ConfiguredForPlatforms []ConfigurationPlatform `json:"configuredForPlatforms,omitempty"`
-	CustomSettingsValues   *CustomSettingsValues   `json:"customSettingsValues,omitempty"`
+	CustomSettingsValues   *CustomSettingsValues   `json:"customSettingsValues,omitzero"`
 	CreatedDateTime        string                  `json:"createdDateTime,omitempty"`
 	UpdatedDateTime        string                  `json:"updatedDateTime,omitempty"`
 }
@@ -123,9 +123,9 @@ type ConfigurationUpdateRequestData struct {
 
 // ConfigurationUpdateRequestAttributes represents attributes for updating a Configuration.
 type ConfigurationUpdateRequestAttributes struct {
-	Name                   *string                 `json:"name,omitempty"`
+	Name                   *string                 `json:"name,omitzero"`
 	ConfiguredForPlatforms []ConfigurationPlatform `json:"configuredForPlatforms,omitempty"`
-	CustomSettingsValues   *CustomSettingsValues   `json:"customSettingsValues,omitempty"`
+	CustomSettingsValues   *CustomSettingsValues   `json:"customSettingsValues,omitzero"`
 }
 
 // GetConfigurations retrieves all Configurations in the organization.
@@ -165,7 +165,7 @@ func (c *Client) GetConfigurations(ctx context.Context, queryParams url.Values) 
 			}
 
 			var response ConfigurationsResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
@@ -209,7 +209,7 @@ func (c *Client) GetConfiguration(ctx context.Context, id string, queryParams ur
 	}
 
 	var response ConfigurationResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -243,7 +243,7 @@ func (c *Client) CreateConfiguration(ctx context.Context, request ConfigurationC
 	}
 
 	var response ConfigurationResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
@@ -277,7 +277,7 @@ func (c *Client) UpdateConfiguration(ctx context.Context, request ConfigurationU
 	}
 
 	var response ConfigurationResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 

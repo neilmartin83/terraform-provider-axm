@@ -5,7 +5,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"maps"
 	"net/http"
@@ -62,7 +62,7 @@ type UserAttributes struct {
 	MiddleName          string              `json:"middleName,omitempty"`
 	Status              UserStatus          `json:"status,omitempty"`
 	ManagedAppleAccount string              `json:"managedAppleAccount,omitempty"`
-	IsExternalUser      bool                `json:"isExternalUser,omitempty"`
+	IsExternalUser      bool                `json:"isExternalUser,omitzero"`
 	RoleOuList          []UserRoleOuMapping `json:"roleOuList,omitempty"`
 	Email               string              `json:"email,omitempty"`
 	EmployeeNumber      string              `json:"employeeNumber,omitempty"`
@@ -125,7 +125,7 @@ func (c *Client) GetUsers(ctx context.Context, queryParams url.Values) ([]User, 
 			}
 
 			var response UsersResponse
-			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 				return fmt.Errorf("failed to decode response JSON: %w", err)
 			}
 
@@ -169,7 +169,7 @@ func (c *Client) GetUser(ctx context.Context, id string, queryParams url.Values)
 	}
 
 	var response UserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.UnmarshalRead(resp.Body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response JSON: %w", err)
 	}
 
