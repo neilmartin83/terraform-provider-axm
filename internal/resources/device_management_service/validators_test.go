@@ -138,22 +138,30 @@ func TestVerifyMigrationsCapable(t *testing.T) {
 
 	serials := []string{"S1", "S2"}
 
-	capable := func(ctx context.Context, id string) (*client.OrgDevice, error) {
-		return &client.OrgDevice{
-			ID:         id,
-			Attributes: client.DeviceAttribute{IsMdmMigrationCapable: true, Status: "ASSIGNED"},
-		}, nil
+	capable := func(ctx context.Context, serials []string) ([]client.OrgDevice, error) {
+		devices := make([]client.OrgDevice, 0, len(serials))
+		for _, serial := range serials {
+			devices = append(devices, client.OrgDevice{
+				ID:         serial,
+				Attributes: client.DeviceAttribute{SerialNumber: serial, IsMdmMigrationCapable: true, Status: "ASSIGNED"},
+			})
+		}
+		return devices, nil
 	}
 	if err := verifyMigrationsCapable(context.Background(), serials, capable, time.Second); err != nil {
 		t.Errorf("expected no error for capable devices, got %v", err)
 	}
 
 	// A device that is unassigned can never be migrated and must fail fast.
-	unassignedFetcher := func(ctx context.Context, id string) (*client.OrgDevice, error) {
-		return &client.OrgDevice{
-			ID:         id,
-			Attributes: client.DeviceAttribute{IsMdmMigrationCapable: false, Status: "UNASSIGNED"},
-		}, nil
+	unassignedFetcher := func(ctx context.Context, serials []string) ([]client.OrgDevice, error) {
+		devices := make([]client.OrgDevice, 0, len(serials))
+		for _, serial := range serials {
+			devices = append(devices, client.OrgDevice{
+				ID:         serial,
+				Attributes: client.DeviceAttribute{SerialNumber: serial, IsMdmMigrationCapable: false, Status: "UNASSIGNED"},
+			})
+		}
+		return devices, nil
 	}
 	start := time.Now()
 	err := verifyMigrationsCapable(context.Background(), serials, unassignedFetcher, time.Minute)
@@ -168,11 +176,15 @@ func TestVerifyMigrationsCapable(t *testing.T) {
 	}
 
 	// An assigned device that stays non-capable fails once the timeout elapses.
-	laggyFetcher := func(ctx context.Context, id string) (*client.OrgDevice, error) {
-		return &client.OrgDevice{
-			ID:         id,
-			Attributes: client.DeviceAttribute{IsMdmMigrationCapable: false, Status: "ASSIGNED"},
-		}, nil
+	laggyFetcher := func(ctx context.Context, serials []string) ([]client.OrgDevice, error) {
+		devices := make([]client.OrgDevice, 0, len(serials))
+		for _, serial := range serials {
+			devices = append(devices, client.OrgDevice{
+				ID:         serial,
+				Attributes: client.DeviceAttribute{SerialNumber: serial, IsMdmMigrationCapable: false, Status: "ASSIGNED"},
+			})
+		}
+		return devices, nil
 	}
 	err = verifyMigrationsCapable(context.Background(), serials, laggyFetcher, 50*time.Millisecond)
 	if err == nil {
@@ -181,18 +193,19 @@ func TestVerifyMigrationsCapable(t *testing.T) {
 
 	// A device that becomes capable on a later poll succeeds.
 	attempts := 0
-	eventuallyCapable := func(ctx context.Context, id string) (*client.OrgDevice, error) {
+	eventuallyCapable := func(ctx context.Context, serials []string) ([]client.OrgDevice, error) {
 		attempts++
-		if attempts < 3 {
-			return &client.OrgDevice{
-				ID:         id,
-				Attributes: client.DeviceAttribute{IsMdmMigrationCapable: false, Status: "ASSIGNED"},
-			}, nil
+		capable := attempts >= 3
+		devices := make([]client.OrgDevice, 0, len(serials))
+		for _, serial := range serials {
+			devices = append(devices, client.OrgDevice{
+				ID: serial,
+				Attributes: client.DeviceAttribute{
+					SerialNumber: serial, IsMdmMigrationCapable: capable, Status: "ASSIGNED",
+				},
+			})
 		}
-		return &client.OrgDevice{
-			ID:         id,
-			Attributes: client.DeviceAttribute{IsMdmMigrationCapable: true, Status: "ASSIGNED"},
-		}, nil
+		return devices, nil
 	}
 	if err := verifyMigrationsCapable(context.Background(), serials, eventuallyCapable, time.Second); err != nil {
 		t.Errorf("expected eventual success, got %v", err)
@@ -200,7 +213,7 @@ func TestVerifyMigrationsCapable(t *testing.T) {
 
 	// A persistent lookup failure fails fast via the timeout.
 	fetchError := errors.New("boom")
-	errorFetcher := func(ctx context.Context, id string) (*client.OrgDevice, error) {
+	errorFetcher := func(ctx context.Context, serials []string) ([]client.OrgDevice, error) {
 		return nil, fetchError
 	}
 	start = time.Now()
@@ -217,15 +230,12 @@ func TestVerifyMigrationsCapable(t *testing.T) {
 
 	// A transient lookup error should retry and recover once fetches succeed.
 	attempts = 0
-	flakyFetcher := func(ctx context.Context, id string) (*client.OrgDevice, error) {
+	flakyFetcher := func(ctx context.Context, serials []string) ([]client.OrgDevice, error) {
 		attempts++
 		if attempts < 2 {
 			return nil, errors.New("transient")
 		}
-		return &client.OrgDevice{
-			ID:         id,
-			Attributes: client.DeviceAttribute{IsMdmMigrationCapable: true, Status: "ASSIGNED"},
-		}, nil
+		return capable(ctx, serials)
 	}
 	if err := verifyMigrationsCapable(context.Background(), serials, flakyFetcher, 2*time.Second); err != nil {
 		t.Errorf("expected success after transient lookup errors, got %v", err)
@@ -233,20 +243,22 @@ func TestVerifyMigrationsCapable(t *testing.T) {
 }
 
 func TestCheckMigrationReadiness(t *testing.T) {
-	fetch := func(ctx context.Context, id string) (*client.OrgDevice, error) {
-		switch id {
-		case "CAPABLE":
-			return &client.OrgDevice{ID: id,
-				Attributes: client.DeviceAttribute{IsMdmMigrationCapable: true, Status: "ASSIGNED"}}, nil
-		case "NONCAP":
-			return &client.OrgDevice{ID: id,
-				Attributes: client.DeviceAttribute{IsMdmMigrationCapable: false, Status: "ASSIGNED"}}, nil
-		case "UNASSIGNED":
-			return &client.OrgDevice{ID: id,
-				Attributes: client.DeviceAttribute{IsMdmMigrationCapable: false, Status: "UNASSIGNED"}}, nil
-		default:
-			return nil, errors.New("boom")
+	fetch := func(ctx context.Context, serials []string) ([]client.OrgDevice, error) {
+		var devices []client.OrgDevice
+		for _, serial := range serials {
+			switch serial {
+			case "CAPABLE":
+				devices = append(devices, client.OrgDevice{ID: serial,
+					Attributes: client.DeviceAttribute{SerialNumber: serial, IsMdmMigrationCapable: true, Status: "ASSIGNED"}})
+			case "NONCAP":
+				devices = append(devices, client.OrgDevice{ID: serial,
+					Attributes: client.DeviceAttribute{SerialNumber: serial, IsMdmMigrationCapable: false, Status: "ASSIGNED"}})
+			case "UNASSIGNED":
+				devices = append(devices, client.OrgDevice{ID: serial,
+					Attributes: client.DeviceAttribute{SerialNumber: serial, IsMdmMigrationCapable: false, Status: "UNASSIGNED"}})
+			}
 		}
+		return devices, nil
 	}
 
 	migrated := []MdmDeviceMigrationModel{

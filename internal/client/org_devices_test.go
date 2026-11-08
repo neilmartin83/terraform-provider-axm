@@ -5,6 +5,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -163,6 +164,54 @@ func TestGetOrgDevices_WithQueryParams(t *testing.T) {
 	_, err := c.GetOrgDevices(context.Background(), params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGetOrgDevicesBySerialNumbers_BatchesAndDeduplicates(t *testing.T) {
+	var requestCount atomic.Int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		count := requestCount.Add(1)
+		serials := strings.Split(r.URL.Query().Get("filter[serialNumber]"), ",")
+		if count == 1 && len(serials) != orgDevicesSerialFilterBatchSize {
+			t.Errorf("expected first batch of %d serials, got %d", orgDevicesSerialFilterBatchSize, len(serials))
+		}
+		if count == 2 && len(serials) != 1 {
+			t.Errorf("expected second batch of 1 serial, got %d", len(serials))
+		}
+
+		devices := make([]OrgDevice, 0, len(serials))
+		for _, serial := range serials {
+			devices = append(devices, OrgDevice{
+				Type:       "orgDevices",
+				ID:         serial,
+				Attributes: DeviceAttribute{SerialNumber: serial},
+			})
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(mustMarshalJSON(t, OrgDevicesResponse{
+			Data: devices,
+			Meta: Meta{Paging: Paging{Limit: 1000}},
+		}))
+	}))
+	defer server.Close()
+
+	serials := make([]string, orgDevicesSerialFilterBatchSize+1)
+	for i := range serials {
+		serials[i] = fmt.Sprintf("SN%03d", i)
+	}
+	serials = append(serials, serials[0], "")
+
+	c := newTestClient(t, server)
+	devices, err := c.GetOrgDevicesBySerialNumbers(context.Background(), serials)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := requestCount.Load(); got != 2 {
+		t.Fatalf("expected 2 batched requests, got %d", got)
+	}
+	if len(devices) != orgDevicesSerialFilterBatchSize+1 {
+		t.Fatalf("expected %d devices, got %d", orgDevicesSerialFilterBatchSize+1, len(devices))
 	}
 }
 
