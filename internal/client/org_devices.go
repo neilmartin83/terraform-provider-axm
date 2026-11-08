@@ -11,7 +11,13 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
+
+// orgDevicesSerialFilterBatchSize bounds how many serial numbers are sent in a
+// single filter[serialNumber] query parameter to keep request URLs a reasonable
+// length. The API accepts comma-separated values within one filter.
+const orgDevicesSerialFilterBatchSize = 100
 
 // OrgDevicesResponse represents a response that contains a list of organization device resources.
 type OrgDevicesResponse struct {
@@ -161,6 +167,41 @@ func (c *Client) GetOrgDevices(ctx context.Context, queryParams url.Values) ([]O
 		if nextCursor == "" {
 			break
 		}
+	}
+
+	return allDevices, nil
+}
+
+// GetOrgDevicesBySerialNumbers retrieves the organization devices matching any
+// of the given serial numbers. It uses the filter[serialNumber] query parameter
+// so a set of devices can be resolved with one request per batch instead of one
+// request per device.
+func (c *Client) GetOrgDevicesBySerialNumbers(ctx context.Context, serials []string) ([]OrgDevice, error) {
+	unique := make([]string, 0, len(serials))
+	seen := make(map[string]struct{}, len(serials))
+	for _, serial := range serials {
+		if serial == "" {
+			continue
+		}
+		if _, ok := seen[serial]; ok {
+			continue
+		}
+		seen[serial] = struct{}{}
+		unique = append(unique, serial)
+	}
+
+	var allDevices []OrgDevice
+	for start := 0; start < len(unique); start += orgDevicesSerialFilterBatchSize {
+		end := min(start+orgDevicesSerialFilterBatchSize, len(unique))
+
+		params := url.Values{}
+		params.Set("filter[serialNumber]", strings.Join(unique[start:end], ","))
+
+		devices, err := c.GetOrgDevices(ctx, params)
+		if err != nil {
+			return nil, err
+		}
+		allDevices = append(allDevices, devices...)
 	}
 
 	return allDevices, nil

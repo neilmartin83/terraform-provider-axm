@@ -49,8 +49,30 @@ func validRFC3339() validator.String {
 	return rfc3339StringValidator{}
 }
 
-// orgDeviceFetcher retrieves an organization device by serial number.
-type orgDeviceFetcher func(ctx context.Context, id string) (*client.OrgDevice, error)
+// orgDeviceFetcher retrieves organization devices by their serial numbers.
+type orgDeviceFetcher func(ctx context.Context, serials []string) ([]client.OrgDevice, error)
+
+// fetchOrgDevicesBySerial resolves devices through a single batched filter
+// request and indexes them by both serial number and resource ID.
+func fetchOrgDevicesBySerial(ctx context.Context, serials []string, fetch orgDeviceFetcher) (map[string]client.OrgDevice, error) {
+	if len(serials) == 0 {
+		return map[string]client.OrgDevice{}, nil
+	}
+
+	devices, err := fetch(ctx, serials)
+	if err != nil {
+		return nil, err
+	}
+
+	bySerial := make(map[string]client.OrgDevice, len(devices))
+	for _, device := range devices {
+		bySerial[device.Attributes.SerialNumber] = device
+		if device.ID != "" {
+			bySerial[device.ID] = device
+		}
+	}
+	return bySerial, nil
+}
 
 // migrationReadiness describes a single device's MDM migration eligibility as
 // reported by the API at a point in time.
@@ -60,23 +82,33 @@ type migrationReadiness struct {
 	LookupErr error
 }
 
-// checkMigrationReadiness fetches each migrated device and reports its current
-// migration eligibility.
+// checkMigrationReadiness fetches the migrated devices in one batched request
+// and reports their current migration eligibility.
 func checkMigrationReadiness(ctx context.Context, migrated []MdmDeviceMigrationModel, fetch orgDeviceFetcher) []migrationReadiness {
-	readiness := make([]migrationReadiness, 0, len(migrated))
+	serials := make([]string, 0, len(migrated))
 	for _, device := range migrated {
 		if device.ID.IsNull() || device.ID.IsUnknown() {
 			continue
 		}
-		serial := device.ID.ValueString()
+		serials = append(serials, device.ID.ValueString())
+	}
+
+	bySerial, fetchErr := fetchOrgDevicesBySerial(ctx, serials, fetch)
+
+	readiness := make([]migrationReadiness, 0, len(serials))
+	for _, serial := range serials {
 		r := migrationReadiness{DeviceID: serial}
-		orgDevice, err := fetch(ctx, serial)
-		if err != nil {
-			r.LookupErr = err
-			readiness = append(readiness, r)
-			continue
+		switch {
+		case fetchErr != nil:
+			r.LookupErr = fetchErr
+		default:
+			orgDevice, ok := bySerial[serial]
+			if !ok {
+				r.LookupErr = fmt.Errorf("device %q not found", serial)
+			} else {
+				r.Capable = orgDevice.Attributes.IsMdmMigrationCapable
+			}
 		}
-		r.Capable = orgDevice.Attributes.IsMdmMigrationCapable
 		readiness = append(readiness, r)
 	}
 	return readiness
@@ -126,10 +158,17 @@ func verifyMigrationsCapable(ctx context.Context, serials []string, fetch orgDev
 		lookupFailed = nil
 		allReady := true
 
+		bySerial, fetchErr := fetchOrgDevicesBySerial(ctx, serials, fetch)
+
 		for _, serial := range serials {
-			orgDevice, err := fetch(ctx, serial)
-			if err != nil {
-				lookupFailed = append(lookupFailed, fmt.Sprintf("%s (%v)", serial, err))
+			if fetchErr != nil {
+				lookupFailed = append(lookupFailed, fmt.Sprintf("%s (%v)", serial, fetchErr))
+				allReady = false
+				continue
+			}
+			orgDevice, ok := bySerial[serial]
+			if !ok {
+				lookupFailed = append(lookupFailed, fmt.Sprintf("%s (device not found)", serial))
 				allReady = false
 				continue
 			}

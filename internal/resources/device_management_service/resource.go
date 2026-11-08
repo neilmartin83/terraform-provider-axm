@@ -232,8 +232,8 @@ func (r *DeviceManagementServiceResource) ModifyPlan(ctx context.Context, req re
 		return
 	}
 
-	readiness := checkMigrationReadiness(ctx, plan.MigratedDevices, func(ctx context.Context, id string) (*client.OrgDevice, error) {
-		return r.client.GetOrgDevice(ctx, id, nil)
+	readiness := checkMigrationReadiness(ctx, plan.MigratedDevices, func(ctx context.Context, serials []string) ([]client.OrgDevice, error) {
+		return r.client.GetOrgDevicesBySerialNumbers(ctx, serials)
 	})
 	planMigrationDiagnostics(readiness, &resp.Diagnostics)
 }

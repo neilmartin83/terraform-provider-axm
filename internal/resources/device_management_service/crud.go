@@ -82,8 +82,8 @@ func (r *DeviceManagementServiceResource) Create(ctx context.Context, req resour
 				serials = append(serials, device.ID.ValueString())
 			}
 		}
-		if err := verifyMigrationsCapable(createCtx, serials, func(ctx context.Context, id string) (*client.OrgDevice, error) {
-			return r.client.GetOrgDevice(ctx, id, nil)
+		if err := verifyMigrationsCapable(createCtx, serials, func(ctx context.Context, serials []string) ([]client.OrgDevice, error) {
+			return r.client.GetOrgDevicesBySerialNumbers(ctx, serials)
 		}, migrationEligibilityTimeout); err != nil {
 			resp.Diagnostics.AddError("Failed to verify MDM migration eligibility", err.Error())
 			return
@@ -418,8 +418,8 @@ func (r *DeviceManagementServiceResource) Update(ctx context.Context, req resour
 		migrationSerials = append(migrationSerials, group.devices...)
 	}
 	if len(migrationSerials) > 0 {
-		if err := verifyMigrationsCapable(updateCtx, migrationSerials, func(ctx context.Context, id string) (*client.OrgDevice, error) {
-			return r.client.GetOrgDevice(ctx, id, nil)
+		if err := verifyMigrationsCapable(updateCtx, migrationSerials, func(ctx context.Context, serials []string) ([]client.OrgDevice, error) {
+			return r.client.GetOrgDevicesBySerialNumbers(ctx, serials)
 		}, migrationEligibilityTimeout); err != nil {
 			resp.Diagnostics.AddError("Failed to verify MDM migration eligibility", err.Error())
 			return
